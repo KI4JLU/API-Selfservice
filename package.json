@@ -1,0 +1,27 @@
+{
+  "name": "litelite",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Self-service portal for an existing LiteLLM proxy: Keycloak SSO, roles, cost centers with approval workflow, budgets, API key self-service, request logs, reports and email notifications.",
+  "packageManager": "pnpm@10.33.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "setup:dev": "node scripts/setup.mts",
+    "dev": "pnpm -r --parallel --filter \"./apps/*\" dev",
+    "dev:api": "pnpm --filter @litelite/api dev",
+    "dev:web": "pnpm --filter @litelite/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "test:e2e": "playwright test -c e2e/playwright.config.ts",
+    "db:generate": "pnpm --filter @litelite/db generate",
+    "db:migrate": "pnpm --filter @litelite/db migrate",
+    "db:seed": "pnpm --filter @litelite/db seed",
+    "keycloak:setup": "node scripts/keycloak-setup.mts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,60 @@
+name: CI
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: litelite
+          POSTGRES_PASSWORD: litelite
+          POSTGRES_DB: litellm
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U litelite -d litellm" --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+        env:
+          DATABASE_URL: postgres://litelite:litelite@localhost:5433/litellm
+      - run: pnpm --filter @litelite/web build
+  e2e:
+    runs-on: ubuntu-latest
+    needs: test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: litelite
+          POSTGRES_PASSWORD: litelite
+          POSTGRES_DB: litellm
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U litelite -d litellm" --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: cp .env.example .env && sed -i 's/^LITELLM_MODE=http.*/LITELLM_MODE=mock/; s/^DEV_LOGIN_ENABLED=false.*/DEV_LOGIN_ENABLED=true/; s/^JOBS_ENABLED=true/JOBS_ENABLED=false/' .env
+      - run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright-report, path: playwright-report }
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t litelite:ci .

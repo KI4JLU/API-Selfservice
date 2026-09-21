@@ -65,6 +65,9 @@ web_modules/
 # Yarn Integrity file
 .yarn-integrity
 
+# Playwright output
+e2e/test-results/
+
 # dotenv environment variable files
 .env
 .env.*
@@ -128,6 +131,14 @@ dist
 # pnpm
 .pnpm-store
 
+# Agents
+agents.md
+AGENTS.md
+agents.local.md
+claude.md
+CLAUDE.md
+claude.local.md
+
 # yarn v3
 .pnp.*
 .yarn/*
@@ -141,3 +152,8 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Development directories
+docs/
+.vscode/
+tmp/

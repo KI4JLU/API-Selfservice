@@ -1,0 +1,2 @@
+ALTER TABLE "litelite"."audit_log" ADD COLUMN "severity" text DEFAULT 'info' NOT NULL;--> statement-breakpoint
+CREATE INDEX "audit_severity_created_idx" ON "litelite"."audit_log" USING btree ("severity","created_at");

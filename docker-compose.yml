@@ -1,0 +1,46 @@
+# Local development stack. LiteLLM and Keycloak are external (see .env).
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: litelite
+      POSTGRES_PASSWORD: litelite
+      POSTGRES_DB: litellm
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litelite -d litellm"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"   # web ui
+      - "1025:1025"   # smtp
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: ["app"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://litelite:litelite@postgres:5432/litellm
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      PORT: "3030"
+    ports:
+      - "3030:3030"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

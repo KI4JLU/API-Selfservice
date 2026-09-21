@@ -1,0 +1,49 @@
+# Git / CI / editor
+.git
+.gitignore
+.github
+.vscode
+
+# Dependencies and build output (reinstalled / rebuilt inside the image)
+node_modules
+**/node_modules
+**/dist
+.pnpm-store
+*.tsbuildinfo
+.vite
+**/.vite
+
+# Environment files (never bake secrets into the image)
+.env
+.env.*
+!.env.example
+
+# Tests and reports
+e2e
+**/*.test.ts
+**/*.test.tsx
+apps/api/src/test
+**/vitest.config.*
+test-results
+**/test-results
+playwright-report
+**/playwright-report
+coverage
+
+# Docs, agent notes, local tooling
+docs
+README.md
+CLAUDE.md
+claude.md
+AGENTS.md
+agents.md
+*.local.md
+scripts
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Logs and temp
+logs
+*.log
+tmp
