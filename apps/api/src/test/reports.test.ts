@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { CostCenterReportDetailSchema, CostCenterReportRowSchema } from '@litelite/shared';
+import { CostCenterReportDetailSchema, CostCenterReportRowSchema } from '@api-selfservice/shared';
 import { z } from 'zod';
 import { createTestApp, DAY, expectError, expectShape, randomCostCenter, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
 

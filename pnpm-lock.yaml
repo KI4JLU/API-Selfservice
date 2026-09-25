@@ -23,10 +23,10 @@ importers:
       '@hono/zod-openapi':
         specifier: ^1.6.0
         version: 1.6.3(hono@4.13.8)(zod@4.6.5)
-      '@litelite/db':
+      '@api-selfservice/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@litelite/shared':
+      '@api-selfservice/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@scalar/hono-api-reference':
@@ -81,7 +81,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@litelite/shared':
+      '@api-selfservice/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@radix-ui/react-checkbox':

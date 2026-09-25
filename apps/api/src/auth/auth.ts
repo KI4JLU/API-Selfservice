@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { genericOAuth, keycloak } from 'better-auth/plugins/generic-oauth';
-import { account, session, user, verification, eq } from '@litelite/db';
+import { account, session, user, verification, eq } from '@api-selfservice/db';
 import type { Deps } from '../context.js';
 import { decodeJwtPayload, extractClaims, isAdminByGroup, isAffiliationValid } from './claims.js';
 import { findLitellmUserIdByEmail, onUserCreated, syncIdpClaims } from '../services/users.js';
@@ -42,7 +42,7 @@ export function createAuth(deps: Deps) {
     },
     account: { updateAccountOnSignIn: true },
     advanced: {
-      cookiePrefix: 'litelite',
+      cookiePrefix: 'api-selfservice',
       useSecureCookies: env.NODE_ENV === 'production',
       // A function instead of 'uuid': Better Auth then accepts an id supplied by the create.before hook,
       // which is how an existing LiteLLM user is adopted (E-7).

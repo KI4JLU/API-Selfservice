@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AuditEventSchema, paginated } from '@litelite/shared';
+import { AuditEventSchema, paginated } from '@api-selfservice/shared';
 import { approvedCostCenterFor, createTestApp, expectError, expectShape, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
 import { runJob } from '../jobs/index.js';
 

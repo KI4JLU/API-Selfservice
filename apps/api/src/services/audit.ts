@@ -1,5 +1,5 @@
-import { and, apiKeys, auditLog, costCenters, count, desc, eq, gte, ilike, inArray, lt, providers, user } from '@litelite/db';
-import type { AuditEntity, AuditSeverity } from '@litelite/shared';
+import { and, apiKeys, auditLog, costCenters, count, desc, eq, gte, ilike, inArray, lt, providers, user } from '@api-selfservice/db';
+import type { AuditEntity, AuditSeverity } from '@api-selfservice/shared';
 import type { Deps } from '../context.js';
 
 export interface AuditEntry {

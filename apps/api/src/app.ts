@@ -68,7 +68,7 @@ export function createApp(deps: Deps): App {
   // OpenAPI + docs
   app.doc31('/api/openapi.json', {
     openapi: '3.1.0',
-    info: { title: 'LiteLite API', version: '1.0.0', description: 'Self-service portal for LiteLLM. All /api/v1 routes require a session cookie.' },
+    info: { title: 'API-Selfservice API', version: '1.0.0', description: 'Self-service portal for LiteLLM. All /api/v1 routes require a session cookie.' },
     servers: [{ url: '/' }],
   });
   app.get('/api/docs', Scalar({ url: '/api/openapi.json', theme: 'default' }));
@@ -83,10 +83,10 @@ export function createApp(deps: Deps): App {
     // No static web app here (dev): a small landing page instead of a bare 404 on "/".
     app.get('/', (c) =>
       c.html(`<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>LiteLite API</title>
+<html lang="en"><head><meta charset="utf-8"><title>API-Selfservice API</title>
 <style>body{font-family:system-ui,sans-serif;max-width:40rem;margin:4rem auto;padding:0 1rem;line-height:1.5}code{background:#eee;padding:.1em .3em;border-radius:3px}</style>
 </head><body>
-<h1>LiteLite API</h1>
+<h1>API-Selfservice API</h1>
 <p>This is the API server only. The web app runs separately.</p>
 <ul>
 <li><a href="${deps.env.APP_URL}/login">Web app</a> (<code>${deps.env.APP_URL}</code>)</li>

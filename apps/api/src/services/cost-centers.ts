@@ -1,5 +1,5 @@
-import { and, apiKeys, costCenterAdmins, costCenterRequests, costCenters, count, desc, eq, ilike, ne, or, user } from '@litelite/db';
-import { DEFAULT_COST_CENTER, currentPeriod, normalizeCostCenter, type BudgetPeriod, type CostCenterStatus } from '@litelite/shared';
+import { and, apiKeys, costCenterAdmins, costCenterRequests, costCenters, count, desc, eq, ilike, ne, or, user } from '@api-selfservice/db';
+import { DEFAULT_COST_CENTER, currentPeriod, normalizeCostCenter, type BudgetPeriod, type CostCenterStatus } from '@api-selfservice/shared';
 import type { CurrentUser, Deps } from '../context.js';
 import { ApiError, forbidden, notFound } from '../errors.js';
 import { audit, auditError } from './audit.js';
@@ -19,7 +19,7 @@ export async function getDefaultCostCenter(deps: Pick<Deps, 'db'>): Promise<CC> 
       number: DEFAULT_COST_CENTER,
       name: 'Default (kostenfreie Provider)',
       ownerName: 'System',
-      ownerEmail: 'noreply@litelite.invalid',
+      ownerEmail: 'noreply@api-selfservice.invalid',
       status: 'approved',
       isDefault: true,
     })
@@ -51,7 +51,7 @@ export async function ensureTeam(deps: Deps, cc: CC): Promise<string | null> {
         alias: teamAlias(cc),
         maxBudget: cc.maxBudget === null ? null : Number(cc.maxBudget),
         budgetDuration: budgetDurationFor(cc.budgetPeriod),
-        metadata: { cost_center: cc.number, litelite: true },
+        metadata: { cost_center: cc.number, api_selfservice: true },
       });
     }
     await deps.db.update(costCenters).set({ litellmTeamId: cc.id }).where(eq(costCenters.id, cc.id));
@@ -416,7 +416,7 @@ export async function evaluateCostCenterBudget(deps: Deps, cc: CC) {
   }
   if (ratio >= deps.env.BUDGET_WARN_THRESHOLD) {
     const key = `cc80:${cc.id}:${p.start.toISOString()}`;
-    const { jobState } = await import('@litelite/db');
+    const { jobState } = await import('@api-selfservice/db');
     const sent = await deps.db.query.jobState.findFirst({ where: eq(jobState.key, key) });
     if (!sent) {
       for (const r of recipients) await notify(deps, { type: 'cost_center_budget_80', to: r.email, locale: r.locale, userId: r.userId, vars });

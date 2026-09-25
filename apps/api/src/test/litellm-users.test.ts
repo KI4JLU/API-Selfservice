@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { LitellmUserSchema, paginated } from '@litelite/shared';
+import { LitellmUserSchema, paginated } from '@api-selfservice/shared';
 import { createTestApp, expectError, expectShape, uniqEmail, type Client, type TestApp } from './harness.js';
 
 describe('admin: LiteLLM user lookup', () => {
@@ -12,16 +12,16 @@ describe('admin: LiteLLM user lookup', () => {
   });
   afterAll(() => t.close());
 
-  it('lists LiteLLM users with the matching LiteLite account, searches by e-mail substring and by id', async () => {
+  it('lists LiteLLM users with the matching API-Selfservice account, searches by e-mail substring and by id', async () => {
     const email = uniqEmail('lookup');
     const u = await t.login({ email, name: 'Lookup Person' });
-    // A user that only exists in LiteLLM (never signed in to LiteLite).
+    // A user that only exists in LiteLLM (never signed in to API-Selfservice).
     await t.mock.createUser({ userId: 'll-only-1', email: 'only-in-litellm@test.local', alias: 'Only LiteLLM' });
 
     const all = expectShape(paginated(LitellmUserSchema), (await admin.get('/admin/litellm-users')).body);
     expect(all.total).toBeGreaterThanOrEqual(3);
-    expect(all.items.find((x) => x.userId === u.userId)).toMatchObject({ email, alias: 'Lookup Person', litelite: { id: u.userId, name: 'Lookup Person', status: 'active' } });
-    expect(all.items.find((x) => x.userId === 'll-only-1')).toMatchObject({ email: 'only-in-litellm@test.local', litelite: null });
+    expect(all.items.find((x) => x.userId === u.userId)).toMatchObject({ email, alias: 'Lookup Person', apiSelfservice: { id: u.userId, name: 'Lookup Person', status: 'active' } });
+    expect(all.items.find((x) => x.userId === 'll-only-1')).toMatchObject({ email: 'only-in-litellm@test.local', apiSelfservice: null });
 
     const byEmail = (await admin.get(`/admin/litellm-users?q=${encodeURIComponent(email.slice(0, 10).toUpperCase())}`)).body;
     expect(byEmail.items.map((x: { userId: string }) => x.userId)).toEqual([u.userId]);
@@ -30,7 +30,7 @@ describe('admin: LiteLLM user lookup', () => {
     expect((await admin.get('/admin/litellm-users?q=zzz-nobody')).body.total).toBe(0);
 
     await admin.post(`/admin/users/${u.userId}/deactivate`);
-    expect((await admin.get(`/admin/litellm-users?q=${u.userId}`)).body.items[0].litelite.status).toBe('deactivated');
+    expect((await admin.get(`/admin/litellm-users?q=${u.userId}`)).body.items[0].apiSelfservice.status).toBe('deactivated');
 
     const p = (await admin.get('/admin/litellm-users?pageSize=1&page=2')).body;
     expect(p.items).toHaveLength(1);

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AdminUserSchema, MeSchema, paginated } from '@litelite/shared';
+import { AdminUserSchema, MeSchema, paginated } from '@api-selfservice/shared';
 import { approvedCostCenterFor, CostCenterSchemaLenient, createTestApp, expectError, expectShape, type Client, type TestApp } from './harness.js';
 
 describe('security chain', () => {
@@ -29,7 +29,7 @@ describe('security chain', () => {
     });
 
     it('401 with a garbage cookie', async () => {
-      const r = await t.request('GET', '/api/v1/me', { cookie: 'litelite.session_token=abc.def' });
+      const r = await t.request('GET', '/api/v1/me', { cookie: 'api-selfservice.session_token=abc.def' });
       expectError(r, 401, 'UNAUTHORIZED');
     });
 
@@ -164,7 +164,7 @@ describe('security chain', () => {
 
     it('user with invalid affiliation gets ACCOUNT_INVALID_AFFILIATION', async () => {
       const u = await t.login();
-      const { user: userTable, eq } = await import('@litelite/db');
+      const { user: userTable, eq } = await import('@api-selfservice/db');
       await t.db.update(userTable).set({ affiliationValid: false }).where(eq(userTable.id, u.userId));
       expectError(await u.get('/me'), 403, 'ACCOUNT_INVALID_AFFILIATION');
     });

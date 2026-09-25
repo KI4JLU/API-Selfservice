@@ -17,8 +17,8 @@ import {
   SetCostCenterAdminSchema,
   SetRoleSchema,
   paginated,
-} from '@litelite/shared';
-import { and, count, desc, eq, notifications } from '@litelite/db';
+} from '@api-selfservice/shared';
+import { and, count, desc, eq, notifications } from '@api-selfservice/db';
 import { createRouter, body, json, errors, IdParam, okBody } from './_util.js';
 import { startImpersonation } from '../services/impersonation.js';
 import { deactivateUser, getUserAdmin, listUsers, reactivateUser, searchLitellmUsers, setCostCenterAdmin, setRole } from '../services/users.js';
@@ -38,7 +38,7 @@ r.openapi(
     method: 'get',
     path: '/admin/litellm-users',
     tags: ['users'],
-    description: 'Users as LiteLLM knows them (user master), each with the matching LiteLite account if one exists.',
+    description: 'Users as LiteLLM knows them (user master), each with the matching API-Selfservice account if one exists.',
     request: { query: LitellmUsersQuery },
     responses: { 200: json(paginated(LitellmUserSchema), 'LiteLLM users'), ...errors },
   }),

@@ -1,2 +1,2 @@
-ALTER TABLE "litelite"."session" ADD COLUMN "impersonated_user_id" text;--> statement-breakpoint
-ALTER TABLE "litelite"."session" ADD CONSTRAINT "session_impersonated_user_id_user_id_fk" FOREIGN KEY ("impersonated_user_id") REFERENCES "litelite"."user"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "api_selfservice"."session" ADD COLUMN "impersonated_user_id" text;--> statement-breakpoint
+ALTER TABLE "api_selfservice"."session" ADD CONSTRAINT "session_impersonated_user_id_user_id_fk" FOREIGN KEY ("impersonated_user_id") REFERENCES "api_selfservice"."user"("id") ON DELETE set null ON UPDATE no action;

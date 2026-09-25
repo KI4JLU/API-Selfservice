@@ -4,9 +4,9 @@ import { z } from 'zod';
 import { expect } from 'vitest';
 import pg from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { apiKeys, eq, notifications, schema, sql, and, type Db } from '@litelite/db';
-import { seedBase } from '@litelite/db/seed';
-import { CostCenterSchema, type NotificationType } from '@litelite/shared';
+import { apiKeys, eq, notifications, schema, sql, and, type Db } from '@api-selfservice/db';
+import { seedBase } from '@api-selfservice/db/seed';
+import { CostCenterSchema, type NotificationType } from '@api-selfservice/shared';
 import { loadEnv } from '../env.js';
 import { createApp } from '../app.js';
 import { createMockAdapter } from '../litellm/mock.js';
@@ -16,10 +16,10 @@ import type { LiteLLMSpendLog } from '../litellm/types.js';
 import { runIngestAndBudgets } from '../jobs/index.js';
 import { storeLogs } from '../services/spend.js';
 
-export const TEST_SCHEMA = 'litelite_test';
+export const TEST_SCHEMA = 'api_selfservice_test';
 export const APP_URL = 'http://localhost:5173';
 export const API_URL = 'http://localhost:3030';
-export const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://litelite:litelite@localhost:5433/litellm';
+export const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://api_selfservice:api_selfservice@localhost:5433/litellm';
 /** Fixed "now" so month boundaries never interfere with the tests. */
 export const BASE_NOW = new Date('2026-09-15T12:00:00.000Z');
 export const DAY = 86_400_000;
@@ -77,7 +77,7 @@ export interface TestApp {
   notificationsOf(type: NotificationType, recipient?: string): Promise<{ recipient: string; subject: string; status: string }[]>;
   litellmKeyIdOf(keyId: string): Promise<string>;
   keyRow(keyId: string): Promise<typeof apiKeys.$inferSelect>;
-  /** Injects a synthetic LiteLLM spend log for a LiteLite key id (default startTime: 1 min ago). */
+  /** Injects a synthetic LiteLLM spend log for a API-Selfservice key id (default startTime: 1 min ago). */
   addLog(keyId: string, partial?: Partial<LiteLLMSpendLog>): Promise<LiteLLMSpendLog>;
   /** Writes logs straight into the DB (bypasses the ingest window; e.g. for history / older months). */
   storeLogs(logs: LiteLLMSpendLog[]): Promise<number>;

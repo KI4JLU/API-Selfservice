@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { ROLES, type BudgetPeriod, type Role } from '@litelite/shared';
+import { ROLES, type BudgetPeriod, type Role } from '@api-selfservice/shared';
 import { useCostCenters, useSetBudget, useSetCostCenterAdmin, useSetRole, type AdminUser } from '@/lib/queries';
 import { fmtCostCenter, toDateInput } from '@/lib/format';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';

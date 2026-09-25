@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AdminApiKeySchema, ApiKeySchema, CreatedApiKeySchema, paginated } from '@litelite/shared';
-import { apiKeys, eq } from '@litelite/db';
+import { AdminApiKeySchema, ApiKeySchema, CreatedApiKeySchema, paginated } from '@api-selfservice/shared';
+import { apiKeys, eq } from '@api-selfservice/db';
 import { approvedCostCenterFor, createTestApp, DAY, expectError, expectShape, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
 
 describe('api keys', () => {

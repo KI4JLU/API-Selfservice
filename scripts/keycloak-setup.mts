@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Set up the LiteLite realm in Keycloak as described in docs/keycloak.md.
+ * Set up the API-Selfservice realm in Keycloak as described in docs/keycloak.md.
  *
  * Reads .env (KEYCLOAK_*, APP_URL, API_URL) and the admin credentials from
  * KC_ADMIN_USER / KC_ADMIN_PASS (environment or .env). Idempotent: existing
@@ -279,11 +279,11 @@ async function main() {
   const adminPass = cfg('KC_ADMIN_PASS');
   if (!adminUser || !adminPass) fail('set KC_ADMIN_USER and KC_ADMIN_PASS (environment or .env)');
 
-  const clientId = cfg('KEYCLOAK_CLIENT_ID', 'litelite');
+  const clientId = cfg('KEYCLOAK_CLIENT_ID', 'api-selfservice');
   const adminGroup = cfg('KEYCLOAK_ADMIN_GROUP', 'LiteLLMAdmin');
   const groupsClaim = cfg('KEYCLOAK_GROUPS_CLAIM', 'groups');
   const affClaim = cfg('KEYCLOAK_AFFILIATION_CLAIM', 'eduPersonAffiliation');
-  const adminClientId = cfg('KEYCLOAK_ADMIN_CLIENT_ID', 'litelite-admin');
+  const adminClientId = cfg('KEYCLOAK_ADMIN_CLIENT_ID', 'api-selfservice-admin');
   const testPassFixed = cfg('KC_TEST_USER_PASS');
   const testPass = testPassFixed || randomBytes(12).toString('base64url');
 

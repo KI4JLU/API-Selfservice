@@ -5,7 +5,7 @@ import { sql } from 'drizzle-orm';
 import { createDb, SCHEMA_NAME, type Db } from './index.js';
 
 const migrationsFolder = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../drizzle');
-const GENERATED_SCHEMA = 'litelite';
+const GENERATED_SCHEMA = 'api_selfservice';
 
 interface JournalEntry {
   idx: number;

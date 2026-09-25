@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BUDGET_WARN_THRESHOLD } from '@litelite/shared';
+import { BUDGET_WARN_THRESHOLD } from '@api-selfservice/shared';
 
 export function ReportDetailBody({ id, from, to }: { id: string; from?: string; to?: string }) {
   const { t } = useTranslation();

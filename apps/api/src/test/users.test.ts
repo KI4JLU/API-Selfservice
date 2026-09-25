@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AdminUserSchema, NotificationSchema, paginated } from '@litelite/shared';
+import { AdminUserSchema, NotificationSchema, paginated } from '@api-selfservice/shared';
 import { approvedCostCenterFor, createTestApp, expectError, expectShape, syncProvidersWithFree, uniqEmail, type Client, type TestApp } from './harness.js';
 
 describe('user administration', () => {
@@ -75,7 +75,7 @@ describe('user administration', () => {
     expect(await t.notificationsOf('role_changed', u.email)).toHaveLength(2);
     expectError(await admin.patch(`/admin/users/${u.userId}/role`, { role: 'superuser' }), 400, 'VALIDATION_ERROR');
     expectError(await admin.patch('/admin/users/nope/role', { role: 'admin' }), 404, 'NOT_FOUND');
-    const { auditLog, eq, and } = await import('@litelite/db');
+    const { auditLog, eq, and } = await import('@api-selfservice/db');
     const entries = await t.db.query.auditLog.findMany({ where: and(eq(auditLog.action, 'user.set_role'), eq(auditLog.entityId, u.userId)) });
     expect(entries).toHaveLength(2);
     expect(entries.every((e) => e.actorId === admin.userId)).toBe(true);

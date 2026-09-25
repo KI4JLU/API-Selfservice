@@ -1,6 +1,6 @@
-CREATE SCHEMA "litelite";
+CREATE SCHEMA "api_selfservice";
 --> statement-breakpoint
-CREATE TABLE "litelite"."account" (
+CREATE TABLE "api_selfservice"."account" (
 	"id" text PRIMARY KEY DEFAULT gen_random_uuid()::text NOT NULL,
 	"account_id" text NOT NULL,
 	"provider_id" text NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE "litelite"."account" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."api_keys" (
+CREATE TABLE "api_selfservice"."api_keys" (
 	"id" text PRIMARY KEY DEFAULT gen_random_uuid()::text NOT NULL,
 	"user_id" text NOT NULL,
 	"litellm_key_id" text NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE "litelite"."api_keys" (
 	"deleted_at" timestamp with time zone
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."audit_log" (
+CREATE TABLE "api_selfservice"."audit_log" (
 	"id" text PRIMARY KEY DEFAULT gen_random_uuid()::text NOT NULL,
 	"actor_id" text,
 	"action" text NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE "litelite"."audit_log" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."budgets" (
+CREATE TABLE "api_selfservice"."budgets" (
 	"id" text PRIMARY KEY DEFAULT gen_random_uuid()::text NOT NULL,
 	"user_id" text NOT NULL,
 	"amount" numeric(14, 6) NOT NULL,
@@ -62,7 +62,7 @@ CREATE TABLE "litelite"."budgets" (
 	CONSTRAINT "budgets_user_id_unique" UNIQUE("user_id")
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."cost_center_admins" (
+CREATE TABLE "api_selfservice"."cost_center_admins" (
 	"user_id" text NOT NULL,
 	"cost_center_id" text NOT NULL,
 	"assigned_by" text,
@@ -70,7 +70,7 @@ CREATE TABLE "litelite"."cost_center_admins" (
 	CONSTRAINT "cost_center_admins_user_id_cost_center_id_pk" PRIMARY KEY("user_id","cost_center_id")
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."cost_center_requests" (
+CREATE TABLE "api_selfservice"."cost_center_requests" (
 	"id" text PRIMARY KEY DEFAULT gen_random_uuid()::text NOT NULL,
 	"user_id" text NOT NULL,
 	"cost_center_id" text NOT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE "litelite"."cost_center_requests" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."cost_centers" (
+CREATE TABLE "api_selfservice"."cost_centers" (
 	"id" text PRIMARY KEY DEFAULT gen_random_uuid()::text NOT NULL,
 	"number" text NOT NULL,
 	"name" text NOT NULL,
@@ -100,13 +100,13 @@ CREATE TABLE "litelite"."cost_centers" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."job_state" (
+CREATE TABLE "api_selfservice"."job_state" (
 	"key" text PRIMARY KEY NOT NULL,
 	"value" jsonb,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."notifications" (
+CREATE TABLE "api_selfservice"."notifications" (
 	"id" text PRIMARY KEY DEFAULT gen_random_uuid()::text NOT NULL,
 	"user_id" text,
 	"type" text NOT NULL,
@@ -118,7 +118,7 @@ CREATE TABLE "litelite"."notifications" (
 	"sent_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."providers" (
+CREATE TABLE "api_selfservice"."providers" (
 	"id" text PRIMARY KEY DEFAULT gen_random_uuid()::text NOT NULL,
 	"model_name" text NOT NULL,
 	"litellm_model_id" text,
@@ -134,7 +134,7 @@ CREATE TABLE "litelite"."providers" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."rebookings" (
+CREATE TABLE "api_selfservice"."rebookings" (
 	"id" text PRIMARY KEY DEFAULT gen_random_uuid()::text NOT NULL,
 	"period_start" timestamp with time zone NOT NULL,
 	"period_end" timestamp with time zone NOT NULL,
@@ -145,7 +145,7 @@ CREATE TABLE "litelite"."rebookings" (
 	"total_amount" numeric(14, 6) DEFAULT '0' NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."request_logs" (
+CREATE TABLE "api_selfservice"."request_logs" (
 	"request_id" text PRIMARY KEY NOT NULL,
 	"session_id" text,
 	"user_id" text,
@@ -169,7 +169,7 @@ CREATE TABLE "litelite"."request_logs" (
 	"ingested_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."session" (
+CREATE TABLE "api_selfservice"."session" (
 	"id" text PRIMARY KEY DEFAULT gen_random_uuid()::text NOT NULL,
 	"expires_at" timestamp with time zone NOT NULL,
 	"token" text NOT NULL,
@@ -180,7 +180,7 @@ CREATE TABLE "litelite"."session" (
 	"user_id" text NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."spend_snapshots" (
+CREATE TABLE "api_selfservice"."spend_snapshots" (
 	"id" text PRIMARY KEY DEFAULT gen_random_uuid()::text NOT NULL,
 	"date" text NOT NULL,
 	"user_id" text,
@@ -196,7 +196,7 @@ CREATE TABLE "litelite"."spend_snapshots" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."user" (
+CREATE TABLE "api_selfservice"."user" (
 	"id" text PRIMARY KEY DEFAULT gen_random_uuid()::text NOT NULL,
 	"name" text NOT NULL,
 	"email" text NOT NULL,
@@ -219,7 +219,7 @@ CREATE TABLE "litelite"."user" (
 	"last_login_at" timestamp with time zone
 );
 --> statement-breakpoint
-CREATE TABLE "litelite"."verification" (
+CREATE TABLE "api_selfservice"."verification" (
 	"id" text PRIMARY KEY DEFAULT gen_random_uuid()::text NOT NULL,
 	"identifier" text NOT NULL,
 	"value" text NOT NULL,
@@ -228,37 +228,37 @@ CREATE TABLE "litelite"."verification" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "litelite"."account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "litelite"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "litelite"."api_keys" ADD CONSTRAINT "api_keys_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "litelite"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "litelite"."api_keys" ADD CONSTRAINT "api_keys_cost_center_id_cost_centers_id_fk" FOREIGN KEY ("cost_center_id") REFERENCES "litelite"."cost_centers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "litelite"."budgets" ADD CONSTRAINT "budgets_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "litelite"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "litelite"."cost_center_admins" ADD CONSTRAINT "cost_center_admins_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "litelite"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "litelite"."cost_center_admins" ADD CONSTRAINT "cost_center_admins_cost_center_id_cost_centers_id_fk" FOREIGN KEY ("cost_center_id") REFERENCES "litelite"."cost_centers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "litelite"."cost_center_requests" ADD CONSTRAINT "cost_center_requests_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "litelite"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "litelite"."cost_center_requests" ADD CONSTRAINT "cost_center_requests_cost_center_id_cost_centers_id_fk" FOREIGN KEY ("cost_center_id") REFERENCES "litelite"."cost_centers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "litelite"."session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "litelite"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "account_user_idx" ON "litelite"."account" USING btree ("user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "api_key_litellm_idx" ON "litelite"."api_keys" USING btree ("litellm_key_id");--> statement-breakpoint
-CREATE INDEX "api_key_user_idx" ON "litelite"."api_keys" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "api_key_cc_idx" ON "litelite"."api_keys" USING btree ("cost_center_id");--> statement-breakpoint
-CREATE INDEX "audit_entity_idx" ON "litelite"."audit_log" USING btree ("entity","entity_id");--> statement-breakpoint
-CREATE INDEX "audit_created_idx" ON "litelite"."audit_log" USING btree ("created_at");--> statement-breakpoint
-CREATE INDEX "ccr_user_idx" ON "litelite"."cost_center_requests" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "ccr_status_idx" ON "litelite"."cost_center_requests" USING btree ("status");--> statement-breakpoint
-CREATE UNIQUE INDEX "cost_center_number_idx" ON "litelite"."cost_centers" USING btree ("number");--> statement-breakpoint
-CREATE INDEX "cost_center_status_idx" ON "litelite"."cost_centers" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "notif_user_idx" ON "litelite"."notifications" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "notif_type_idx" ON "litelite"."notifications" USING btree ("type");--> statement-breakpoint
-CREATE UNIQUE INDEX "provider_model_name_idx" ON "litelite"."providers" USING btree ("model_name");--> statement-breakpoint
-CREATE INDEX "rl_user_time_idx" ON "litelite"."request_logs" USING btree ("user_id","time");--> statement-breakpoint
-CREATE INDEX "rl_cc_time_idx" ON "litelite"."request_logs" USING btree ("cost_center_id","time");--> statement-breakpoint
-CREATE INDEX "rl_key_idx" ON "litelite"."request_logs" USING btree ("api_key_id");--> statement-breakpoint
-CREATE INDEX "rl_time_idx" ON "litelite"."request_logs" USING btree ("time");--> statement-breakpoint
-CREATE UNIQUE INDEX "session_token_idx" ON "litelite"."session" USING btree ("token");--> statement-breakpoint
-CREATE INDEX "session_user_idx" ON "litelite"."session" USING btree ("user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "snap_unique_idx" ON "litelite"."spend_snapshots" USING btree ("date","user_id","api_key_id","cost_center_id","model");--> statement-breakpoint
-CREATE INDEX "snap_cc_date_idx" ON "litelite"."spend_snapshots" USING btree ("cost_center_id","date");--> statement-breakpoint
-CREATE INDEX "snap_user_date_idx" ON "litelite"."spend_snapshots" USING btree ("user_id","date");--> statement-breakpoint
-CREATE UNIQUE INDEX "user_email_idx" ON "litelite"."user" USING btree ("email");--> statement-breakpoint
-CREATE INDEX "user_cost_center_idx" ON "litelite"."user" USING btree ("cost_center_id");--> statement-breakpoint
-CREATE INDEX "verification_identifier_idx" ON "litelite"."verification" USING btree ("identifier");
+ALTER TABLE "api_selfservice"."account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "api_selfservice"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "api_selfservice"."api_keys" ADD CONSTRAINT "api_keys_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "api_selfservice"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "api_selfservice"."api_keys" ADD CONSTRAINT "api_keys_cost_center_id_cost_centers_id_fk" FOREIGN KEY ("cost_center_id") REFERENCES "api_selfservice"."cost_centers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "api_selfservice"."budgets" ADD CONSTRAINT "budgets_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "api_selfservice"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "api_selfservice"."cost_center_admins" ADD CONSTRAINT "cost_center_admins_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "api_selfservice"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "api_selfservice"."cost_center_admins" ADD CONSTRAINT "cost_center_admins_cost_center_id_cost_centers_id_fk" FOREIGN KEY ("cost_center_id") REFERENCES "api_selfservice"."cost_centers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "api_selfservice"."cost_center_requests" ADD CONSTRAINT "cost_center_requests_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "api_selfservice"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "api_selfservice"."cost_center_requests" ADD CONSTRAINT "cost_center_requests_cost_center_id_cost_centers_id_fk" FOREIGN KEY ("cost_center_id") REFERENCES "api_selfservice"."cost_centers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "api_selfservice"."session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "api_selfservice"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "account_user_idx" ON "api_selfservice"."account" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "api_key_litellm_idx" ON "api_selfservice"."api_keys" USING btree ("litellm_key_id");--> statement-breakpoint
+CREATE INDEX "api_key_user_idx" ON "api_selfservice"."api_keys" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "api_key_cc_idx" ON "api_selfservice"."api_keys" USING btree ("cost_center_id");--> statement-breakpoint
+CREATE INDEX "audit_entity_idx" ON "api_selfservice"."audit_log" USING btree ("entity","entity_id");--> statement-breakpoint
+CREATE INDEX "audit_created_idx" ON "api_selfservice"."audit_log" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "ccr_user_idx" ON "api_selfservice"."cost_center_requests" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "ccr_status_idx" ON "api_selfservice"."cost_center_requests" USING btree ("status");--> statement-breakpoint
+CREATE UNIQUE INDEX "cost_center_number_idx" ON "api_selfservice"."cost_centers" USING btree ("number");--> statement-breakpoint
+CREATE INDEX "cost_center_status_idx" ON "api_selfservice"."cost_centers" USING btree ("status");--> statement-breakpoint
+CREATE INDEX "notif_user_idx" ON "api_selfservice"."notifications" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "notif_type_idx" ON "api_selfservice"."notifications" USING btree ("type");--> statement-breakpoint
+CREATE UNIQUE INDEX "provider_model_name_idx" ON "api_selfservice"."providers" USING btree ("model_name");--> statement-breakpoint
+CREATE INDEX "rl_user_time_idx" ON "api_selfservice"."request_logs" USING btree ("user_id","time");--> statement-breakpoint
+CREATE INDEX "rl_cc_time_idx" ON "api_selfservice"."request_logs" USING btree ("cost_center_id","time");--> statement-breakpoint
+CREATE INDEX "rl_key_idx" ON "api_selfservice"."request_logs" USING btree ("api_key_id");--> statement-breakpoint
+CREATE INDEX "rl_time_idx" ON "api_selfservice"."request_logs" USING btree ("time");--> statement-breakpoint
+CREATE UNIQUE INDEX "session_token_idx" ON "api_selfservice"."session" USING btree ("token");--> statement-breakpoint
+CREATE INDEX "session_user_idx" ON "api_selfservice"."session" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "snap_unique_idx" ON "api_selfservice"."spend_snapshots" USING btree ("date","user_id","api_key_id","cost_center_id","model");--> statement-breakpoint
+CREATE INDEX "snap_cc_date_idx" ON "api_selfservice"."spend_snapshots" USING btree ("cost_center_id","date");--> statement-breakpoint
+CREATE INDEX "snap_user_date_idx" ON "api_selfservice"."spend_snapshots" USING btree ("user_id","date");--> statement-breakpoint
+CREATE UNIQUE INDEX "user_email_idx" ON "api_selfservice"."user" USING btree ("email");--> statement-breakpoint
+CREATE INDEX "user_cost_center_idx" ON "api_selfservice"."user" USING btree ("cost_center_id");--> statement-breakpoint
+CREATE INDEX "verification_identifier_idx" ON "api_selfservice"."verification" USING btree ("identifier");

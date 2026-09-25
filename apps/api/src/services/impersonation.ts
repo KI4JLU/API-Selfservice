@@ -1,4 +1,4 @@
-import { eq, session, user } from '@litelite/db';
+import { eq, session, user } from '@api-selfservice/db';
 import type { CurrentUser, Deps } from '../context.js';
 import { ApiError, forbidden, notFound } from '../errors.js';
 import { audit } from './audit.js';

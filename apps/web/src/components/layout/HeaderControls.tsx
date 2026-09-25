@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Moon, Sun } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { LOCALES, type Locale } from '@litelite/shared';
+import { LOCALES, type Locale } from '@api-selfservice/shared';
 import { useTheme } from '@/lib/theme';
 import { api } from '@/lib/api';
 import { qk } from '@/lib/queries';

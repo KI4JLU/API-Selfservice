@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import type { ColumnDef } from '@tanstack/react-table';
-import { NOTIFICATION_TYPES } from '@litelite/shared';
+import { NOTIFICATION_TYPES } from '@api-selfservice/shared';
 import { requireAdmin } from '@/lib/guards';
 import { useNotifications, type Notification } from '@/lib/queries';
 import { fmtDateTime } from '@/lib/format';

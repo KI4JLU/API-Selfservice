@@ -1,4 +1,4 @@
-# LiteLite
+# API-Selfservice
 
 Self-service portal for an existing LiteLLM proxy: Keycloak SSO, roles (user, cost center admin, admin), cost centers with approval workflow, budgets, API key self-service, request logger, reports, email notifications. Requirements: [docs/PRD.md](docs/PRD.md).
 
@@ -8,7 +8,7 @@ Self-service portal for an existing LiteLLM proxy: Keycloak SSO, roles (user, co
 |---|---|
 | Frontend | React 19, TanStack Router/Query/Table, shadcn/ui components, Tailwind 4, i18next (de/en) |
 | Backend | Hono + `@hono/zod-openapi`, Better Auth (Keycloak via generic-oauth), Drizzle ORM, Nodemailer, croner |
-| Database | PostgreSQL, dedicated schema (`DB_SCHEMA`, default `litelite`) on the LiteLLM DB host |
+| Database | PostgreSQL, dedicated schema (`DB_SCHEMA`, default `api_selfservice`) on the LiteLLM DB host |
 | Tests | Vitest (unit/integration), Playwright (API + UI) |
 
 Structure: `apps/api`, `apps/web`, `packages/shared` (Zod schemas, i18n), `packages/db` (Drizzle schema, migrations), `e2e`.
@@ -26,7 +26,7 @@ Details, manual steps and Keycloak setup: [docs/SETUP.md](docs/SETUP.md).
 - Mailpit (all mails): http://localhost:8025
 - Login without Keycloak: dev login form on the login page (only when `DEV_LOGIN_ENABLED=true`, refused in production).
 - Debugging as another user: with `IMPERSONATION_ENABLED=true`, admins can pick "Impersonate" in Users / roles and act as that user in their own session until they click Stop in the banner. Start and end are audited.
-- Login with Keycloak (realm `litelite-dev`, created by `pnpm keycloak:setup`): test users, password = `KC_TEST_USER_PASS` in `.env`.
+- Login with Keycloak (realm `api-selfservice-dev`, created by `pnpm keycloak:setup`): test users, password = `KC_TEST_USER_PASS` in `.env`.
 
   | User | Group | eduPersonAffiliation | Result |
   |---|---|---|---|
@@ -58,8 +58,8 @@ pnpm typecheck                 # all packages
 pnpm test                      # Vitest (needs Postgres on :5433)
 pnpm test:e2e                  # Playwright (API + UI)
 pnpm db:generate               # new migration from the Drizzle schema
-pnpm --filter @litelite/web build
-docker build -t litelite .     # production image (API + static web)
+pnpm --filter @api-selfservice/web build
+docker build -t api-selfservice .     # production image (API + static web)
 ```
 
 ## Environments

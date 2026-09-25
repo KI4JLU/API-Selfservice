@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { CostCenterRequestSchema, CostCenterSchema, MeSchema, paginated } from '@litelite/shared';
+import { CostCenterRequestSchema, CostCenterSchema, MeSchema, paginated } from '@api-selfservice/shared';
 import { createTestApp, expectError, expectShape, randomCostCenter, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
 
 describe('profile + cost centers', () => {

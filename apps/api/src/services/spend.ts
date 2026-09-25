@@ -1,5 +1,5 @@
-import { and, apiKeys, count, desc, eq, gte, jobState, lt, requestLogs, spendSnapshots, sql, sum, user } from '@litelite/db';
-import { dateKey } from '@litelite/shared';
+import { and, apiKeys, count, desc, eq, gte, jobState, lt, requestLogs, spendSnapshots, sql, sum, user } from '@api-selfservice/db';
+import { dateKey } from '@api-selfservice/shared';
 import type { Deps } from '../context.js';
 import type { LiteLLMSpendLog } from '../litellm/types.js';
 
@@ -31,7 +31,7 @@ export async function storeLogs(deps: Deps, logs: LiteLLMSpendLog[]) {
   const byLitellmKey = new Map(keyRows.map((k) => [k.litellmKeyId, k]));
   const byHash = new Map(keyRows.filter((k) => k.keyHash).map((k) => [k.keyHash!, k]));
   const users = await deps.db.query.user.findMany();
-  // user ids are shared with LiteLLM (E-7): the log's `user` is the LiteLite id
+  // user ids are shared with LiteLLM (E-7): the log's `user` is the API-Selfservice id
   const byId = new Map(users.map((u) => [u.id, u]));
   let inserted = 0;
   const touched = new Map<string, { date: string; userId: string | null; apiKeyId: string | null; costCenterId: string | null; model: string; provider: string | null }>();

@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "LiteLite",
+    "name": "API-Selfservice",
     "tagline": "Self-Service-Portal für LiteLLM"
   },
   "nav": {
@@ -461,9 +461,9 @@
     "teams": "Teams",
     "maxBudget": "Max-Budget",
     "blocked": "Gesperrt",
-    "inLitelite": "In LiteLite",
-    "notInLitelite": "noch nie angemeldet",
-    "hint": "LiteLLM ist die führende User-Liste: Ein dort vorhandenes Konto wird beim ersten LiteLite-Login mit derselben ID übernommen.",
+    "inApiSelfservice": "In API-Selfservice",
+    "notInApiSelfservice": "noch nie angemeldet",
+    "hint": "LiteLLM ist die führende User-Liste: Ein dort vorhandenes Konto wird beim ersten API-Selfservice-Login mit derselben ID übernommen.",
     "error": "LiteLLM hat die User-Liste nicht geliefert. Der konfigurierte LITELLM_API_KEY braucht Proxy-Admin-Rechte."
   }
 }

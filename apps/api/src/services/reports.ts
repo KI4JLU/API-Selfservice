@@ -1,4 +1,4 @@
-import { and, apiKeys, costCenters, count, eq, gte, lt, ne, requestLogs, sum, user } from '@litelite/db';
+import { and, apiKeys, costCenters, count, eq, gte, lt, ne, requestLogs, sum, user } from '@api-selfservice/db';
 import type { CurrentUser, Deps } from '../context.js';
 import { forbidden, notFound } from '../errors.js';
 import { costCenterPeriod } from './cost-centers.js';

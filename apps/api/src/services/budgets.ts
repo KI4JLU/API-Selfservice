@@ -1,5 +1,5 @@
-import { and, budgets, costCenters, count, desc, eq, isNull, user } from '@litelite/db';
-import { currentPeriod, monthPeriod, monthKey, type BudgetPeriod } from '@litelite/shared';
+import { and, budgets, costCenters, count, desc, eq, isNull, user } from '@api-selfservice/db';
+import { currentPeriod, monthPeriod, monthKey, type BudgetPeriod } from '@api-selfservice/shared';
 import type { CurrentUser, Deps } from '../context.js';
 import { notFound } from '../errors.js';
 import { budgetDurationFor } from '../litellm/types.js';

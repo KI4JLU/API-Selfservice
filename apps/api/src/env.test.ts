@@ -10,7 +10,7 @@ describe('loadEnv', () => {
     expect(e.PORT).toBe(3030);
     expect(e.APP_URL).toBe('http://localhost:5173');
     expect(e.API_URL).toBe('http://localhost:3030');
-    expect(e.DB_SCHEMA).toBe('litelite');
+    expect(e.DB_SCHEMA).toBe('api_selfservice');
     expect(e.LITELLM_MODE).toBe('http');
     expect(e.LITELLM_BASE_URL).toBe('http://localhost:4000');
     expect(e.KEYCLOAK_ADMIN_GROUP).toBe('LiteLLMAdmin');

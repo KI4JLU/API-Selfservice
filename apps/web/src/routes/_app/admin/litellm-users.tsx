@@ -65,21 +65,21 @@ function AdminLitellmUsersPage() {
       { header: t('common.spend'), accessorKey: 'spend', cell: ({ row }) => <span className="whitespace-nowrap tabular-nums">{fmtMoney(row.original.spend, { precise: true })}</span>, meta: { className: 'text-right' } },
       { header: t('litellmUsers.maxBudget'), accessorKey: 'maxBudget', cell: ({ row }) => <span className="whitespace-nowrap tabular-nums">{row.original.maxBudget === null ? t('common.unlimited') : fmtMoney(row.original.maxBudget)}</span>, meta: { className: 'text-right' } },
       {
-        header: t('litellmUsers.inLitelite'),
-        accessorKey: 'litelite',
+        header: t('litellmUsers.inApiSelfservice'),
+        accessorKey: 'apiSelfservice',
         cell: ({ row }) =>
-          row.original.litelite ? (
+          row.original.apiSelfservice ? (
             <div className="flex flex-wrap items-center gap-1">
               <span className="text-sm" data-testid="litellm-user-name">
-                {row.original.litelite.name}
+                {row.original.apiSelfservice.name}
               </span>
-              <StatusBadge status={row.original.litelite.status} testId="litellm-user-litelite-status" />
+              <StatusBadge status={row.original.apiSelfservice.status} testId="litellm-user-api-selfservice-status" />
               {row.original.blocked ? <Badge variant="destructive">{t('litellmUsers.blocked')}</Badge> : null}
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-1">
-              <span className="text-muted-foreground text-sm" data-testid="litellm-user-not-in-litelite">
-                {t('litellmUsers.notInLitelite')}
+              <span className="text-muted-foreground text-sm" data-testid="litellm-user-not-in-api-selfservice">
+                {t('litellmUsers.notInApiSelfservice')}
               </span>
               {row.original.blocked ? <Badge variant="destructive">{t('litellmUsers.blocked')}</Badge> : null}
             </div>

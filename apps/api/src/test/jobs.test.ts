@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { account, eq, user as userTable } from '@litelite/db';
+import { account, eq, user as userTable } from '@api-selfservice/db';
 import { runAffiliationCheck, runDeletionReminder, runKeyExpiry } from '../jobs/index.js';
 import { syncIdpClaims } from '../services/users.js';
 import { approvedCostCenterFor, BASE_NOW, createTestApp, DAY, expectError, syncProvidersWithFree, uniqEmail, type Client, type TestApp } from './harness.js';

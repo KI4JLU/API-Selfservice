@@ -15,8 +15,8 @@ import {
   ne,
   or,
   user,
-} from '@litelite/db';
-import { DEFAULT_COST_CENTER, type Role } from '@litelite/shared';
+} from '@api-selfservice/db';
+import { DEFAULT_COST_CENTER, type Role } from '@api-selfservice/shared';
 import type { CurrentUser, Deps } from '../context.js';
 import { ApiError, notFound } from '../errors.js';
 import { audit, auditError } from './audit.js';
@@ -27,8 +27,8 @@ import { getBudgetState } from './budgets.js';
 import { KEYCLOAK_PROVIDER_ID } from '../auth/claims.js';
 
 /**
- * LiteLLM is the user master (PRD E-7). Before LiteLite creates a user on first login, an existing
- * LiteLLM user with the same e-mail is adopted: its `user_id` becomes the LiteLite user id.
+ * LiteLLM is the user master (PRD E-7). Before API-Selfservice creates a user on first login, an existing
+ * LiteLLM user with the same e-mail is adopted: its `user_id` becomes the API-Selfservice user id.
  */
 export async function findLitellmUserIdByEmail(deps: Deps, email: string): Promise<string | null> {
   try {
@@ -103,7 +103,7 @@ export async function syncIdpClaims(
   await deps.db.update(user).set(patch).where(eq(user.id, userId));
 }
 
-/** Admin lookup in LiteLLM (the user master, E-7) with the matching LiteLite account per row. */
+/** Admin lookup in LiteLLM (the user master, E-7) with the matching API-Selfservice account per row. */
 export async function searchLitellmUsers(deps: Deps, q: { page: number; pageSize: number; q?: string }) {
   const search = q.q?.trim() || undefined;
   const r = await deps.litellm.listUsers({ page: q.page, pageSize: q.pageSize, search });
@@ -121,7 +121,7 @@ export async function searchLitellmUsers(deps: Deps, q: { page: number; pageSize
         spend: u.spend,
         blocked: u.blocked,
         teams: u.teams,
-        litelite: l ? { id: l.id, name: l.name, status: l.deletedAt ? ('deactivated' as const) : ('active' as const) } : null,
+        apiSelfservice: l ? { id: l.id, name: l.name, status: l.deletedAt ? ('deactivated' as const) : ('active' as const) } : null,
       };
     }),
     total: r.total,
@@ -211,7 +211,7 @@ export async function updateMe(
   if (input.costCenterOwnerEmail !== undefined) patch.costCenterOwnerEmail = input.costCenterOwnerEmail;
   let requestCreated: { number: string } | null = null;
   if (input.costCenterNumber !== undefined) {
-    const { normalizeCostCenter } = await import('@litelite/shared');
+    const { normalizeCostCenter } = await import('@api-selfservice/shared');
     const number = normalizeCostCenter(input.costCenterNumber);
     if (!number) throw new ApiError('VALIDATION_ERROR', 'Cost center must be 8 digits');
     const existing = await deps.db.query.costCenters.findFirst({ where: eq(costCenters.number, number) });

@@ -2,7 +2,7 @@ import { createAuthEndpoint } from 'better-auth/api';
 import { setSessionCookie } from 'better-auth/cookies';
 import type { BetterAuthPlugin } from 'better-auth';
 import { z } from 'zod';
-import { eq, user } from '@litelite/db';
+import { eq, user } from '@api-selfservice/db';
 import type { Deps } from '../context.js';
 
 /**
@@ -11,7 +11,7 @@ import type { Deps } from '../context.js';
  */
 export function devLoginPlugin(deps: Deps): BetterAuthPlugin {
   return {
-    id: 'litelite-dev-login',
+    id: 'api-selfservice-dev-login',
     endpoints: {
       devLogin: createAuthEndpoint(
         '/dev-login',

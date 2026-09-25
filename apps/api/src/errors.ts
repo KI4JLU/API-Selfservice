@@ -1,4 +1,4 @@
-import type { ErrorCode } from '@litelite/shared';
+import type { ErrorCode } from '@api-selfservice/shared';
 
 const STATUS: Record<ErrorCode, number> = {
   UNAUTHORIZED: 401,

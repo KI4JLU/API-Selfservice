@@ -3,7 +3,7 @@ import type { Deps } from '../context.js';
 import { ingestSpendLogs } from '../services/spend.js';
 import { evaluateUserBudget } from '../services/budgets.js';
 import { evaluateCostCenterBudget } from '../services/cost-centers.js';
-import { budgets, costCenters, apiKeys, and, eq, inArray, isNull, user, lt, lte } from '@litelite/db';
+import { budgets, costCenters, apiKeys, and, eq, inArray, isNull, user, lt, lte } from '@api-selfservice/db';
 import { notifyUser, notifyAdmins } from '../services/notifications.js';
 import { syncProviders } from '../services/providers.js';
 import { usersDueForDeletion } from '../services/users.js';
@@ -56,7 +56,7 @@ export async function runKeyExpiry(deps: Deps) {
 /** F-USR-5: remind admins about users past the retention period (once per user). */
 export async function runDeletionReminder(deps: Deps) {
   const due = await usersDueForDeletion(deps);
-  const { jobState } = await import('@litelite/db');
+  const { jobState } = await import('@api-selfservice/db');
   let sent = 0;
   for (const u of due) {
     const key = `deletion_due:${u.id}`;

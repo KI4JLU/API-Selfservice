@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LOCALES, NOTIFICATION_TYPES } from '@litelite/shared';
+import { LOCALES, NOTIFICATION_TYPES } from '@api-selfservice/shared';
 import { renderMail } from './templates.js';
 
 /** Superset of all variables used by any template. */

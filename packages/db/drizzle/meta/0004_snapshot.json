@@ -4,9 +4,9 @@
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "litelite.account": {
+    "api_selfservice.account": {
       "name": "account",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "id": {
           "name": "id",
@@ -112,7 +112,7 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "schemaTo": "litelite",
+          "schemaTo": "api_selfservice",
           "columnsFrom": [
             "user_id"
           ],
@@ -129,9 +129,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.api_keys": {
+    "api_selfservice.api_keys": {
       "name": "api_keys",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "id": {
           "name": "id",
@@ -294,7 +294,7 @@
           "name": "api_keys_user_id_user_id_fk",
           "tableFrom": "api_keys",
           "tableTo": "user",
-          "schemaTo": "litelite",
+          "schemaTo": "api_selfservice",
           "columnsFrom": [
             "user_id"
           ],
@@ -308,7 +308,7 @@
           "name": "api_keys_cost_center_id_cost_centers_id_fk",
           "tableFrom": "api_keys",
           "tableTo": "cost_centers",
-          "schemaTo": "litelite",
+          "schemaTo": "api_selfservice",
           "columnsFrom": [
             "cost_center_id"
           ],
@@ -325,9 +325,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.audit_log": {
+    "api_selfservice.audit_log": {
       "name": "audit_log",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "id": {
           "name": "id",
@@ -447,9 +447,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.budgets": {
+    "api_selfservice.budgets": {
       "name": "budgets",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "id": {
           "name": "id",
@@ -534,7 +534,7 @@
           "name": "budgets_user_id_user_id_fk",
           "tableFrom": "budgets",
           "tableTo": "user",
-          "schemaTo": "litelite",
+          "schemaTo": "api_selfservice",
           "columnsFrom": [
             "user_id"
           ],
@@ -559,9 +559,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.cost_center_admins": {
+    "api_selfservice.cost_center_admins": {
       "name": "cost_center_admins",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "user_id": {
           "name": "user_id",
@@ -595,7 +595,7 @@
           "name": "cost_center_admins_user_id_user_id_fk",
           "tableFrom": "cost_center_admins",
           "tableTo": "user",
-          "schemaTo": "litelite",
+          "schemaTo": "api_selfservice",
           "columnsFrom": [
             "user_id"
           ],
@@ -609,7 +609,7 @@
           "name": "cost_center_admins_cost_center_id_cost_centers_id_fk",
           "tableFrom": "cost_center_admins",
           "tableTo": "cost_centers",
-          "schemaTo": "litelite",
+          "schemaTo": "api_selfservice",
           "columnsFrom": [
             "cost_center_id"
           ],
@@ -634,9 +634,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.cost_center_requests": {
+    "api_selfservice.cost_center_requests": {
       "name": "cost_center_requests",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "id": {
           "name": "id",
@@ -727,7 +727,7 @@
           "name": "cost_center_requests_user_id_user_id_fk",
           "tableFrom": "cost_center_requests",
           "tableTo": "user",
-          "schemaTo": "litelite",
+          "schemaTo": "api_selfservice",
           "columnsFrom": [
             "user_id"
           ],
@@ -741,7 +741,7 @@
           "name": "cost_center_requests_cost_center_id_cost_centers_id_fk",
           "tableFrom": "cost_center_requests",
           "tableTo": "cost_centers",
-          "schemaTo": "litelite",
+          "schemaTo": "api_selfservice",
           "columnsFrom": [
             "cost_center_id"
           ],
@@ -758,9 +758,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.cost_centers": {
+    "api_selfservice.cost_centers": {
       "name": "cost_centers",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "id": {
           "name": "id",
@@ -909,9 +909,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.job_state": {
+    "api_selfservice.job_state": {
       "name": "job_state",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "key": {
           "name": "key",
@@ -941,9 +941,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.notifications": {
+    "api_selfservice.notifications": {
       "name": "notifications",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "id": {
           "name": "id",
@@ -1042,9 +1042,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.providers": {
+    "api_selfservice.providers": {
       "name": "providers",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "id": {
           "name": "id",
@@ -1166,9 +1166,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.rebookings": {
+    "api_selfservice.rebookings": {
       "name": "rebookings",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "id": {
           "name": "id",
@@ -1231,9 +1231,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.request_logs": {
+    "api_selfservice.request_logs": {
       "name": "request_logs",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "request_id": {
           "name": "request_id",
@@ -1449,9 +1449,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.session": {
+    "api_selfservice.session": {
       "name": "session",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "id": {
           "name": "id",
@@ -1548,7 +1548,7 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "schemaTo": "litelite",
+          "schemaTo": "api_selfservice",
           "columnsFrom": [
             "user_id"
           ],
@@ -1562,7 +1562,7 @@
           "name": "session_impersonated_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "schemaTo": "litelite",
+          "schemaTo": "api_selfservice",
           "columnsFrom": [
             "impersonated_user_id"
           ],
@@ -1579,9 +1579,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.spend_snapshots": {
+    "api_selfservice.spend_snapshots": {
       "name": "spend_snapshots",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "id": {
           "name": "id",
@@ -1759,9 +1759,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.user": {
+    "api_selfservice.user": {
       "name": "user",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "id": {
           "name": "id",
@@ -1919,9 +1919,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "litelite.verification": {
+    "api_selfservice.verification": {
       "name": "verification",
-      "schema": "litelite",
+      "schema": "api_selfservice",
       "columns": {
         "id": {
           "name": "id",
@@ -1990,7 +1990,7 @@
   },
   "enums": {},
   "schemas": {
-    "litelite": "litelite"
+    "api_selfservice": "api_selfservice"
   },
   "sequences": {},
   "roles": {},

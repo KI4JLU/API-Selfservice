@@ -1,5 +1,5 @@
 import { createRoute, z } from '@hono/zod-openapi';
-import { ProviderSchema, ProviderSyncResult, UpdateProviderSchema } from '@litelite/shared';
+import { ProviderSchema, ProviderSyncResult, UpdateProviderSchema } from '@api-selfservice/shared';
 import { createRouter, body, json, errors, IdParam } from './_util.js';
 import { adminListProviders, listProvidersForUser, syncProviders, updateProvider } from '../services/providers.js';
 import { requireAdmin } from '../middleware/roles.js';

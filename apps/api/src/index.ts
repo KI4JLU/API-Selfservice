@@ -1,9 +1,9 @@
 import { loadDotEnv } from './dotenv.js';
 loadDotEnv();
 import { serve } from '@hono/node-server';
-import { createDb } from '@litelite/db';
-import { applyMigrations } from '@litelite/db/migrate';
-import { seedBase } from '@litelite/db/seed';
+import { createDb } from '@api-selfservice/db';
+import { applyMigrations } from '@api-selfservice/db/migrate';
+import { seedBase } from '@api-selfservice/db/seed';
 import { loadEnv } from './env.js';
 import { logger } from './logger.js';
 import { createLiteLLM } from './litellm/index.js';
@@ -30,7 +30,7 @@ async function main() {
   const stopJobs = env.JOBS_ENABLED ? startJobs(deps) : () => {};
 
   const server = serve({ fetch: app.fetch, port: env.PORT }, (info) => {
-    logger.info({ port: info.port, env: env.NODE_ENV, litellm: env.LITELLM_MODE, docs: `${env.API_URL}/api/docs` }, 'LiteLite API listening');
+    logger.info({ port: info.port, env: env.NODE_ENV, litellm: env.LITELLM_MODE, docs: `${env.API_URL}/api/docs` }, 'API-Selfservice API listening');
   });
   const shutdown = async () => {
     stopJobs();

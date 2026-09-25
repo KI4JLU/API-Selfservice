@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { MeSchema } from '@litelite/shared';
+import { MeSchema } from '@api-selfservice/shared';
 import { createTestApp, expectError, expectShape, type Client, type TestApp } from './harness.js';
 
 describe('admin impersonation (IMPERSONATION_ENABLED)', () => {
@@ -33,7 +33,7 @@ describe('admin impersonation (IMPERSONATION_ENABLED)', () => {
     expect((await admin.get('/me')).body).toMatchObject({ id: admin.userId, impersonatedBy: null });
     expect((await admin.get('/admin/users')).status).toBe(200);
 
-    const { auditLog, eq, and } = await import('@litelite/db');
+    const { auditLog, eq, and } = await import('@api-selfservice/db');
     const entries = await t.db.query.auditLog.findMany({ where: and(eq(auditLog.actorId, admin.userId), eq(auditLog.entityId, user.userId)) });
     expect(entries.map((e) => e.action).sort()).toEqual(['user.impersonate', 'user.impersonate_stop']);
   });
@@ -52,7 +52,7 @@ describe('admin impersonation (IMPERSONATION_ENABLED)', () => {
     const victim = await t.login({ name: 'Victim' });
     expect((await admin.post(`/admin/users/${victim.userId}/impersonate`)).status).toBe(200);
     expect((await admin.get('/me')).body.id).toBe(victim.userId);
-    const { user: userTable, eq } = await import('@litelite/db');
+    const { user: userTable, eq } = await import('@api-selfservice/db');
     await t.db.update(userTable).set({ deletedAt: t.deps.now(), deletedReason: 'admin' }).where(eq(userTable.id, victim.userId));
     expect((await admin.get('/me')).body).toMatchObject({ id: admin.userId, impersonatedBy: null });
   });

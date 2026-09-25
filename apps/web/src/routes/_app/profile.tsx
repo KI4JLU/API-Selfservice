@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { LOCALES, normalizeCostCenter, type Locale } from '@litelite/shared';
+import { LOCALES, normalizeCostCenter, type Locale } from '@api-selfservice/shared';
 import { useMe, useUpdateMe } from '@/lib/queries';
 import { fmtCostCenter, fmtDate } from '@/lib/format';
 import { Banner, PageHeader } from '@/components/ui/page';

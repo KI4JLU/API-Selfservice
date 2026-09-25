@@ -1,5 +1,5 @@
 import { createRoute, z } from '@hono/zod-openapi';
-import { ApiKeySchema, AdminApiKeySchema, AdminApiKeysQuery, CreateApiKeySchema, CreatedApiKeySchema, UpdateApiKeySchema, paginated } from '@litelite/shared';
+import { ApiKeySchema, AdminApiKeySchema, AdminApiKeysQuery, CreateApiKeySchema, CreatedApiKeySchema, UpdateApiKeySchema, paginated } from '@api-selfservice/shared';
 import { createRouter, body, json, errors, IdParam, okBody } from './_util.js';
 import { adminBlockKey, adminListKeys, createKey, deleteKey, extendKey, listMyKeys, updateKey } from '../services/keys.js';
 import { requireAdmin } from '../middleware/roles.js';

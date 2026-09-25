@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { BUDGET_PERIODS, type BudgetPeriod } from '@litelite/shared';
+import { BUDGET_PERIODS, type BudgetPeriod } from '@api-selfservice/shared';
 import { useUpdateCostCenter, type CostCenter } from '@/lib/queries';
 import { fmtCostCenter, toDateInput } from '@/lib/format';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';

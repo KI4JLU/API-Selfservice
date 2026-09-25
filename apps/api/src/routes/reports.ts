@@ -1,5 +1,5 @@
 import { createRoute, z } from '@hono/zod-openapi';
-import { CostCenterReportDetailSchema, CostCenterReportRowSchema, ReportQuery } from '@litelite/shared';
+import { CostCenterReportDetailSchema, CostCenterReportRowSchema, ReportQuery } from '@api-selfservice/shared';
 import { createRouter, json, errors, IdParam } from './_util.js';
 import { costCenterReport, costCenterReportDetail } from '../services/reports.js';
 import { requireCostCenterAdmin } from '../middleware/roles.js';

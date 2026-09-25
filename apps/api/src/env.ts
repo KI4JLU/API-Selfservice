@@ -13,7 +13,7 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.string().default('info'),
 
   DATABASE_URL: z.string().min(1),
-  DB_SCHEMA: z.string().default('litelite'),
+  DB_SCHEMA: z.string().default('api_selfservice'),
 
   AUTH_SECRET: z.string().min(16),
 
@@ -39,7 +39,7 @@ const EnvSchema = z.object({
   SMTP_SECURE: bool,
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
-  MAIL_FROM: z.string().default('LiteLite <noreply@localhost>'),
+  MAIL_FROM: z.string().default('API-Selfservice <noreply@localhost>'),
   ADMIN_NOTIFY_EMAILS: z
     .string()
     .default('')

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Archive, Pencil, Plus, Search, ThumbsDown, ThumbsUp } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { COST_CENTER_STATUS } from '@litelite/shared';
+import { COST_CENTER_STATUS } from '@api-selfservice/shared';
 import { requireAdmin } from '@/lib/guards';
 import { useApproveRequest, useArchiveCostCenter, useCostCenterRequests, useCostCenters, useRejectRequest, type CostCenter, type CostCenterRequest } from '@/lib/queries';
 import { fmtCostCenter, fmtDate, fmtDateTime, fmtMoney } from '@/lib/format';

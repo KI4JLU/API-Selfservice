@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { MeSchema } from '@litelite/shared';
-import { eq, user as userTable } from '@litelite/db';
+import { MeSchema } from '@api-selfservice/shared';
+import { eq, user as userTable } from '@api-selfservice/db';
 import { createTestApp, expectShape, uniq, uniqEmail, type TestApp } from './harness.js';
 
 describe('auth / onboarding', () => {

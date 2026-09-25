@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Banner, PageHeader } from '@/components/ui/page';
 import { DataTable } from '@/components/ui/data-table';
 import { BarList, SpendBarChart } from '@/components/charts';
-import { BUDGET_WARN_THRESHOLD } from '@litelite/shared';
+import { BUDGET_WARN_THRESHOLD } from '@api-selfservice/shared';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_app/')({

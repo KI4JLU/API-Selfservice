@@ -1,5 +1,5 @@
-import { and, apiKeys, count, costCenters, desc, eq, inArray, ne, user } from '@litelite/db';
-import type { KeyStatus } from '@litelite/shared';
+import { and, apiKeys, count, costCenters, desc, eq, inArray, ne, user } from '@api-selfservice/db';
+import type { KeyStatus } from '@api-selfservice/shared';
 import type { CurrentUser, Deps } from '../context.js';
 import { ApiError, forbidden, notFound } from '../errors.js';
 import { audit, auditError } from './audit.js';
@@ -67,7 +67,7 @@ export async function createKey(
   for (const m of input.models) {
     const p = allowed.find((a) => a.modelName === m);
     if (!p) {
-      const paid = await deps.db.query.providers.findFirst({ where: eq((await import('@litelite/db')).providers.modelName, m) });
+      const paid = await deps.db.query.providers.findFirst({ where: eq((await import('@api-selfservice/db')).providers.modelName, m) });
       if (paid && paid.tier === 'paid' && cc.isDefault) throw new ApiError('PAID_MODEL_REQUIRES_COST_CENTER', `Model ${m} requires a cost center`);
       throw new ApiError('MODEL_NOT_ALLOWED', `Model ${m} is not available`);
     }
@@ -84,7 +84,7 @@ export async function createKey(
     models: input.models,
     maxBudget: input.budget ?? null,
     expiresAt,
-    metadata: { litelite_user: cu.id, cost_center: cc.number },
+    metadata: { api_selfservice_user: cu.id, cost_center: cc.number },
   });
   const [row] = await deps.db
     .insert(apiKeys)

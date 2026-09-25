@@ -21,7 +21,7 @@ import { WithTooltip } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { StatusBadge } from '@/components/StatusBadge';
 import { BudgetDialog, CostCenterAdminDialog, RoleDialog } from '@/components/admin/UserDialogs';
-import { BUDGET_WARN_THRESHOLD } from '@litelite/shared';
+import { BUDGET_WARN_THRESHOLD } from '@api-selfservice/shared';
 
 export const Route = createFileRoute('/_app/admin/users')({
   beforeLoad: ({ context }) => requireAdmin(context.me),

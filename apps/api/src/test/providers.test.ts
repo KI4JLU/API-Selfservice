@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { ProviderSchema, ProviderSyncResult } from '@litelite/shared';
+import { ProviderSchema, ProviderSyncResult } from '@api-selfservice/shared';
 import { z } from 'zod';
 import { approvedCostCenterFor, createTestApp, expectError, expectShape, type Client, type TestApp } from './harness.js';
 

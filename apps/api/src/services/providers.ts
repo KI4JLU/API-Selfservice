@@ -1,5 +1,5 @@
-import { costCenters, eq, providers } from '@litelite/db';
-import type { ProviderTier } from '@litelite/shared';
+import { costCenters, eq, providers } from '@api-selfservice/db';
+import type { ProviderTier } from '@api-selfservice/shared';
 import type { CurrentUser, Deps } from '../context.js';
 import { notFound } from '../errors.js';
 import { audit } from './audit.js';

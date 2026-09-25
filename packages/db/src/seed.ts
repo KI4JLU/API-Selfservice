@@ -13,7 +13,7 @@ export async function seedBase(db: Db) {
       number: DEFAULT_COST_CENTER_NUMBER,
       name: 'Default (kostenfreie Provider)',
       ownerName: 'System',
-      ownerEmail: 'noreply@litelite.invalid',
+      ownerEmail: 'noreply@api-selfservice.invalid',
       status: 'approved',
       isDefault: true,
     });

@@ -1,5 +1,5 @@
 import { OpenAPIHono, z } from '@hono/zod-openapi';
-import { ErrorSchema } from '@litelite/shared';
+import { ErrorSchema } from '@api-selfservice/shared';
 import type { AppEnv } from '../context.js';
 
 export function createRouter() {

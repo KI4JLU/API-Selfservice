@@ -1,5 +1,5 @@
 import i18n from './i18n';
-import { formatCostCenter } from '@litelite/shared';
+import { formatCostCenter } from '@api-selfservice/shared';
 
 function locale() {
   return i18n.resolvedLanguage === 'en' ? 'en-GB' : 'de-DE';

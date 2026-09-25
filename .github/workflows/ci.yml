@@ -8,12 +8,12 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: litelite
-          POSTGRES_PASSWORD: litelite
+          POSTGRES_USER: api_selfservice
+          POSTGRES_PASSWORD: api_selfservice
           POSTGRES_DB: litellm
         ports: ["5433:5432"]
         options: >-
-          --health-cmd "pg_isready -U litelite -d litellm" --health-interval 5s --health-timeout 3s --health-retries 20
+          --health-cmd "pg_isready -U api_selfservice -d litellm" --health-interval 5s --health-timeout 3s --health-retries 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -24,8 +24,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
         env:
-          DATABASE_URL: postgres://litelite:litelite@localhost:5433/litellm
-      - run: pnpm --filter @litelite/web build
+          DATABASE_URL: postgres://api_selfservice:api_selfservice@localhost:5433/litellm
+      - run: pnpm --filter @api-selfservice/web build
   e2e:
     runs-on: ubuntu-latest
     needs: test
@@ -33,12 +33,12 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: litelite
-          POSTGRES_PASSWORD: litelite
+          POSTGRES_USER: api_selfservice
+          POSTGRES_PASSWORD: api_selfservice
           POSTGRES_DB: litellm
         ports: ["5433:5432"]
         options: >-
-          --health-cmd "pg_isready -U litelite -d litellm" --health-interval 5s --health-timeout 3s --health-retries 20
+          --health-cmd "pg_isready -U api_selfservice -d litellm" --health-interval 5s --health-timeout 3s --health-retries 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -57,4 +57,4 @@ jobs:
     needs: test
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t litelite:ci .
+      - run: docker build -t api-selfservice:ci .

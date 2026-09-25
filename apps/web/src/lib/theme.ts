@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 export type Theme = 'light' | 'dark';
-const KEY = 'litelite.theme';
+const KEY = 'api-selfservice.theme';
 const listeners = new Set<() => void>();
 
 function read(): Theme {

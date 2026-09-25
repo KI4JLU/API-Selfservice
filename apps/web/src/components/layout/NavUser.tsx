@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Check, ChevronsUpDown, LogOut, Moon, Sun, User } from 'lucide-react';
-import { LOCALES } from '@litelite/shared';
+import { LOCALES } from '@api-selfservice/shared';
 import type { Me } from '@/lib/queries';
 import { profileNav } from '@/lib/nav';
 import { signOut } from '@/lib/auth';

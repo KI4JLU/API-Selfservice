@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import type { ColumnDef } from '@tanstack/react-table';
 import { CircleX, Info, TriangleAlert } from 'lucide-react';
-import { AUDIT_ENTITIES, AUDIT_SEVERITIES, type AuditSeverity } from '@litelite/shared';
+import { AUDIT_ENTITIES, AUDIT_SEVERITIES, type AuditSeverity } from '@api-selfservice/shared';
 import { requireAdmin } from '@/lib/guards';
 import { useEvents, type AuditEvent } from '@/lib/queries';
 import { fmtDateTime } from '@/lib/format';

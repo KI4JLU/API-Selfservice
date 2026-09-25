@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import type { ErrorCode } from '@litelite/shared';
+import type { ErrorCode } from '@api-selfservice/shared';
 
 export class ApiError extends Error {
   code: ErrorCode | string;

@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { WithTooltip } from '@/components/ui/tooltip';
 import { ReportDetailBody } from '@/components/cost-centers/CostCenterReportSheet';
-import { BUDGET_WARN_THRESHOLD } from '@litelite/shared';
+import { BUDGET_WARN_THRESHOLD } from '@api-selfservice/shared';
 
 export const Route = createFileRoute('/_app/admin/reports')({
   beforeLoad: ({ context }) => requireAdmin(context.me),

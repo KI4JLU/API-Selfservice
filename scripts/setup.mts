@@ -37,8 +37,8 @@ function run(cmd: string, cmdArgs: string[], opts: SpawnSyncOptions = {}) {
 }
 const ok = (cmd: string, cmdArgs: string[]) => spawnSync(cmd, cmdArgs, { stdio: 'ignore' }).status === 0;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const psql = ['compose', 'exec', '-T', 'postgres', 'psql', '-U', 'litelite', '-d', 'litellm', '-v', 'ON_ERROR_STOP=1'];
-const pgIsReady = ['compose', 'exec', '-T', 'postgres', 'pg_isready', '-U', 'litelite', '-d', 'litellm'];
+const psql = ['compose', 'exec', '-T', 'postgres', 'psql', '-U', 'api_selfservice', '-d', 'litellm', '-v', 'ON_ERROR_STOP=1'];
+const pgIsReady = ['compose', 'exec', '-T', 'postgres', 'pg_isready', '-U', 'api_selfservice', '-d', 'litellm'];
 
 // ---- 1. .env -------------------------------------------------------------
 step('.env');
@@ -51,7 +51,7 @@ if (!existsSync('.env')) {
 }
 process.loadEnvFile('.env'); // Node >= 22: handles quotes and inline comments, does not override existing env
 const databaseUrl = process.env.DATABASE_URL ?? fail('DATABASE_URL missing in .env');
-const schema = (process.env.DB_SCHEMA ||= 'litelite');
+const schema = (process.env.DB_SCHEMA ||= 'api_selfservice');
 if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(schema)) fail(`invalid DB_SCHEMA: ${schema}`);
 console.log(`DATABASE_URL=${databaseUrl.replace(/\/\/[^@]*@/, '//***@')}`);
 console.log(`DB_SCHEMA=${schema}`);
@@ -97,4 +97,4 @@ step('done');
 console.log(`Postgres : ${databaseUrl.replace(/.*@/, '')}  schema "${schema}"
 Mailpit  : http://localhost:8025
 Next     : pnpm dev   (API http://localhost:3030, Web http://localhost:5173)
-Tests    : pnpm test  (uses schema litelite_test on the same Postgres)`);
+Tests    : pnpm test  (uses schema api_selfservice_test on the same Postgres)`);

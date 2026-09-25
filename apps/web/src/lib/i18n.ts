@@ -1,10 +1,10 @@
 import i18n from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next } from 'react-i18next';
-import { resources } from '@litelite/shared/i18n';
-import { LOCALES, type Locale } from '@litelite/shared';
+import { resources } from '@api-selfservice/shared/i18n';
+import { LOCALES, type Locale } from '@api-selfservice/shared';
 
-export const LANG_STORAGE_KEY = 'litelite.lang';
+export const LANG_STORAGE_KEY = 'api-selfservice.lang';
 
 void i18n
   .use(LanguageDetector)

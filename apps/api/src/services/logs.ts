@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, lte, requestLogs, apiKeys } from '@litelite/db';
+import { and, count, desc, eq, gte, lte, requestLogs, apiKeys } from '@api-selfservice/db';
 import type { Deps } from '../context.js';
 
 export async function listLogs(

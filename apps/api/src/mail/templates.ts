@@ -1,5 +1,5 @@
-import type { Locale, NotificationType } from '@litelite/shared';
-import { formatCostCenter } from '@litelite/shared';
+import type { Locale, NotificationType } from '@api-selfservice/shared';
+import { formatCostCenter } from '@api-selfservice/shared';
 
 type Vars = Record<string, string | number | null | undefined>;
 
@@ -72,8 +72,8 @@ const T: Record<NotificationType, Record<Locale, Template>> = {
     en: { subject: 'Deletion due: {{userEmail}}', body: 'Account {{userEmail}} has been deactivated since {{deletedAt}}. The retention period is over. Please review final deletion.\n\n{{appUrl}}/admin/users' },
   },
   role_changed: {
-    de: { subject: 'Ihre Rolle wurde geändert', body: 'Ihre Rolle im LiteLite-Portal ist jetzt: {{role}}.{{detail}}\n\n{{appUrl}}/' },
-    en: { subject: 'Your role was changed', body: 'Your role in the LiteLite portal is now: {{role}}.{{detail}}\n\n{{appUrl}}/' },
+    de: { subject: 'Ihre Rolle wurde geändert', body: 'Ihre Rolle im API-Selfservice-Portal ist jetzt: {{role}}.{{detail}}\n\n{{appUrl}}/' },
+    en: { subject: 'Your role was changed', body: 'Your role in the API-Selfservice portal is now: {{role}}.{{detail}}\n\n{{appUrl}}/' },
   },
   rebooking_created: {
     de: { subject: 'Umbuchung erzeugt', body: 'Umbuchung für {{periodStart}} bis {{periodEnd}} wurde erzeugt ({{rowCount}} Zeilen, {{total}} EUR).' },

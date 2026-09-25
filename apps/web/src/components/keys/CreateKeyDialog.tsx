@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { DEFAULT_COST_CENTER } from '@litelite/shared';
+import { DEFAULT_COST_CENTER } from '@api-selfservice/shared';
 import { useCostCenters, useCreateKey, useProviders, type CreatedApiKey, type Me } from '@/lib/queries';
 import { fmtCostCenter } from '@/lib/format';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';

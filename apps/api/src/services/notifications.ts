@@ -1,5 +1,5 @@
-import { and, eq, isNull, notifications, user } from '@litelite/db';
-import type { Locale, NotificationType } from '@litelite/shared';
+import { and, eq, isNull, notifications, user } from '@api-selfservice/db';
+import type { Locale, NotificationType } from '@api-selfservice/shared';
 import type { Deps } from '../context.js';
 import { renderMail } from '../mail/templates.js';
 

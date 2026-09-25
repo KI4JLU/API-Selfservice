@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AdminBudgetRowSchema, BudgetSchema, CostCenterSchema, SpendSummarySchema, paginated } from '@litelite/shared';
+import { AdminBudgetRowSchema, BudgetSchema, CostCenterSchema, SpendSummarySchema, paginated } from '@api-selfservice/shared';
 import { approvedCostCenterFor, createTestApp, DAY, expectError, expectShape, randomCostCenter, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
 
 describe('budgets & spend', () => {

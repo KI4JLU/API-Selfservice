@@ -8,7 +8,7 @@ import {
   AdminCreateCostCenterSchema,
   RejectSchema,
   paginated,
-} from '@litelite/shared';
+} from '@api-selfservice/shared';
 import { createRouter, body, json, errors, IdParam } from './_util.js';
 import {
   adminCreateCostCenter,

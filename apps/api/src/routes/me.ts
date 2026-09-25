@@ -1,5 +1,5 @@
 import { createRoute } from '@hono/zod-openapi';
-import { MeSchema, UpdateMeSchema, BudgetSchema, SpendSummarySchema, MonthQuery, LogsQuery, RequestLogSchema, paginated } from '@litelite/shared';
+import { MeSchema, UpdateMeSchema, BudgetSchema, SpendSummarySchema, MonthQuery, LogsQuery, RequestLogSchema, paginated } from '@api-selfservice/shared';
 import type { Context } from 'hono';
 import type { AppEnv } from '../context.js';
 import { createRouter, body, json, errors, okBody } from './_util.js';

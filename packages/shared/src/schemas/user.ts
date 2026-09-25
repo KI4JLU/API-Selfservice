@@ -75,7 +75,7 @@ export const AdminUsersQuery = z.object({
 
 export const SetRoleSchema = z.object({ role: z.enum(ROLES) });
 
-/** A user as LiteLLM knows it (LiteLLM is the user master, E-7), with the matching LiteLite account if any. */
+/** A user as LiteLLM knows it (LiteLLM is the user master, E-7), with the matching API-Selfservice account if any. */
 export const LitellmUserSchema = z.object({
   userId: z.string(),
   email: z.string().nullable(),
@@ -84,7 +84,7 @@ export const LitellmUserSchema = z.object({
   spend: z.number(),
   blocked: z.boolean(),
   teams: z.array(z.string()),
-  litelite: z.object({ id: IdSchema, name: z.string(), status: z.enum(['active', 'deactivated']) }).nullable(),
+  apiSelfservice: z.object({ id: IdSchema, name: z.string(), status: z.enum(['active', 'deactivated']) }).nullable(),
 });
 
 export const LitellmUsersQuery = z.object({

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { devLogin, uniqueEmail } from './helpers';
 
 test.describe('admin: LiteLLM users', () => {
-  test('search by e-mail shows the LiteLLM account with its LiteLite match', async ({ page }) => {
+  test('search by e-mail shows the LiteLLM account with its API-Selfservice match', async ({ page }) => {
     const email = uniqueEmail('test-llsearch');
     await devLogin(page, { email, name: 'Test LiteLLM Search Admin', admin: true });
 
@@ -18,6 +18,6 @@ test.describe('admin: LiteLLM users', () => {
 
     await expect(row.getByTestId('litellm-user-email')).toHaveText(email);
     await expect(row.getByTestId('litellm-user-name')).toHaveText('Test LiteLLM Search Admin');
-    await expect(row.getByTestId('litellm-user-litelite-status')).toHaveAttribute('data-status', 'active');
+    await expect(row.getByTestId('litellm-user-api-selfservice-status')).toHaveAttribute('data-status', 'active');
   });
 });

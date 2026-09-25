@@ -1,5 +1,5 @@
-import type { Db } from '@litelite/db';
-import type { EffectiveRole } from '@litelite/shared';
+import type { Db } from '@api-selfservice/db';
+import type { EffectiveRole } from '@api-selfservice/shared';
 import type { Env } from './env.js';
 import type { LiteLLMAdapter } from './litellm/types.js';
 import type { Mailer } from './mail/mailer.js';

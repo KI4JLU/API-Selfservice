@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "LiteLite",
+    "name": "API-Selfservice",
     "tagline": "Self-service portal for LiteLLM"
   },
   "nav": {
@@ -461,9 +461,9 @@
     "teams": "Teams",
     "maxBudget": "Max budget",
     "blocked": "Blocked",
-    "inLitelite": "In LiteLite",
-    "notInLitelite": "not yet signed in",
-    "hint": "LiteLLM is the user master: an account that exists there is adopted with the same ID on its first LiteLite login.",
+    "inApiSelfservice": "In API-Selfservice",
+    "notInApiSelfservice": "not yet signed in",
+    "hint": "LiteLLM is the user master: an account that exists there is adopted with the same ID on its first API-Selfservice login.",
     "error": "LiteLLM did not answer the user list. The configured LITELLM_API_KEY needs proxy admin rights."
   }
 }

@@ -23,7 +23,7 @@ import {
   type UpdateCostCenterSchema,
   type UpdateMeSchema,
   type UpdateProviderSchema,
-} from '@litelite/shared';
+} from '@api-selfservice/shared';
 import { api } from './api';
 
 export type Me = z.infer<typeof MeSchema>;

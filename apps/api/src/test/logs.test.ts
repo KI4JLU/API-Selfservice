@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { RequestLogSchema, paginated } from '@litelite/shared';
+import { RequestLogSchema, paginated } from '@api-selfservice/shared';
 import { approvedCostCenterFor, createTestApp, expectError, expectShape, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
 
 describe('request logs', () => {

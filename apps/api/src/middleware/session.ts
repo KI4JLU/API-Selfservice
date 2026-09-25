@@ -1,5 +1,5 @@
 import { createMiddleware } from 'hono/factory';
-import { eq, session } from '@litelite/db';
+import { eq, session } from '@api-selfservice/db';
 import type { AppEnv, CurrentUser } from '../context.js';
 import { ApiError } from '../errors.js';
 import type { Auth } from '../auth/auth.js';

@@ -13,7 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CostCenterEditDialog } from '@/components/cost-centers/CostCenterEditDialog';
 import { CostCenterReportSheet } from '@/components/cost-centers/CostCenterReportSheet';
-import { BUDGET_WARN_THRESHOLD } from '@litelite/shared';
+import { BUDGET_WARN_THRESHOLD } from '@api-selfservice/shared';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_app/cost-centers')({

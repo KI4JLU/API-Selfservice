@@ -3,15 +3,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: litelite
-      POSTGRES_PASSWORD: litelite
+      POSTGRES_USER: api_selfservice
+      POSTGRES_PASSWORD: api_selfservice
       POSTGRES_DB: litellm
     ports:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U litelite -d litellm"]
+      test: ["CMD-SHELL", "pg_isready -U api_selfservice -d litellm"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -32,7 +32,7 @@ services:
     profiles: ["app"]
     env_file: .env
     environment:
-      DATABASE_URL: postgres://litelite:litelite@postgres:5432/litellm
+      DATABASE_URL: postgres://api_selfservice:api_selfservice@postgres:5432/litellm
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
       PORT: "3030"

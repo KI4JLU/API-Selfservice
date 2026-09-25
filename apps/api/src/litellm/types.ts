@@ -22,13 +22,13 @@ export interface LiteLLMKey {
   expires: string | null;
   blocked: boolean;
   spend: number;
-  /** LiteLLM team (= LiteLite cost center id), null for keys without a team */
+  /** LiteLLM team (= API-Selfservice cost center id), null for keys without a team */
   teamId: string | null;
 }
 
 /**
  * A user record in LiteLLM. LiteLLM is the user master (PRD E-7): `userId` is the same
- * value as the LiteLite user id, so no mapping table is needed.
+ * value as the API-Selfservice user id, so no mapping table is needed.
  */
 export interface LiteLLMUser {
   userId: string;
@@ -39,11 +39,11 @@ export interface LiteLLMUser {
   maxBudget: number | null;
   spend: number;
   blocked: boolean;
-  /** team ids the user belongs to (= LiteLite cost center ids) */
+  /** team ids the user belongs to (= API-Selfservice cost center ids) */
   teams: string[];
 }
 
-/** A LiteLLM team. One team per cost center (PRD E-8); `teamId` equals the LiteLite cost center id. */
+/** A LiteLLM team. One team per cost center (PRD E-8); `teamId` equals the API-Selfservice cost center id. */
 export interface LiteLLMTeam {
   teamId: string;
   alias: string;
@@ -79,7 +79,7 @@ export interface LiteLLMAdapter {
   readonly mode: 'http' | 'mock';
   health(): Promise<{ ok: boolean; detail?: string }>;
 
-  // ---- Users. LiteLLM is the user master; LiteLite never invents a second identity.
+  // ---- Users. LiteLLM is the user master; API-Selfservice never invents a second identity.
   getUser(userId: string): Promise<LiteLLMUser | null>;
   /**
    * Paginated user list. `email` narrows to an exact (case-insensitive) match;
@@ -127,7 +127,7 @@ export interface LiteLLMAdapter {
   getSpendLogs(since: Date, until: Date): Promise<LiteLLMSpendLog[]>;
 }
 
-/** LiteLite budget period -> LiteLLM `budget_duration`. Project budgets have no reset; LiteLite watches their end date. */
+/** API-Selfservice budget period -> LiteLLM `budget_duration`. Project budgets have no reset; API-Selfservice watches their end date. */
 export function budgetDurationFor(period: 'monthly' | 'yearly' | 'project' | null | undefined): string | null {
   return period === 'monthly' ? '30d' : period === 'yearly' ? '365d' : null;
 }

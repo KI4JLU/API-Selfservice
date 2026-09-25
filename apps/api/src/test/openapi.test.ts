@@ -14,7 +14,7 @@ describe('openapi / docs / health', () => {
     expect(r.headers.get('content-type')).toMatch(/application\/json/);
     const doc = r.body as { openapi: string; info: { title: string }; servers: { url: string }[]; paths: Record<string, Record<string, { responses: Record<string, unknown> }>> };
     expect(doc.openapi).toBe('3.1.0');
-    expect(doc.info.title).toBe('LiteLite API');
+    expect(doc.info.title).toBe('API-Selfservice API');
     expect(doc.servers).toEqual([{ url: '/' }]);
     // routes are documented with their mount prefix
     const paths = Object.keys(doc.paths).map((p) => p.replace(/^\/api\/v1/, ''));

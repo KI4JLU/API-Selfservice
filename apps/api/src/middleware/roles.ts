@@ -1,5 +1,5 @@
 import { createMiddleware } from 'hono/factory';
-import type { EffectiveRole } from '@litelite/shared';
+import type { EffectiveRole } from '@api-selfservice/shared';
 import type { AppEnv } from '../context.js';
 import { forbidden } from '../errors.js';
 

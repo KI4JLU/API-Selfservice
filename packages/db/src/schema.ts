@@ -12,8 +12,8 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 
-export const SCHEMA_NAME = process.env.DB_SCHEMA ?? 'litelite';
-export const litelite = pgSchema(SCHEMA_NAME);
+export const SCHEMA_NAME = process.env.DB_SCHEMA ?? 'api_selfservice';
+export const apiSelfservice = pgSchema(SCHEMA_NAME);
 
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' });
 const money = (name: string) => numeric(name, { precision: 14, scale: 6 });
@@ -24,7 +24,7 @@ const id = () => text('id').primaryKey().default(sql`gen_random_uuid()::text`);
 // ---------- Better Auth core tables (names/fields required by better-auth) ----------
 // `user.id` is shared with LiteLLM (`user_id`); the Keycloak subject lives in `account.account_id`.
 
-export const user = litelite.table(
+export const user = apiSelfservice.table(
   'user',
   {
     id: id(),
@@ -34,7 +34,7 @@ export const user = litelite.table(
     image: text('image'),
     createdAt: ts('created_at').notNull().defaultNow(),
     updatedAt: ts('updated_at').notNull().defaultNow(),
-    // ---- LiteLite fields ----
+    // ---- API-Selfservice fields ----
     role: text('role', { enum: ['user', 'admin'] }).notNull().default('user'),
     roleFromIdp: boolean('role_from_idp').notNull().default(false),
     locale: text('locale', { enum: ['de', 'en'] }).notNull().default('de'),
@@ -50,7 +50,7 @@ export const user = litelite.table(
   (t) => [uniqueIndex('user_email_idx').on(t.email), index('user_cost_center_idx').on(t.costCenterId)],
 );
 
-export const session = litelite.table(
+export const session = apiSelfservice.table(
   'session',
   {
     id: id(),
@@ -69,7 +69,7 @@ export const session = litelite.table(
   (t) => [uniqueIndex('session_token_idx').on(t.token), index('session_user_idx').on(t.userId)],
 );
 
-export const account = litelite.table(
+export const account = apiSelfservice.table(
   'account',
   {
     id: id(),
@@ -91,7 +91,7 @@ export const account = litelite.table(
   (t) => [index('account_user_idx').on(t.userId)],
 );
 
-export const verification = litelite.table(
+export const verification = apiSelfservice.table(
   'verification',
   {
     id: id(),
@@ -106,7 +106,7 @@ export const verification = litelite.table(
 
 // ---------- Domain tables ----------
 
-export const costCenters = litelite.table(
+export const costCenters = apiSelfservice.table(
   'cost_centers',
   {
     id: id(),
@@ -131,7 +131,7 @@ export const costCenters = litelite.table(
   (t) => [uniqueIndex('cost_center_number_idx').on(t.number), index('cost_center_status_idx').on(t.status)],
 );
 
-export const costCenterRequests = litelite.table(
+export const costCenterRequests = apiSelfservice.table(
   'cost_center_requests',
   {
     id: id(),
@@ -150,7 +150,7 @@ export const costCenterRequests = litelite.table(
   (t) => [index('ccr_user_idx').on(t.userId), index('ccr_status_idx').on(t.status)],
 );
 
-export const costCenterAdmins = litelite.table(
+export const costCenterAdmins = apiSelfservice.table(
   'cost_center_admins',
   {
     userId: text('user_id')
@@ -165,7 +165,7 @@ export const costCenterAdmins = litelite.table(
   (t) => [primaryKey({ columns: [t.userId, t.costCenterId] })],
 );
 
-export const apiKeys = litelite.table(
+export const apiKeys = apiSelfservice.table(
   'api_keys',
   {
     id: id(),
@@ -197,7 +197,7 @@ export const apiKeys = litelite.table(
   ],
 );
 
-export const providers = litelite.table(
+export const providers = apiSelfservice.table(
   'providers',
   {
     id: id(),
@@ -219,7 +219,7 @@ export const providers = litelite.table(
   (t) => [uniqueIndex('provider_model_name_idx').on(t.modelName)],
 );
 
-export const budgets = litelite.table('budgets', {
+export const budgets = apiSelfservice.table('budgets', {
   id: id(),
   userId: text('user_id')
     .notNull()
@@ -238,7 +238,7 @@ export const budgets = litelite.table('budgets', {
 });
 
 /** Request metadata ingested from LiteLLM spend logs. No prompt/response content. */
-export const requestLogs = litelite.table(
+export const requestLogs = apiSelfservice.table(
   'request_logs',
   {
     requestId: text('request_id').primaryKey(),
@@ -271,7 +271,7 @@ export const requestLogs = litelite.table(
   ],
 );
 
-export const spendSnapshots = litelite.table(
+export const spendSnapshots = apiSelfservice.table(
   'spend_snapshots',
   {
     id: id(),
@@ -295,7 +295,7 @@ export const spendSnapshots = litelite.table(
   ],
 );
 
-export const rebookings = litelite.table('rebookings', {
+export const rebookings = apiSelfservice.table('rebookings', {
   id: id(),
   periodStart: ts('period_start').notNull(),
   periodEnd: ts('period_end').notNull(),
@@ -306,7 +306,7 @@ export const rebookings = litelite.table('rebookings', {
   totalAmount: money('total_amount').notNull().default('0'),
 });
 
-export const notifications = litelite.table(
+export const notifications = apiSelfservice.table(
   'notifications',
   {
     id: id(),
@@ -323,7 +323,7 @@ export const notifications = litelite.table(
 );
 
 /** Admin event log: major changes (info), alerts such as exhausted budgets (warning) and failures (error). */
-export const auditLog = litelite.table(
+export const auditLog = apiSelfservice.table(
   'audit_log',
   {
     id: id(),
@@ -343,7 +343,7 @@ export const auditLog = litelite.table(
 );
 
 /** Key/value state for jobs (e.g. last ingested log timestamp). */
-export const jobState = litelite.table('job_state', {
+export const jobState = apiSelfservice.table('job_state', {
   key: text('key').primaryKey(),
   value: jsonb('value'),
   updatedAt: ts('updated_at').notNull().defaultNow(),
