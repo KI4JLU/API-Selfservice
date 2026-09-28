@@ -81,10 +81,10 @@ function MyCostCentersPage() {
                     </div>
                     <div>
                       <div className="text-muted-foreground text-xs">{t('common.utilization')}</div>
-                      <div className={cn('font-medium tabular-nums', danger ? 'text-destructive' : warn ? 'text-amber-600 dark:text-amber-500' : '')}>{u === null ? '–' : fmtPercent(u)}</div>
+                      <div className={cn('font-medium tabular-nums', danger ? 'text-destructive' : warn ? 'text-warning' : '')}>{u === null ? '–' : fmtPercent(u)}</div>
                     </div>
                   </div>
-                  <Progress value={u === null ? 0 : Math.min(100, u * 100)} indicatorClassName={danger ? 'bg-destructive' : warn ? 'bg-amber-500' : undefined} />
+                  <Progress value={u === null ? 0 : Math.min(100, u * 100)} indicatorClassName={danger ? 'bg-destructive' : warn ? 'bg-warning' : undefined} />
                   {c.blocked ? <div className="text-destructive text-xs">{t('costCenters.blocked')}</div> : null}
                 </CardContent>
                 <CardFooter className="justify-end gap-2">

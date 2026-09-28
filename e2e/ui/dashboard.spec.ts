@@ -35,20 +35,20 @@ test.describe('login and dashboard', () => {
     await expect(page.getByTestId('nav-keys')).toHaveText('API-Keys');
   });
 
-  test('dark mode toggle adds the dark class and persists', async ({ page }) => {
+  test('dark mode toggle sets data-theme and persists', async ({ page }) => {
     await devLogin(page, { email: uniqueEmail(), name: 'Dark User' });
     const html = page.locator('html');
-    const wasDark = await html.evaluate((el) => el.classList.contains('dark'));
+    const wasDark = await html.evaluate((el) => el.dataset.theme === 'dark');
     await page.getByTestId('btn-user-menu').click();
     await page.getByTestId('btn-theme').click();
-    await expect(html).toHaveClass(wasDark ? /^(?!.*dark).*$/ : /dark/);
+    await expect(html).toHaveAttribute('data-theme', wasDark ? 'light' : 'dark');
     await page.reload();
     await expect(page.getByTestId('page-dashboard')).toBeVisible();
-    expect(await html.evaluate((el) => el.classList.contains('dark'))).toBe(!wasDark);
+    expect(await html.evaluate((el) => el.dataset.theme === 'dark')).toBe(!wasDark);
     // toggle back
     await page.getByTestId('btn-user-menu').click();
     await page.getByTestId('btn-theme').click();
-    expect(await html.evaluate((el) => el.classList.contains('dark'))).toBe(wasDark);
+    expect(await html.evaluate((el) => el.dataset.theme === 'dark')).toBe(wasDark);
   });
 
   test('help sheet opens with the section of the current screen', async ({ page }) => {

@@ -18,7 +18,7 @@ let current: Theme = typeof window !== 'undefined' ? read() : 'light';
 
 export function applyTheme(theme: Theme) {
   current = theme;
-  document.documentElement.classList.toggle('dark', theme === 'dark');
+  document.documentElement.dataset.theme = theme;
   try {
     localStorage.setItem(KEY, theme);
   } catch {
@@ -28,7 +28,7 @@ export function applyTheme(theme: Theme) {
 }
 
 export function initTheme() {
-  document.documentElement.classList.toggle('dark', current === 'dark');
+  document.documentElement.dataset.theme = current;
 }
 
 export function useTheme(): [Theme, () => void] {

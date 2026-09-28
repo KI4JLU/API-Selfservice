@@ -30,7 +30,7 @@ export function ReportDetailBody({ id, from, to }: { id: string; from?: string; 
         <Stat label={t('common.utilization')} value={util === null ? '–' : fmtPercent(util)}>
           <Progress
             value={util === null ? 0 : Math.min(100, util * 100)}
-            indicatorClassName={util !== null && util >= 1 ? 'bg-destructive' : util !== null && util >= BUDGET_WARN_THRESHOLD ? 'bg-amber-500' : undefined}
+            indicatorClassName={util !== null && util >= 1 ? 'bg-destructive' : util !== null && util >= BUDGET_WARN_THRESHOLD ? 'bg-warning' : undefined}
             className="mt-2"
           />
         </Stat>

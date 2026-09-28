@@ -155,7 +155,7 @@ function AdminUsersPage() {
         cell: ({ row }) => {
           const u = row.original.budget ? row.original.spendCurrentPeriod / row.original.budget.amount : null;
           return (
-            <span className={`whitespace-nowrap tabular-nums ${u !== null && u >= 1 ? 'text-destructive font-medium' : u !== null && u >= BUDGET_WARN_THRESHOLD ? 'font-medium text-amber-600 dark:text-amber-500' : ''}`}>
+            <span className={`whitespace-nowrap tabular-nums ${u !== null && u >= 1 ? 'text-destructive font-medium' : u !== null && u >= BUDGET_WARN_THRESHOLD ? 'font-medium text-warning' : ''}`}>
               {fmtMoney(row.original.spendCurrentPeriod, { precise: true })}
               {u !== null ? <span className="ml-1 text-xs">({fmtPercent(u)})</span> : null}
             </span>

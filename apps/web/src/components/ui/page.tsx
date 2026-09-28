@@ -38,7 +38,7 @@ export function Banner({
   const Icon = icons[variant];
   return (
     <Alert variant={variant === 'danger' ? 'destructive' : 'default'} className={className} data-testid={testId}>
-      <Icon className={cn(variant === 'success' && 'text-green-600 dark:text-green-500', variant === 'warning' && 'text-amber-600 dark:text-amber-500')} />
+      <Icon className={cn(variant === 'success' && 'text-success', variant === 'warning' && 'text-warning')} />
       {title ? <AlertTitle>{title}</AlertTitle> : null}
       <AlertDescription>{children}</AlertDescription>
     </Alert>

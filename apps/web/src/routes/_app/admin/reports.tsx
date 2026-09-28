@@ -74,8 +74,8 @@ function AdminReportsPage() {
           const u = row.original.utilization;
           return (
             <div className="min-w-32">
-              <div className={`text-xs tabular-nums ${u !== null && u >= 1 ? 'text-destructive' : u !== null && u >= BUDGET_WARN_THRESHOLD ? 'text-amber-600 dark:text-amber-500' : ''}`}>{u === null ? '–' : fmtPercent(u)}</div>
-              <Progress value={u === null ? 0 : Math.min(100, u * 100)} indicatorClassName={u !== null && u >= 1 ? 'bg-destructive' : u !== null && u >= BUDGET_WARN_THRESHOLD ? 'bg-amber-500' : undefined} className="mt-1.5" />
+              <div className={`text-xs tabular-nums ${u !== null && u >= 1 ? 'text-destructive' : u !== null && u >= BUDGET_WARN_THRESHOLD ? 'text-warning' : ''}`}>{u === null ? '–' : fmtPercent(u)}</div>
+              <Progress value={u === null ? 0 : Math.min(100, u * 100)} indicatorClassName={u !== null && u >= 1 ? 'bg-destructive' : u !== null && u >= BUDGET_WARN_THRESHOLD ? 'bg-warning' : undefined} className="mt-1.5" />
             </div>
           );
         },

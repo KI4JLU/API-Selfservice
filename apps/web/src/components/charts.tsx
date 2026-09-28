@@ -8,7 +8,7 @@ export function SpendBarChart({
   yKey,
   xFormatter,
   name,
-  color = 'var(--chart-1)',
+  color = 'var(--color-chart-1)',
 }: {
   data: Record<string, unknown>[];
   xKey: string;

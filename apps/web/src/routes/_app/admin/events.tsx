@@ -23,8 +23,8 @@ const ALL = '__all__';
 const PAGE_SIZE = 50;
 
 const severityLook: Record<AuditSeverity, { variant: 'outline' | 'destructive'; icon: React.ComponentType<{ className?: string }>; iconClass?: string }> = {
-  info: { variant: 'outline', icon: Info, iconClass: 'text-sky-600 dark:text-sky-500' },
-  warning: { variant: 'outline', icon: TriangleAlert, iconClass: 'text-amber-600 dark:text-amber-500' },
+  info: { variant: 'outline', icon: Info, iconClass: 'text-info' },
+  warning: { variant: 'outline', icon: TriangleAlert, iconClass: 'text-warning' },
   error: { variant: 'destructive', icon: CircleX },
 };
 

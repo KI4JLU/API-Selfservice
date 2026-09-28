@@ -5,12 +5,12 @@ import { Badge } from '@/components/ui/badge';
 type Look = { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon?: React.ComponentType<{ className?: string }>; iconClass?: string };
 
 const looks: Record<string, Look> = {
-  active: { variant: 'outline', icon: CircleCheck, iconClass: 'text-green-600 dark:text-green-500' },
-  approved: { variant: 'outline', icon: CircleCheck, iconClass: 'text-green-600 dark:text-green-500' },
-  sent: { variant: 'outline', icon: CircleCheck, iconClass: 'text-green-600 dark:text-green-500' },
-  success: { variant: 'outline', icon: CircleCheck, iconClass: 'text-green-600 dark:text-green-500' },
-  pending: { variant: 'outline', icon: Clock, iconClass: 'text-amber-600 dark:text-amber-500' },
-  expired: { variant: 'outline', icon: Clock, iconClass: 'text-amber-600 dark:text-amber-500' },
+  active: { variant: 'outline', icon: CircleCheck, iconClass: 'text-success' },
+  approved: { variant: 'outline', icon: CircleCheck, iconClass: 'text-success' },
+  sent: { variant: 'outline', icon: CircleCheck, iconClass: 'text-success' },
+  success: { variant: 'outline', icon: CircleCheck, iconClass: 'text-success' },
+  pending: { variant: 'outline', icon: Clock, iconClass: 'text-warning' },
+  expired: { variant: 'outline', icon: Clock, iconClass: 'text-warning' },
   skipped: { variant: 'secondary' },
   blocked: { variant: 'destructive', icon: Ban },
   rejected: { variant: 'destructive', icon: CircleX },

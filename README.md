@@ -6,7 +6,7 @@ Self-service portal for an existing LiteLLM proxy: Keycloak SSO, roles (user, co
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 19, TanStack Router/Query/Table, shadcn/ui components, Tailwind 4, i18next (de/en) |
+| Frontend | React 19, TanStack Router/Query/Table, shadcn/ui components styled with the [JLU Design System](https://github.com/KI4JLU/JLU-Design-System), Tailwind 4, i18next (de/en) |
 | Backend | Hono + `@hono/zod-openapi`, Better Auth (Keycloak via generic-oauth), Drizzle ORM, Nodemailer, croner |
 | Database | PostgreSQL, dedicated schema (`DB_SCHEMA`, default `api_selfservice`) on the LiteLLM DB host |
 | Tests | Vitest (unit/integration), Playwright (API + UI) |

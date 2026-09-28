@@ -12,7 +12,7 @@
         try {
           var t = localStorage.getItem('api-selfservice.theme');
           var dark = t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (dark) document.documentElement.classList.add('dark');
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
         } catch (e) {}
       })();
     </script>

@@ -83,8 +83,8 @@ function DashboardPage() {
           label={t('common.utilization')}
           loading={isLoading}
           value={util === null ? '–' : fmtPercent(util)}
-          valueClassName={danger ? 'text-destructive' : warn ? 'text-amber-600 dark:text-amber-500' : undefined}
-          footer={<Progress value={util === null ? 0 : Math.min(100, util * 100)} indicatorClassName={danger ? 'bg-destructive' : warn ? 'bg-amber-500' : undefined} className="w-full" />}
+          valueClassName={danger ? 'text-destructive' : warn ? 'text-warning' : undefined}
+          footer={<Progress value={util === null ? 0 : Math.min(100, util * 100)} indicatorClassName={danger ? 'bg-destructive' : warn ? 'bg-warning' : undefined} className="w-full" />}
         />
       </section>
 
@@ -117,7 +117,7 @@ function DashboardPage() {
             <CardDescription>{t('dashboard.historyDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? <Skeleton className="h-[220px] w-full" /> : data ? <SpendBarChart data={data.history} xKey="month" yKey="spend" xFormatter={fmtMonth} name={t('common.spend')} color="var(--chart-2)" /> : <Empty />}
+            {isLoading ? <Skeleton className="h-[220px] w-full" /> : data ? <SpendBarChart data={data.history} xKey="month" yKey="spend" xFormatter={fmtMonth} name={t('common.spend')} color="var(--color-chart-2)" /> : <Empty />}
           </CardContent>
         </Card>
       </section>

@@ -22,7 +22,7 @@ export function CopyButton({ value, testId, label }: { value: string; testId?: s
   };
   return (
     <Button type="button" variant="outline" size={label ? 'default' : 'icon-sm'} onClick={copy} data-testid={testId} aria-label={t('common.copy')}>
-      {copied ? <Check className="text-green-600 dark:text-green-500" /> : <Copy />}
+      {copied ? <Check className="text-success" /> : <Copy />}
       {label ? (copied ? t('common.copied') : t('common.copy')) : null}
     </Button>
   );
