@@ -9,6 +9,8 @@ import {
   CostCenterRequestSchema,
   CostCenterSchema,
   CreatedApiKeySchema,
+  KeyTestModelsSchema,
+  KeyTestResultSchema,
   LitellmUserSchema,
   MeSchema,
   NotificationSchema,
@@ -19,6 +21,7 @@ import {
   paginated,
   type AdminCreateCostCenterSchema,
   type CreateApiKeySchema,
+  type KeyTestRequestSchema,
   type SetBudgetSchema,
   type UpdateCostCenterSchema,
   type UpdateMeSchema,
@@ -29,6 +32,7 @@ import { api } from './api';
 export type Me = z.infer<typeof MeSchema>;
 export type ApiKey = z.infer<typeof ApiKeySchema>;
 export type CreatedApiKey = z.infer<typeof CreatedApiKeySchema>;
+export type KeyTestResult = z.infer<typeof KeyTestResultSchema>;
 export type Provider = z.infer<typeof ProviderSchema>;
 export type CostCenter = z.infer<typeof CostCenterSchema>;
 export type CostCenterRequest = z.infer<typeof CostCenterRequestSchema>;
@@ -207,6 +211,15 @@ export function useDeleteKey() {
     mutationFn: (id: string) => api.delete(`/api-keys/${id}`, OkResponse),
     onSuccess: () => inv(qk.keys),
   });
+}
+
+/** F-KEY-9: errors are shown on the page, not as toast. */
+export function useKeyTestModels() {
+  return useMutation({ mutationFn: (key: string) => api.post('/key-test/models', { key }, KeyTestModelsSchema), meta: { silent: true } });
+}
+
+export function useKeyTest() {
+  return useMutation({ mutationFn: (body: z.infer<typeof KeyTestRequestSchema>) => api.post('/key-test', body, KeyTestResultSchema), meta: { silent: true } });
 }
 
 export function useUpdateCostCenter() {

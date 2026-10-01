@@ -108,8 +108,8 @@ function ProfilePage() {
             <Field label={t('common.language')} htmlFor="p-locale">
               <SimpleSelect id="p-locale" value={locale} onValueChange={(v) => setLocale(v as Locale)} options={LOCALES.map((l) => ({ value: l, label: t(`locale.${l}`) }))} className="sm:w-60" testId="input-locale" />
             </Field>
-            <Field label={t('profile.costCenter')} htmlFor="p-cc" hint={t('profile.costCenterHint')}>
-              <Input id="p-cc" inputMode="numeric" value={costCenter} onChange={(e) => setCostCenter(formatInput(e.target.value))} placeholder="1234 5678" className="font-mono sm:w-60" data-testid="input-cost-center" />
+            <Field label={t('profile.costCenter')} htmlFor="p-cc" required hint={t('profile.costCenterHint')}>
+              <Input id="p-cc" required inputMode="numeric" value={costCenter} onChange={(e) => setCostCenter(formatInput(e.target.value))} placeholder="1234 5678" className="font-mono sm:w-60" data-testid="input-cost-center" />
             </Field>
             <div className="text-muted-foreground text-sm">
               {t('profile.currentCostCenter')}: <span className="text-foreground font-medium">{fmtCostCenter(me.costCenter.number)}</span> · {me.costCenter.name}

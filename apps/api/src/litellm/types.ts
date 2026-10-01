@@ -123,6 +123,15 @@ export interface LiteLLMAdapter {
   ): Promise<void>;
   deleteKey(keyId: string): Promise<void>;
   listModels(): Promise<LiteLLMModel[]>;
+
+  // ---- Key test (F-KEY-9). These calls authenticate with the user's key, not with the master key.
+  /** Model names the key may call (`/v1/models`). */
+  listKeyModels(secret: string): Promise<string[]>;
+  /** One short chat completion with the key (`/v1/chat/completions`). */
+  chatWithKey(
+    secret: string,
+    input: { model: string; prompt: string; maxTokens: number },
+  ): Promise<{ model: string; answer: string; promptTokens: number | null; completionTokens: number | null }>;
   /** Spend logs in [since, until). Implementations page internally. */
   getSpendLogs(since: Date, until: Date): Promise<LiteLLMSpendLog[]>;
 }

@@ -40,7 +40,8 @@ const queryClient = new QueryClient({
     },
   }),
   mutationCache: new MutationCache({
-    onError: (err) => {
+    onError: (err, _vars, _ctx, mutation) => {
+      if (mutation.meta?.silent) return;
       toast.error(errorMessage(err));
     },
   }),

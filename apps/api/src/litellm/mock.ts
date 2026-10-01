@@ -1,5 +1,6 @@
 import { randomBytes, createHash } from 'node:crypto';
 import type { LiteLLMAdapter, LiteLLMKey, LiteLLMModel, LiteLLMSpendLog, LiteLLMUser, TeamRole } from './types.js';
+import { LiteLLMHttpError } from './types.js';
 
 export interface MockUser {
   email: string;
@@ -58,6 +59,13 @@ export function createMockAdapter(opts: { seedLogs?: boolean; now?: () => Date }
     blocked: u.blocked,
     teams: [...u.teams],
   });
+
+  /** Like LiteLLM: unknown, blocked and expired keys are rejected with 401. */
+  const keyBySecret = (secret: string, path: string) => {
+    const k = keys.get(createHash('sha256').update(secret).digest('hex'));
+    if (!k || k.blocked || (k.expires && new Date(k.expires) <= now())) throw new LiteLLMHttpError(401, 'Authentication Error', path);
+    return k;
+  };
 
   function addLog(partial: Partial<LiteLLMSpendLog> & { apiKey: string }): LiteLLMSpendLog {
     const t = partial.startTime ? new Date(partial.startTime) : now();
@@ -194,6 +202,17 @@ export function createMockAdapter(opts: { seedLogs?: boolean; now?: () => Date }
     },
     async listModels() {
       return models;
+    },
+    async listKeyModels(secret) {
+      return [...keyBySecret(secret, '/v1/models').models];
+    },
+    async chatWithKey(secret, { model, prompt }) {
+      const k = keyBySecret(secret, '/v1/chat/completions');
+      if (!k.models.includes(model)) throw new LiteLLMHttpError(401, 'key not allowed to access model', '/v1/chat/completions');
+      const promptTokens = Math.ceil(prompt.length / 4);
+      const completionTokens = 8;
+      addLog({ apiKey: k.keyId, model, promptTokens, completionTokens });
+      return { model, answer: `Mock answer from ${model}.`, promptTokens, completionTokens };
     },
     async getSpendLogs(since, until) {
       return logs.filter((l) => {

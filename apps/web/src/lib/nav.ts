@@ -1,4 +1,4 @@
-import { Activity, Boxes, Building2, ChartColumn, Database, KeyRound, LayoutDashboard, Mail, ScrollText, User, Users, Wallet, type LucideIcon } from 'lucide-react';
+import { Activity, Boxes, Building2, ChartColumn, Database, FlaskConical, KeyRound, LayoutDashboard, Mail, ScrollText, User, Users, Wallet, type LucideIcon } from 'lucide-react';
 import type { Me } from './queries';
 
 export interface NavItem {
@@ -12,6 +12,7 @@ export interface NavItem {
 export const userNav: NavItem[] = [
   { to: '/', labelKey: 'nav.dashboard', testId: 'nav-dashboard', helpSection: 'dashboard', icon: LayoutDashboard },
   { to: '/keys', labelKey: 'nav.keys', testId: 'nav-keys', helpSection: 'keys', icon: KeyRound },
+  { to: '/key-test', labelKey: 'nav.keyTest', testId: 'nav-key-test', helpSection: 'key-test', icon: FlaskConical },
   { to: '/requests', labelKey: 'nav.requests', testId: 'nav-requests', helpSection: 'requests', icon: ScrollText },
 ];
 

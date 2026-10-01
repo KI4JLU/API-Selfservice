@@ -313,7 +313,7 @@ function RequestsTab() {
         onConfirm={onReject}
         testId="dialog-reject-request"
       >
-        <Field label={t('costCenters.rejectReason')} htmlFor="reject-reason">
+        <Field label={t('costCenters.rejectReason')} htmlFor="reject-reason" required>
           <Textarea id="reject-reason" required value={reason} onChange={(e) => setReason(e.target.value)} maxLength={1000} data-testid="input-reject-reason" />
         </Field>
       </ConfirmDialog>

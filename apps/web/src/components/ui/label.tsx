@@ -15,15 +15,27 @@ function Label({ className, ...props }: React.ComponentProps<typeof LabelPrimiti
   );
 }
 
+/** Visual marker for required fields. Hidden from screen readers; the control itself carries `required`. */
+function RequiredMark() {
+  return (
+    <span aria-hidden="true" className="text-destructive -ml-1.5">
+      *
+    </span>
+  );
+}
+
 /** Label + control + optional hint, following the shadcn form field layout (grid gap-2). */
-function Field({ label, hint, htmlFor, children, className }: { label: React.ReactNode; hint?: React.ReactNode; htmlFor?: string; children: React.ReactNode; className?: string }) {
+function Field({ label, hint, htmlFor, required, children, className }: { label: React.ReactNode; hint?: React.ReactNode; htmlFor?: string; required?: boolean; children: React.ReactNode; className?: string }) {
   return (
     <div className={cn('grid gap-2', className)}>
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <Label htmlFor={htmlFor}>
+        {label}
+        {required ? <RequiredMark /> : null}
+      </Label>
       {children}
       {hint ? <p className="text-muted-foreground text-sm">{hint}</p> : null}
     </div>
   );
 }
 
-export { Label, Field };
+export { Label, Field, RequiredMark };

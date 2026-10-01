@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Field } from '@/components/ui/label';
+import { Field, RequiredMark } from '@/components/ui/label';
 import { SimpleSelect } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TierBadge } from '@/components/StatusBadge';
@@ -73,7 +73,7 @@ export function CreateKeyDialog({ open, onOpenChange, me, onCreated }: { open: b
             <DialogTitle>{t('keys.create')}</DialogTitle>
             <DialogDescription>{t('keys.createHint')}</DialogDescription>
           </DialogHeader>
-          <Field label={t('keys.name')} htmlFor="key-name">
+          <Field label={t('keys.name')} htmlFor="key-name" required>
             <Input id="key-name" required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} data-testid="input-key-name" autoFocus />
           </Field>
           <Field label={t('common.costCenter')} htmlFor="key-cc">
@@ -81,7 +81,10 @@ export function CreateKeyDialog({ open, onOpenChange, me, onCreated }: { open: b
           </Field>
           <div className="grid gap-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{t('keys.models')}</span>
+              <span className="flex items-center gap-2 text-sm font-medium">
+                {t('keys.models')}
+                <RequiredMark />
+              </span>
               <span className="text-xs text-muted-foreground">{t('keys.modelsSelected', { count: models.length })}</span>
             </div>
             {isDefaultCc ? (

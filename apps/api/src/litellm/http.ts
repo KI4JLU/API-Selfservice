@@ -46,11 +46,11 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
   const f = opts.fetchImpl ?? fetch;
   const base = opts.baseUrl.replace(/\/$/, '');
 
-  async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
+  async function call<T>(method: string, path: string, body?: unknown, token = opts.apiKey): Promise<T> {
     const res = await f(`${base}${path}`, {
       method,
       headers: {
-        Authorization: `Bearer ${opts.apiKey}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
@@ -242,6 +242,23 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
           outputCostPerToken: cost(m.litellm_params?.output_cost_per_token) ?? cost(m.model_info?.output_cost_per_token),
         };
       });
+    },
+    async listKeyModels(secret) {
+      const r = await call<{ data?: Array<{ id: string }> }>('GET', '/v1/models', undefined, secret);
+      return (r.data ?? []).map((m) => m.id);
+    },
+    async chatWithKey(secret, { model, prompt, maxTokens }) {
+      const r = await call<{
+        model?: string;
+        choices?: Array<{ message?: { content?: string | null } }>;
+        usage?: { prompt_tokens?: number; completion_tokens?: number };
+      }>('POST', '/v1/chat/completions', { model, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens }, secret);
+      return {
+        model: r.model ?? model,
+        answer: r.choices?.[0]?.message?.content ?? '',
+        promptTokens: r.usage?.prompt_tokens ?? null,
+        completionTokens: r.usage?.completion_tokens ?? null,
+      };
     },
     async getSpendLogs(since, until) {
       // /spend/logs supports start_date/end_date (YYYY-MM-DD). We over-fetch by day and filter.

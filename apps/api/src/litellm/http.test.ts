@@ -142,6 +142,25 @@ describe('http adapter', () => {
     expect(await a.listModels()).toEqual([]);
   });
 
+  it('key test calls authenticate with the given key, not the master key', async () => {
+    const { a, calls } = adapter((c) =>
+      c.url.endsWith('/v1/models')
+        ? { body: { data: [{ id: 'gpt-4o' }, { id: 'gemma' }] } }
+        : { body: { model: 'gpt-4o-2024-08-06', choices: [{ message: { content: 'Hi' } }], usage: { prompt_tokens: 5, completion_tokens: 1 } } },
+    );
+    expect(await a.listKeyModels('sk-user')).toEqual(['gpt-4o', 'gemma']);
+    expect(await a.chatWithKey('sk-user', { model: 'gpt-4o', prompt: 'Hello', maxTokens: 50 })).toEqual({ model: 'gpt-4o-2024-08-06', answer: 'Hi', promptTokens: 5, completionTokens: 1 });
+    expect(calls[0]).toMatchObject({ url: 'http://litellm.test/v1/models', method: 'GET' });
+    expect(calls[1]).toMatchObject({ url: 'http://litellm.test/v1/chat/completions', method: 'POST', body: { model: 'gpt-4o', messages: [{ role: 'user', content: 'Hello' }], max_tokens: 50 } });
+    expect(calls.map((c) => c.headers.Authorization)).toEqual(['Bearer sk-user', 'Bearer sk-user']);
+  });
+
+  it('key test calls tolerate missing data, choices and usage', async () => {
+    const { a } = adapter(() => ({ body: {} }));
+    expect(await a.listKeyModels('sk-user')).toEqual([]);
+    expect(await a.chatWithKey('sk-user', { model: 'm', prompt: 'p', maxTokens: 1 })).toEqual({ model: 'm', answer: '', promptTokens: null, completionTokens: null });
+  });
+
   it('getSpendLogs queries by date, maps fields and filters by [since, until)', async () => {
     const since = new Date('2026-09-10T00:00:00Z');
     const until = new Date('2026-09-12T00:00:00Z');

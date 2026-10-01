@@ -14,6 +14,7 @@ import { csrfMiddleware } from './middleware/csrf.js';
 import { meRoutes } from './routes/me.js';
 import { costCenterRoutes } from './routes/cost-centers.js';
 import { keyRoutes } from './routes/keys.js';
+import { keyTestRoutes } from './routes/key-test.js';
 import { providerRoutes } from './routes/providers.js';
 import { adminRoutes } from './routes/admin.js';
 import { reportRoutes } from './routes/reports.js';
@@ -59,6 +60,7 @@ export function createApp(deps: Deps): App {
   v1.route('/', meRoutes);
   v1.route('/', costCenterRoutes);
   v1.route('/', keyRoutes);
+  v1.route('/', keyTestRoutes);
   v1.route('/', providerRoutes);
   v1.route('/', adminRoutes);
   v1.route('/', reportRoutes);

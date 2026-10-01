@@ -73,18 +73,18 @@ export function CostCenterCreateDialog({ open, onOpenChange }: { open: boolean; 
             <DialogDescription>{t('costCenters.createHint')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
-            <Field label={t('costCenters.number')} htmlFor="ncc-number">
+            <Field label={t('costCenters.number')} htmlFor="ncc-number" required>
               <Input id="ncc-number" required inputMode="numeric" value={number} onChange={(e) => setNumber(formatNumberInput(e.target.value))} placeholder="1234 5678" className="font-mono" data-testid="input-cc-number" />
             </Field>
-            <Field label={t('costCenters.name')} htmlFor="ncc-name">
+            <Field label={t('costCenters.name')} htmlFor="ncc-name" required>
               <Input id="ncc-name" required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} data-testid="input-cc-name" />
             </Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t('costCenters.owner')} htmlFor="ncc-owner">
+            <Field label={t('costCenters.owner')} htmlFor="ncc-owner" required>
               <Input id="ncc-owner" required maxLength={200} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} data-testid="input-cc-owner-name" />
             </Field>
-            <Field label={t('costCenters.ownerEmail')} htmlFor="ncc-owner-email">
+            <Field label={t('costCenters.ownerEmail')} htmlFor="ncc-owner-email" required>
               <Input id="ncc-owner-email" type="email" required value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} data-testid="input-cc-owner-email" />
             </Field>
           </div>

@@ -107,7 +107,7 @@ function DevLoginForm() {
   return (
     <form onSubmit={submit} className="flex flex-col gap-3 rounded-md border border-dashed p-4" data-testid="form-dev-login">
       <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{t('auth.devLogin')}</div>
-      <Field label={t('common.email')} htmlFor="dev-email">
+      <Field label={t('common.email')} htmlFor="dev-email" required>
         <Input id="dev-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} data-testid="input-dev-email" autoComplete="off" />
       </Field>
       <Field label={t('common.name')} htmlFor="dev-name">

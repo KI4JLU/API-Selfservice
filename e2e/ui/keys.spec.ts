@@ -1,5 +1,58 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { devLogin, uniqueEmail } from './helpers';
+
+async function expectKeysMenuItem(page: Page) {
+  const item = page.getByTestId('nav-keys');
+  await expect(item).toBeVisible();
+  await item.click();
+  await expect(page).toHaveURL(/\/keys$/);
+  await expect(page.getByTestId('page-keys')).toBeVisible();
+  await expect(page.getByTestId('btn-create-key')).toBeVisible();
+}
+
+test.describe('API keys menu item', () => {
+  test('is shown to a plain user and opens the keys page', async ({ page }) => {
+    await devLogin(page, { email: uniqueEmail('nav-user'), name: 'Nav User' });
+    await expect(page.getByTestId('nav-cost-centers')).toHaveCount(0);
+    await expectKeysMenuItem(page);
+  });
+
+  test('is shown to a cost center admin and opens the keys page', async ({ browser }) => {
+    const email = uniqueEmail('nav-ccadmin');
+    const user = await browser.newContext({ locale: 'de-DE' });
+    const userPage = await user.newPage();
+    await devLogin(userPage, { email, name: 'Nav CC Admin' });
+
+    // admin makes the user cost center admin of the default cost center
+    const admin = await browser.newContext({ locale: 'de-DE' });
+    const adminPage = await admin.newPage();
+    await devLogin(adminPage, { email: uniqueEmail('nav-admin'), name: 'Nav Admin', admin: true });
+    await adminPage.getByTestId('nav-admin-users').click();
+    await adminPage.getByTestId('input-user-search').fill(email);
+    await adminPage.getByTestId('btn-user-search').click();
+    const row = adminPage.getByTestId('table-users').locator('tr', { hasText: email });
+    await expect(row).toBeVisible();
+    await row.getByTestId('btn-user-actions').click();
+    await adminPage.getByTestId('btn-set-cost-center-admin').click();
+    const dialog = adminPage.getByTestId('dialog-cost-center-admin');
+    await dialog.getByTestId('cc-admin-11111111').click();
+    await dialog.getByTestId('btn-save-cost-center-admin').click();
+    await expect(dialog).toBeHidden();
+
+    await userPage.reload();
+    await expect(userPage.getByTestId('nav-cost-centers')).toBeVisible();
+    await expectKeysMenuItem(userPage);
+
+    await user.close();
+    await admin.close();
+  });
+
+  test('is shown to an admin and opens the keys page', async ({ page }) => {
+    await devLogin(page, { email: uniqueEmail('nav-admin'), name: 'Nav Admin', admin: true });
+    await expect(page.getByTestId('nav-admin-users')).toBeVisible();
+    await expectKeysMenuItem(page);
+  });
+});
 
 test.describe('API keys', () => {
   test('create key shows the secret once, then extend and delete', async ({ page }) => {

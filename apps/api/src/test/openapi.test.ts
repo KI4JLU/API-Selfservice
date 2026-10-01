@@ -36,6 +36,8 @@ describe('openapi / docs / health', () => {
       '/api-keys',
       '/api-keys/{id}',
       '/api-keys/{id}/extend',
+      '/key-test',
+      '/key-test/models',
       '/admin/api-keys',
       '/admin/api-keys/{id}/block',
       '/providers',

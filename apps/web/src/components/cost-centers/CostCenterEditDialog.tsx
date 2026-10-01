@@ -39,7 +39,7 @@ export function BudgetFields({
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={amountLabel} htmlFor={`${idPrefix}-amount`} hint={required ? undefined : t('costCenters.maxBudgetHint')}>
+        <Field label={amountLabel} htmlFor={`${idPrefix}-amount`} required={required} hint={required ? undefined : t('costCenters.maxBudgetHint')}>
           <Input id={`${idPrefix}-amount`} type="number" min={0} step="0.01" required={required} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={required ? '' : t('common.unlimited')} data-testid="input-budget-amount" />
         </Field>
         <Field label={t('common.period')} htmlFor={`${idPrefix}-period`}>
@@ -48,10 +48,10 @@ export function BudgetFields({
       </div>
       {period === 'project' ? (
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={t('common.from')} htmlFor={`${idPrefix}-start`}>
+          <Field label={t('common.from')} htmlFor={`${idPrefix}-start`} required>
             <Input id={`${idPrefix}-start`} type="date" required value={start} onChange={(e) => setStart(e.target.value)} data-testid="input-budget-start" />
           </Field>
-          <Field label={t('common.to')} htmlFor={`${idPrefix}-end`}>
+          <Field label={t('common.to')} htmlFor={`${idPrefix}-end`} required>
             <Input id={`${idPrefix}-end`} type="date" required value={end} onChange={(e) => setEnd(e.target.value)} data-testid="input-budget-end" />
           </Field>
         </div>
@@ -118,14 +118,14 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
           </DialogHeader>
           {full ? (
             <>
-              <Field label={t('costCenters.name')} htmlFor="cc-name">
+              <Field label={t('costCenters.name')} htmlFor="cc-name" required>
                 <Input id="cc-name" required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} data-testid="input-cc-name" />
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label={t('costCenters.owner')} htmlFor="cc-owner">
+                <Field label={t('costCenters.owner')} htmlFor="cc-owner" required>
                   <Input id="cc-owner" required maxLength={200} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} data-testid="input-cc-owner-name" />
                 </Field>
-                <Field label={t('costCenters.ownerEmail')} htmlFor="cc-owner-email">
+                <Field label={t('costCenters.ownerEmail')} htmlFor="cc-owner-email" required>
                   <Input id="cc-owner-email" type="email" required value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} data-testid="input-cc-owner-email" />
                 </Field>
               </div>
