@@ -144,8 +144,12 @@ export async function spendForCostCenter(deps: Deps, costCenterId: string, start
   return Number(r?.s ?? 0);
 }
 
-export async function spendForKey(deps: Deps, apiKeyId: string): Promise<number> {
-  const [r] = await deps.db.select({ s: sum(requestLogs.cost) }).from(requestLogs).where(eq(requestLogs.apiKeyId, apiKeyId));
+/** Spend of one key, optionally limited to [start, end) (F-KEY-11: current month for monthly key budgets). */
+export async function spendForKey(deps: Deps, apiKeyId: string, range?: { start: Date; end: Date }): Promise<number> {
+  const [r] = await deps.db
+    .select({ s: sum(requestLogs.cost) })
+    .from(requestLogs)
+    .where(and(eq(requestLogs.apiKeyId, apiKeyId), range ? gte(requestLogs.time, range.start) : undefined, range ? lt(requestLogs.time, range.end) : undefined));
   return Number(r?.s ?? 0);
 }
 

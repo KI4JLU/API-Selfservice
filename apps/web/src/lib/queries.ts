@@ -5,6 +5,7 @@ import {
   ApiKeySchema,
   AuditEventSchema,
   CostCenterReportDetailSchema,
+  CostCenterMemberSchema,
   CostCenterReportRowSchema,
   CostCenterRequestSchema,
   CostCenterSchema,
@@ -13,6 +14,7 @@ import {
   KeyTestResultSchema,
   LitellmUserSchema,
   MeSchema,
+  MemberCandidateSchema,
   NotificationSchema,
   ProviderSchema,
   ProviderSyncResult,
@@ -20,6 +22,7 @@ import {
   SpendSummarySchema,
   paginated,
   type AdminCreateCostCenterSchema,
+  type CostCenterMemberRole,
   type CreateApiKeySchema,
   type KeyTestRequestSchema,
   type SetBudgetSchema,
@@ -36,6 +39,8 @@ export type KeyTestResult = z.infer<typeof KeyTestResultSchema>;
 export type Provider = z.infer<typeof ProviderSchema>;
 export type CostCenter = z.infer<typeof CostCenterSchema>;
 export type CostCenterRequest = z.infer<typeof CostCenterRequestSchema>;
+export type CostCenterMember = z.infer<typeof CostCenterMemberSchema>;
+export type MemberCandidate = z.infer<typeof MemberCandidateSchema>;
 export type SpendSummary = z.infer<typeof SpendSummarySchema>;
 export type RequestLog = z.infer<typeof RequestLogSchema>;
 export type AdminUser = z.infer<typeof AdminUserSchema>;
@@ -64,6 +69,8 @@ export const qk = {
   adminProviders: ['admin', 'providers'] as const,
   costCenters: (params: Record<string, unknown>) => ['cost-centers', params] as const,
   managedCostCenters: ['cost-centers', 'managed'] as const,
+  costCenterMembers: (id: string) => ['cost-centers', id, 'members'] as const,
+  memberCandidates: (id: string, q: string) => ['cost-centers', id, 'member-candidates', q] as const,
   costCenterRequests: (params: Record<string, unknown>) => ['cost-center-requests', params] as const,
   adminUsers: (params: Record<string, unknown>) => ['admin', 'users', params] as const,
   litellmUsers: (params: Record<string, unknown>) => ['admin', 'litellm-users', params] as const,
@@ -129,6 +136,20 @@ export function useCostCenters(params: CostCentersParams, enabled = true) {
 
 export function useManagedCostCenters() {
   return useQuery({ queryKey: qk.managedCostCenters, queryFn: () => api.get('/cost-centers/managed', PagedCostCenters, { pageSize: 200 }) });
+}
+
+export function useCostCenterMembers(id: string | null) {
+  return useQuery({ queryKey: qk.costCenterMembers(id ?? ''), queryFn: () => api.get(`/cost-centers/${id}/members`, z.array(CostCenterMemberSchema)), enabled: !!id });
+}
+
+/** F-KST-11: known LiteLLM users only; the API needs at least 3 characters. */
+export function useMemberCandidates(id: string | null, q: string) {
+  return useQuery({
+    queryKey: qk.memberCandidates(id ?? '', q),
+    queryFn: () => api.get(`/cost-centers/${id}/member-candidates`, z.array(MemberCandidateSchema), { q }),
+    enabled: !!id && q.length >= 3,
+    retry: false,
+  });
 }
 
 export function useCostCenterRequests(params: { status?: string; page?: number; pageSize?: number }) {
@@ -246,6 +267,32 @@ export function useArchiveCostCenter() {
   });
 }
 
+// Member changes can touch the caller's own role and the report's user count.
+export function useAddMember() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: ({ id, userId, role }: { id: string; userId: string; role: CostCenterMemberRole }) => api.post(`/cost-centers/${id}/members`, { userId, role }, CostCenterMemberSchema),
+    onSuccess: (_d, v) => inv(['cost-centers', v.id], qk.me, ['reports']),
+  });
+}
+
+export function useUpdateMember() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: ({ id, userId, role }: { id: string; userId: string; role: CostCenterMemberRole }) =>
+      api.patch(`/cost-centers/${id}/members/${encodeURIComponent(userId)}`, { role }, CostCenterMemberSchema),
+    onSuccess: (_d, v) => inv(['cost-centers', v.id], qk.me, qk.managedCostCenters),
+  });
+}
+
+export function useRemoveMember() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: ({ id, userId }: { id: string; userId: string }) => api.delete(`/cost-centers/${id}/members/${encodeURIComponent(userId)}`, OkResponse),
+    onSuccess: (_d, v) => inv(['cost-centers', v.id], qk.me, qk.managedCostCenters, ['reports']),
+  });
+}
+
 export function useApproveRequest() {
   const inv = useInvalidate();
   return useMutation({
@@ -310,8 +357,8 @@ export function useDeactivateUser() {
   });
 }
 
-export function useLitellmUsers(params: { q?: string; page?: number; pageSize?: number }) {
-  return useQuery({ queryKey: qk.litellmUsers(params), queryFn: () => api.get('/admin/litellm-users', PagedLitellmUsers, params), retry: false });
+export function useLitellmUsers(params: { q?: string; page?: number; pageSize?: number }, enabled = true) {
+  return useQuery({ queryKey: qk.litellmUsers(params), queryFn: () => api.get('/admin/litellm-users', PagedLitellmUsers, params), retry: false, enabled });
 }
 
 export function useImpersonate() {

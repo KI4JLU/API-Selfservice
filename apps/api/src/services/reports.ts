@@ -1,4 +1,4 @@
-import { and, apiKeys, costCenters, count, eq, gte, lt, ne, requestLogs, sum, user } from '@api-selfservice/db';
+import { and, apiKeys, costCenterMembers, costCenters, count, eq, gte, lt, ne, requestLogs, sum, user } from '@api-selfservice/db';
 import type { CurrentUser, Deps } from '../context.js';
 import { forbidden, notFound } from '../errors.js';
 import { costCenterPeriod } from './cost-centers.js';
@@ -15,7 +15,10 @@ function range(deps: Deps, q: { from?: string; to?: string }, cc?: typeof costCe
 async function rowFor(deps: Deps, cc: typeof costCenters.$inferSelect, start: Date, end: Date) {
   const where = and(eq(requestLogs.costCenterId, cc.id), gte(requestLogs.time, start), lt(requestLogs.time, end));
   const [agg] = await deps.db.select({ spend: sum(requestLogs.cost), n: count() }).from(requestLogs).where(where);
-  const [{ users } = { users: 0 }] = await deps.db.select({ users: count() }).from(user).where(eq(user.costCenterId, cc.id));
+  // Every user belongs to the default cost center; there, count the profiles that still point to it.
+  const [{ users } = { users: 0 }] = cc.isDefault
+    ? await deps.db.select({ users: count() }).from(user).where(eq(user.costCenterId, cc.id))
+    : await deps.db.select({ users: count() }).from(costCenterMembers).where(eq(costCenterMembers.costCenterId, cc.id));
   const [{ keys } = { keys: 0 }] = await deps.db.select({ keys: count() }).from(apiKeys).where(and(eq(apiKeys.costCenterId, cc.id), ne(apiKeys.status, 'deleted')));
   const spend = Number(agg?.spend ?? 0);
   const budget = cc.maxBudget === null ? null : Number(cc.maxBudget);

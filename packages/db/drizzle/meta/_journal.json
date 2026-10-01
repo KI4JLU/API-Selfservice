@@ -36,6 +36,41 @@
       "when": 1789972417270,
       "tag": "0004_odd_elektra",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790845569155,
+      "tag": "0005_little_imperial_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790848385652,
+      "tag": "0006_cost_center_members",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790848391109,
+      "tag": "0007_drop_cost_center_admins",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790852223856,
+      "tag": "0008_cost_center_owner",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790853344367,
+      "tag": "0009_yellow_human_fly",
+      "breakpoints": true
     }
   ]
 }

@@ -71,6 +71,10 @@ test.describe('API keys', () => {
     // Radix renders a hidden <input> next to the checkbox button; click the label and assert via the role instead.
     await firstModel.click();
     await expect(firstModel.getByRole('checkbox')).toHaveAttribute('aria-checked', 'true');
+    // F-KEY-11: with an amount the budget resets monthly by default
+    await expect(dialog.getByTestId('input-key-budget-period')).toBeDisabled();
+    await dialog.getByTestId('input-key-budget').fill('5');
+    await expect(dialog.getByTestId('input-key-budget-period')).toBeEnabled();
     await dialog.getByTestId('btn-submit-create-key').click();
 
     const secret = page.getByTestId('dialog-key-secret');
@@ -86,6 +90,9 @@ test.describe('API keys', () => {
     await expect(row.getByTestId('key-status')).toHaveAttribute('data-status', 'active');
     // masked key is shown, never the secret
     await expect(page.getByTestId('table-keys')).not.toContainText(secretText);
+    // the cost center shows by name, without its internal number; the budget per month
+    await expect(row.getByTestId('key-cost-center')).not.toContainText('1111');
+    await expect(row).toContainText(/\/ (Monat|month)/);
 
     await row.getByTestId('btn-extend-key').click();
     await expect(page.getByTestId('toast-key-extended')).toBeVisible();
@@ -95,5 +102,30 @@ test.describe('API keys', () => {
     await page.getByTestId('dialog-delete-key').getByTestId('btn-confirm').click();
     await expect(page.getByTestId('dialog-delete-key')).toBeHidden();
     await expect(page.getByTestId('table-keys').locator('tr', { hasText: 'Playwright key' })).toHaveCount(0);
+  });
+
+  test('create key for a whole provider via the provider tab (F-KEY-10)', async ({ page }) => {
+    await devLogin(page, { email: uniqueEmail('keys-provider'), name: 'Provider Key User' });
+    await page.getByTestId('nav-keys').click();
+    await page.getByTestId('btn-create-key').click();
+    const dialog = page.getByTestId('dialog-create-key');
+    await dialog.getByTestId('input-key-name').fill('Provider key');
+    await dialog.getByTestId('tab-providers').click();
+    // default cost center -> only providers with free models are offered
+    const firstProvider = dialog.getByTestId('list-providers').locator('label').first();
+    await expect(firstProvider).toBeVisible();
+    const providerName = ((await firstProvider.getAttribute('data-testid')) ?? '').replace(/^provider-/, '');
+    await firstProvider.click();
+    await expect(firstProvider.getByRole('checkbox')).toHaveAttribute('aria-checked', 'true');
+    // the provider's models show as included in the models tab
+    await dialog.getByTestId('tab-models').click();
+    await expect(dialog.getByTestId('list-models').getByRole('checkbox', { checked: true }).first()).toBeDisabled();
+    await dialog.getByTestId('btn-submit-create-key').click();
+
+    const secret = page.getByTestId('dialog-key-secret');
+    await expect(secret).toBeVisible();
+    await secret.getByTestId('btn-close-secret').click();
+    const row = page.getByTestId('table-keys').locator('tr', { hasText: 'Provider key' });
+    await expect(row.getByTestId('key-provider')).toContainText(providerName);
   });
 });

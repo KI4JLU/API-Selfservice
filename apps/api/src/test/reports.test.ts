@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { CostCenterReportDetailSchema, CostCenterReportRowSchema } from '@api-selfservice/shared';
 import { z } from 'zod';
-import { createTestApp, DAY, expectError, expectShape, randomCostCenter, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
+import { addMember, createTestApp, DAY, expectError, expectShape, litellmOwner, randomCostCenter, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
 
 describe('reports', () => {
   let t: TestApp;
@@ -23,7 +23,8 @@ describe('reports', () => {
     await syncProvidersWithFree(admin);
     const mk = async (extra: Record<string, unknown> = {}) => {
       const number = randomCostCenter();
-      const r = await admin.post('/admin/cost-centers', { number, name: `CC ${number}`, ownerName: 'Owner', ownerEmail: `o-${number}@x.de`, ...extra });
+      const owner = await litellmOwner(t, `o-${number}@x.de`);
+      const r = await admin.post('/admin/cost-centers', { number, name: `CC ${number}`, ownerUserId: owner.userId, ...extra });
       return { id: r.body.id as string, number };
     };
     cc1 = await mk({ maxBudget: 100 });
@@ -33,9 +34,9 @@ describe('reports', () => {
     u1 = await t.login();
     u2 = await t.login();
     u3 = await t.login();
-    await u1.patch('/me', { costCenterNumber: cc1.number });
-    await u2.patch('/me', { costCenterNumber: cc1.number });
-    await u3.patch('/me', { costCenterNumber: cc2.number });
+    await addMember(admin, cc1.id, u1);
+    await addMember(admin, cc1.id, u2);
+    await addMember(admin, cc2.id, u3);
     k1a = (await u1.post('/api-keys', { name: 'u1-a', models: ['gpt-4o'], costCenterId: cc1.id })).body.id;
     k1b = (await u1.post('/api-keys', { name: 'u1-b', models: ['gpt-4o'], costCenterId: cc1.id })).body.id;
     k2 = (await u2.post('/api-keys', { name: 'u2', models: ['gpt-4o'], costCenterId: cc1.id })).body.id;
@@ -67,12 +68,13 @@ describe('reports', () => {
       spend: 20,
       remaining: 80,
       utilization: 0.2,
-      userCount: 2,
+      // members: u1, u2, the cost center admin and the owner
+      userCount: 4,
       keyCount: 3,
       requests: 4,
     });
     const r2 = rows.find((x) => x.costCenter.id === cc2.id)!;
-    expect(r2).toMatchObject({ budget: null, spend: 7, remaining: null, utilization: null, userCount: 1, keyCount: 1, requests: 1 });
+    expect(r2).toMatchObject({ budget: null, spend: 7, remaining: null, utilization: null, userCount: 2, keyCount: 1, requests: 1 });
   });
 
   it('detail drills down to users and keys', async () => {
@@ -130,9 +132,9 @@ describe('reports', () => {
     const number = randomCostCenter();
     const start = new Date(t.clock.now.getTime() - 2 * DAY).toISOString();
     const end = new Date(t.clock.now.getTime() + 10 * DAY).toISOString();
-    const cc = (await admin.post('/admin/cost-centers', { number, name: 'Project', ownerName: 'o', ownerEmail: 'o@x.de', maxBudget: 10, budgetPeriod: 'project', periodStart: start, periodEnd: end })).body;
+    const cc = (await admin.post('/admin/cost-centers', { number, name: 'Project', ownerUserId: (await litellmOwner(t)).userId, maxBudget: 10, budgetPeriod: 'project', periodStart: start, periodEnd: end })).body;
     const u = await t.login();
-    await u.patch('/me', { costCenterNumber: number });
+    await addMember(admin, cc.id, u);
     const k = (await u.post('/api-keys', { name: 'p', models: ['gpt-4o'], costCenterId: cc.id })).body.id;
     await t.addLog(k, { spend: 2, startTime: new Date(t.clock.now.getTime() - 4 * DAY).toISOString() }); // before the project
     await t.addLog(k, { spend: 3, startTime: t.ago(0.5) });

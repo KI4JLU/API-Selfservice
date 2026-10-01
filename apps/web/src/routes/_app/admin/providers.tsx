@@ -2,15 +2,16 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Pencil, RefreshCw } from 'lucide-react';
+import { Pencil, RefreshCw, TriangleAlert } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { requireAdmin } from '@/lib/guards';
 import { useAdminProviders, useSyncProviders, useUpdateProvider, type Provider } from '@/lib/queries';
 import { fmtDateTime } from '@/lib/format';
-import { PageHeader } from '@/components/ui/page';
+import { Banner, PageHeader } from '@/components/ui/page';
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { WithTooltip } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,8 @@ function AdminProvidersPage() {
     if (res) toast.success(t('providers.tierSaved', { model: p.modelName, tier: t(`tier.${res.tier}`) }));
   };
 
+  const withoutProvider = (providers.data ?? []).filter((p) => p.available && p.provider === null).length;
+
   const columns = useMemo<ColumnDef<Provider>[]>(
     () => [
       {
@@ -55,7 +58,20 @@ function AdminProvidersPage() {
           </div>
         ),
       },
-      { header: t('providers.provider'), accessorKey: 'provider', cell: ({ row }) => row.original.provider ?? '–' },
+      {
+        header: t('providers.provider'),
+        accessorKey: 'provider',
+        // F-KEY-10: without a provider the model never reaches keys that hold a whole provider
+        cell: ({ row }) =>
+          row.original.provider ?? (
+            <WithTooltip text={t('providers.noProviderHint')}>
+              <Badge variant="outline" data-testid="badge-no-provider">
+                <TriangleAlert className="text-warning" />
+                {t('providers.noProvider')}
+              </Badge>
+            </WithTooltip>
+          ),
+      },
       {
         header: t('providers.price'),
         id: 'price',
@@ -131,6 +147,11 @@ function AdminProvidersPage() {
           </Button>
         }
       />
+      {withoutProvider > 0 ? (
+        <Banner variant="warning" className="mb-4" testId="hint-no-provider">
+          {t('providers.noProviderBanner', { count: withoutProvider })}
+        </Banner>
+      ) : null}
       <DataTable columns={columns} data={providers.data ?? []} isLoading={providers.isLoading} testId="table-providers" rowClassName={(p) => (p.available ? undefined : 'opacity-50')} getRowId={(p) => p.id} />
       <ProviderEditDialog provider={editing} onClose={() => setEditing(null)} />
     </div>

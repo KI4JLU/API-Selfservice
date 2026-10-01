@@ -34,9 +34,10 @@ export const adminNav: NavItem[] = [
 ];
 
 export function navFor(me: Me) {
-  const isCcAdmin = me.effectiveRole === 'cost_center_admin' || me.effectiveRole === 'admin';
+  // F-KST-8: only users assigned as cost center admin, admins included, see "My cost centers".
+  const managesCostCenters = me.managedCostCenters.length > 0;
   return {
-    user: [...userNav, ...(isCcAdmin ? costCenterAdminNav : [])],
+    user: [...userNav, ...(managesCostCenters ? costCenterAdminNav : [])],
     admin: me.role === 'admin' ? adminNav : [],
   };
 }

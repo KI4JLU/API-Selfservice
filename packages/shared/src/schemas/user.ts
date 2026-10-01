@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EFFECTIVE_ROLES, ROLES } from '../constants.js';
+import { COST_CENTER_MEMBER_ROLES, EFFECTIVE_ROLES, ROLES } from '../constants.js';
 import { IdSchema, IsoDate, LocaleSchema, Money } from './common.js';
 
 export const CostCenterRef = z.object({
@@ -20,6 +20,8 @@ export const MeSchema = z.object({
   costCenterOwnerName: z.string().nullable(),
   costCenterOwnerEmail: z.string().email().nullable(),
   managedCostCenters: z.array(CostCenterRef),
+  /** Approved cost centers the user may create keys on: the default plus every membership (F-KST-10). */
+  memberCostCenters: z.array(CostCenterRef.extend({ role: z.enum(COST_CENTER_MEMBER_ROLES) })),
   pendingRequest: z
     .object({
       id: IdSchema,

@@ -1,7 +1,7 @@
 import { costCenters, eq, providers } from '@api-selfservice/db';
 import type { ProviderTier } from '@api-selfservice/shared';
 import type { CurrentUser, Deps } from '../context.js';
-import { notFound } from '../errors.js';
+import { forbidden, notFound } from '../errors.js';
 import { audit } from './audit.js';
 
 type CC = typeof costCenters.$inferSelect;
@@ -25,16 +25,25 @@ export function providerView(p: P) {
   };
 }
 
-/** F-PRV-3: free models always; paid models only for non-default approved cost centers. */
+/**
+ * F-PRV-3: free models always; paid models only for non-default approved cost centers.
+ * F-KST-15: a cost center with released models narrows this further to those models.
+ */
 export async function allowedModelsForCostCenter(deps: Deps, cc: CC): Promise<P[]> {
   const all = await deps.db.query.providers.findMany({ where: eq(providers.available, true), orderBy: [providers.modelName] });
-  if (cc.isDefault || cc.status !== 'approved') return all.filter((p) => p.tier === 'free');
-  return all;
+  const byTier = cc.isDefault || cc.status !== 'approved' ? all.filter((p) => p.tier === 'free') : all;
+  return cc.models.length > 0 ? byTier.filter((p) => cc.models.includes(p.modelName)) : byTier;
 }
 
 export async function listProvidersForUser(deps: Deps, cu: CurrentUser, costCenterId?: string) {
   const ccId = costCenterId ?? cu.costCenterId;
   const cc = ccId ? await deps.db.query.costCenters.findFirst({ where: eq(costCenters.id, ccId) }) : null;
+  // The released models of a cost center (F-KST-15) are for its members (F-KST-12) and admins only;
+  // without a query the user's own profile cost center is used.
+  if (costCenterId && cc && cu.role !== 'admin') {
+    const { isMember } = await import('./cost-center-members.js');
+    if (!(await isMember(deps, cu.id, cc))) throw forbidden();
+  }
   const { getDefaultCostCenter } = await import('./cost-centers.js');
   const rows = await allowedModelsForCostCenter(deps, cc ?? (await getDefaultCostCenter(deps)));
   return rows.map(providerView);
@@ -55,6 +64,11 @@ export async function updateProvider(
   if (!p) throw notFound('Provider');
   const [row] = await deps.db.update(providers).set({ ...input, updatedAt: deps.now() }).where(eq(providers.id, id)).returning();
   await audit(deps, { actorId: actor.id, action: 'provider.update', entity: 'provider', entityId: id, payload: input });
+  if (input.tier && input.tier !== p.tier) {
+    // F-KEY-10: a model that became free may now belong to provider keys on the default cost center.
+    const { syncProviderKeyModels } = await import('./keys.js');
+    await syncProviderKeyModels(deps);
+  }
   return providerView(row!);
 }
 
@@ -92,5 +106,8 @@ export async function syncProviders(deps: Deps, actorId: string | null) {
     }
   }
   await audit(deps, { actorId, action: 'provider.sync', entity: 'provider', payload: { added, updated, unavailable } });
+  // F-KEY-10: new models reach keys that hold all models of their provider.
+  const { syncProviderKeyModels } = await import('./keys.js');
+  await syncProviderKeyModels(deps);
   return { added, updated, unavailable };
 }

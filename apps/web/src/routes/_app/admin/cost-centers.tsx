@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Archive, Pencil, Plus, Search, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { Archive, Pencil, Plus, Search, ThumbsDown, ThumbsUp, Users } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { COST_CENTER_STATUS } from '@api-selfservice/shared';
 import { requireAdmin } from '@/lib/guards';
@@ -21,6 +21,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { WithTooltip } from '@/components/ui/tooltip';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CostCenterEditDialog } from '@/components/cost-centers/CostCenterEditDialog';
+import { CostCenterMembersSheet } from '@/components/cost-centers/CostCenterMembersSheet';
 import { CostCenterCreateDialog } from '@/components/admin/CostCenterCreateDialog';
 
 export const Route = createFileRoute('/_app/admin/cost-centers')({
@@ -73,6 +74,7 @@ function LookupTab() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<CostCenter | null>(null);
   const [archiving, setArchiving] = useState<CostCenter | null>(null);
+  const [members, setMembers] = useState<CostCenter | null>(null);
 
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -111,6 +113,12 @@ function LookupTab() {
           <div>
             <div>{row.original.ownerName}</div>
             <div className="text-xs text-muted-foreground">{row.original.ownerEmail}</div>
+            {/* F-KST-14: legacy owners without a LiteLLM user; an admin picks one under Edit. */}
+            {!row.original.isDefault && !row.original.ownerUserId ? (
+              <Badge variant="destructive" className="mt-1" data-testid="badge-owner-missing">
+                {t('costCenters.ownerMissing')}
+              </Badge>
+            ) : null}
           </div>
         ),
       },
@@ -147,6 +155,12 @@ function LookupTab() {
           const locked = c.isDefault;
           return (
             <div className="flex justify-end gap-1">
+              <WithTooltip text={locked ? t('errors.COST_CENTER_DEFAULT_IMMUTABLE') : undefined}>
+                <Button variant="outline" size="sm" disabled={locked || c.status !== 'approved'} onClick={() => setMembers(c)} data-testid="btn-cost-center-members">
+                  <Users />
+                  <span className="hidden sm:inline">{t('members.title')}</span>
+                </Button>
+              </WithTooltip>
               <WithTooltip text={locked ? t('errors.COST_CENTER_DEFAULT_IMMUTABLE') : undefined}>
                 <Button variant="outline" size="sm" disabled={locked || c.status === 'archived'} onClick={() => setEditing(c)} data-testid="btn-edit-cost-center">
                   <Pencil />
@@ -205,6 +219,7 @@ function LookupTab() {
       </div>
       <CostCenterCreateDialog open={createOpen} onOpenChange={setCreateOpen} />
       <CostCenterEditDialog costCenter={editing} onClose={() => setEditing(null)} full />
+      <CostCenterMembersSheet costCenter={members} onClose={() => setMembers(null)} />
       <ConfirmDialog
         open={!!archiving}
         onOpenChange={(o) => !o && setArchiving(null)}

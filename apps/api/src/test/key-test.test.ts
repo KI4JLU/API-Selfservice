@@ -72,6 +72,23 @@ describe('key test (F-KEY-9)', () => {
     expect(JSON.stringify(events.body)).not.toContain('/key-test');
   });
 
+  it('never puts the key into logs or the event log, also not through other errors', async () => {
+    // e.g. fetch rejects a malformed Authorization header with its value in the message
+    const spy = vi.spyOn(t.mock, 'chatWithKey').mockRejectedValueOnce(new TypeError(`Headers.append: "Bearer ${secret}" is an invalid header value.`));
+    const r = await send();
+    spy.mockRestore();
+    expectError(r, 502, 'KEY_TEST_FAILED');
+    expect(JSON.stringify(r.body)).not.toContain(secret);
+    const events = await admin.get('/admin/events?pageSize=200');
+    expect(JSON.stringify(events.body)).not.toContain(secret);
+    // keys with whitespace or control characters inside never reach LiteLLM
+    for (const key of [`${secret.slice(0, 10)}\n${secret.slice(10)}`, `${secret.slice(0, 10)} ${secret.slice(10)}`, `${secret}\u0000`]) {
+      const v = await send({ key });
+      expectError(v, 400, 'VALIDATION_ERROR');
+      expect(JSON.stringify(v.body)).not.toContain(secret.slice(10));
+    }
+  });
+
   it('validates the body and requires a session', async () => {
     expectError(await send({ key: '' }), 400, 'VALIDATION_ERROR');
     expectError(await send({ model: '' }), 400, 'VALIDATION_ERROR');

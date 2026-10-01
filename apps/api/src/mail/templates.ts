@@ -20,12 +20,38 @@ const T: Record<NotificationType, Record<Locale, Template>> = {
     },
   },
   cost_center_request_approved: {
-    de: { subject: 'Kostenstelle {{number}} freigegeben', body: 'Ihr Antrag für die Kostenstelle {{number}} „{{name}}“ wurde freigegeben. Sie ist jetzt in Ihrem Profil aktiv.\n\n{{appUrl}}/profile' },
-    en: { subject: 'Cost center {{number}} approved', body: 'Your request for cost center {{number}} “{{name}}” was approved. It is now active in your profile.\n\n{{appUrl}}/profile' },
+    de: {
+      subject: 'Kostenstelle {{number}} freigegeben',
+      body: 'Ihr Antrag für die Kostenstelle {{number}} „{{name}}“ wurde freigegeben. Sie sind Mitglied und können API-Keys auf diese Kostenstelle anlegen. Verantwortlich und Kostenstellen-Admin: {{ownerName}}.\n\n{{appUrl}}/keys',
+    },
+    en: {
+      subject: 'Cost center {{number}} approved',
+      body: 'Your request for cost center {{number}} “{{name}}” was approved. You are a member and can create API keys on this cost center. Owner and cost center admin: {{ownerName}}.\n\n{{appUrl}}/keys',
+    },
   },
   cost_center_request_rejected: {
     de: { subject: 'Kostenstelle {{number}} abgelehnt', body: 'Ihr Antrag für die Kostenstelle {{number}} „{{name}}“ wurde abgelehnt.\nBegründung: {{reason}}\n\n{{appUrl}}/profile' },
     en: { subject: 'Cost center {{number}} rejected', body: 'Your request for cost center {{number}} “{{name}}” was rejected.\nReason: {{reason}}\n\n{{appUrl}}/profile' },
+  },
+  cost_center_member_added: {
+    de: {
+      subject: 'Kostenstelle {{number}}: Sie wurden hinzugefügt',
+      body: '{{actorName}} hat Sie zur Kostenstelle {{number}} „{{name}}“ hinzugefügt. Sie können jetzt API-Keys auf diese Kostenstelle anlegen.\n\n{{appUrl}}/keys',
+    },
+    en: {
+      subject: 'Cost center {{number}}: you were added',
+      body: '{{actorName}} added you to cost center {{number}} “{{name}}”. You can now create API keys on this cost center.\n\n{{appUrl}}/keys',
+    },
+  },
+  cost_center_member_removed: {
+    de: {
+      subject: 'Kostenstelle {{number}}: Mitgliedschaft beendet',
+      body: '{{actorName}} hat Sie aus der Kostenstelle {{number}} „{{name}}“ entfernt. Ihre API-Keys auf dieser Kostenstelle wurden gesperrt.\n\n{{appUrl}}/keys',
+    },
+    en: {
+      subject: 'Cost center {{number}}: membership ended',
+      body: '{{actorName}} removed you from cost center {{number}} “{{name}}”. Your API keys on this cost center were blocked.\n\n{{appUrl}}/keys',
+    },
   },
   user_budget_80: {
     de: { subject: 'Budget zu {{percent}} % verbraucht', body: 'Sie haben {{spend}} EUR von {{budget}} EUR Ihres Budgets verbraucht ({{percent}} %).\n\n{{appUrl}}/' },

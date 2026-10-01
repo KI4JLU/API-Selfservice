@@ -114,10 +114,14 @@ export const costCenters = apiSelfservice.table(
     name: text('name').notNull(),
     ownerName: text('owner_name').notNull(),
     ownerEmail: text('owner_email').notNull(),
+    /** LiteLLM user id of the owner, always a cost center admin (F-KST-14); null = not linked yet. Name and e-mail above are copies for display and mails. */
+    ownerUserId: text('owner_user_id'),
     maxBudget: money('max_budget'),
     budgetPeriod: text('budget_period', { enum: ['monthly', 'yearly', 'project'] }),
     periodStart: ts('period_start'),
     periodEnd: ts('period_end'),
+    /** F-KST-15: models released for this cost center (mirrored as LiteLLM team `models`); empty = all models of its tier class */
+    models: text('models').array().notNull().default(sql`'{}'::text[]`),
     status: text('status', { enum: ['pending', 'approved', 'rejected', 'archived'] }).notNull().default('pending'),
     isDefault: boolean('is_default').notNull().default(false),
     /** LiteLLM team backing this cost center (team_id = cost center id); null until created. */
@@ -150,19 +154,25 @@ export const costCenterRequests = apiSelfservice.table(
   (t) => [index('ccr_user_idx').on(t.userId), index('ccr_status_idx').on(t.status)],
 );
 
-export const costCenterAdmins = apiSelfservice.table(
-  'cost_center_admins',
+/**
+ * Members of a cost center, mirrored as members of its LiteLLM team (F-KST-10). `user_id` is the LiteLLM user id;
+ * no foreign key to `user`, because known LiteLLM users can be added before their first login (F-KST-11).
+ * Every user is implicitly a member of the default cost center; rows there only mark its cost center admins.
+ */
+export const costCenterMembers = apiSelfservice.table(
+  'cost_center_members',
   {
-    userId: text('user_id')
-      .notNull()
-      .references(() => user.id, { onDelete: 'cascade' }),
     costCenterId: text('cost_center_id')
       .notNull()
       .references(() => costCenters.id, { onDelete: 'cascade' }),
-    assignedBy: text('assigned_by'),
-    assignedAt: ts('assigned_at').notNull().defaultNow(),
+    userId: text('user_id').notNull(),
+    /** e-mail from LiteLLM when added; shown until the person signs in */
+    email: text('email'),
+    role: text('role', { enum: ['user', 'admin'] }).notNull().default('user'),
+    addedBy: text('added_by'),
+    addedAt: ts('added_at').notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.userId, t.costCenterId] })],
+  (t) => [primaryKey({ columns: [t.costCenterId, t.userId] }), index('ccm_user_idx').on(t.userId)],
 );
 
 export const apiKeys = apiSelfservice.table(
@@ -180,7 +190,11 @@ export const apiKeys = apiSelfservice.table(
       .notNull()
       .references(() => costCenters.id),
     models: text('models').array().notNull().default(sql`'{}'::text[]`),
+    /** F-KEY-10: providers whose current and future models the key gets automatically */
+    providers: text('providers').array().notNull().default(sql`'{}'::text[]`),
     budget: money('budget'),
+    /** F-KEY-11: `monthly` = LiteLLM resets the key spend every month; null = the budget applies once */
+    budgetPeriod: text('budget_period', { enum: ['monthly'] }),
     status: text('status', { enum: ['active', 'expired', 'blocked', 'deleted'] }).notNull().default('active'),
     blockedReason: text('blocked_reason'),
     createdAt: ts('created_at').notNull().defaultNow(),
@@ -356,7 +370,7 @@ export const schema = {
   verification,
   costCenters,
   costCenterRequests,
-  costCenterAdmins,
+  costCenterMembers,
   apiKeys,
   providers,
   budgets,

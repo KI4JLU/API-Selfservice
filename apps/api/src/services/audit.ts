@@ -12,15 +12,22 @@ export interface AuditEntry {
   severity?: AuditSeverity;
 }
 
+/** While an admin impersonates a user, the payload names the admin (`impersonatedBy`); the actor stays the user. */
+function withImpersonator(payload: unknown, impersonatorId: string | undefined) {
+  if (!impersonatorId) return payload ?? null;
+  const base = payload == null ? {} : typeof payload === 'object' && !Array.isArray(payload) ? payload : { value: payload };
+  return { ...base, impersonatedBy: impersonatorId };
+}
+
 /** Writes one row to the admin event log (audit_log). */
-export async function audit(deps: Pick<Deps, 'db'>, entry: AuditEntry) {
+export async function audit(deps: Pick<Deps, 'db' | 'impersonatorId'>, entry: AuditEntry) {
   await deps.db.insert(auditLog).values({
     actorId: entry.actorId,
     severity: entry.severity ?? 'info',
     action: entry.action,
     entity: entry.entity,
     entityId: entry.entityId ?? null,
-    payload: entry.payload ?? null,
+    payload: withImpersonator(entry.payload, deps.impersonatorId),
   });
 }
 
@@ -34,7 +41,7 @@ function errorInfo(err: unknown) {
  * error paths, and a broken event log must not mask the original failure.
  */
 export async function auditError(
-  deps: Pick<Deps, 'db' | 'log'>,
+  deps: Pick<Deps, 'db' | 'log' | 'impersonatorId'>,
   entry: { action: string; entity: AuditEntity; entityId?: string | null; err: unknown; actorId?: string | null; payload?: Record<string, unknown> },
 ) {
   deps.log.error({ err: entry.err, action: entry.action, entity: entry.entity, entityId: entry.entityId, ...entry.payload }, entry.action);

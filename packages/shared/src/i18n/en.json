@@ -14,7 +14,7 @@
     "adminUsers": "Users / roles",
     "adminLitellmUsers": "LiteLLM users",
     "adminCostCenters": "Cost centers",
-    "adminProviders": "Providers",
+    "adminProviders": "Models",
     "adminReports": "Reports",
     "adminNotifications": "Notifications",
     "adminEvents": "Event log",
@@ -86,7 +86,8 @@
     "failure": "Failure",
     "sent": "Sent",
     "failed": "Failed",
-    "skipped": "Skipped"
+    "skipped": "Skipped",
+    "never_signed_in": "Never signed in"
   },
   "period": {
     "monthly": "Monthly",
@@ -145,17 +146,26 @@
     "secretHint": "This key is shown only once. Copy it now.",
     "budget": "Key budget (EUR)",
     "budgetHint": "Optional, amount in EUR. The sum of all key budgets must not exceed your user budget.",
+    "budgetPeriod": "Time window",
+    "budgetOnce": "No time window",
+    "budgetPeriodHint": "Monthly: the budget applies per month and starts again afterwards. No time window: the budget applies once for the key's whole lifetime.",
+    "perMonth": "{{amount}} / month",
     "paidRequiresCostCenter": "Paid models require an approved cost center.",
     "extended": "Key extended until {{date}}",
     "created": "Key created",
     "deleted": "Key deleted",
     "key": "Key",
-    "createHint": "Choose a name, cost center and models. The key is shown once after creation.",
+    "createHint": "Choose a name, cost center and models or providers. The key is shown once after creation.",
     "empty": "No keys yet. Create your first key.",
     "extendHint": "Extend lifetime by 6 months from now",
     "modelsSelected": "{{count}} selected",
     "secretClose": "I have copied the key",
-    "selectModel": "Please select at least one model."
+    "selectModel": "Please select at least one model or provider.",
+    "tabModels": "Models",
+    "tabProviders": "Providers",
+    "providersHint": "The key gets all current models of the provider. New models of the provider are added automatically.",
+    "providerModels": "Currently: {{models}}",
+    "providerAll": "{{provider}} (all models)"
   },
   "keyTest": {
     "title": "Test key",
@@ -200,20 +210,10 @@
   },
   "profile": {
     "title": "Profile",
-    "costCenter": "Cost center",
-    "costCenterHint": "8 digits, e.g. 1234 5678. Unknown cost centers are sent to administration as a request.",
-    "ownerName": "Cost center owner",
-    "ownerEmail": "Owner email",
-    "requestStatus": "Request status",
-    "requestPending": "Your request for cost center {{number}} is being reviewed.",
-    "requestRejected": "Your request for cost center {{number}} was rejected: {{reason}}",
     "saved": "Profile saved",
-    "requestCreated": "Request for cost center {{number}} sent",
     "costCenterInvalid": "The cost center must consist of 8 digits.",
-    "currentCostCenter": "Active cost center",
-    "requestApproved": "Your request for cost center {{number}} was approved.",
     "cardTitle": "Profile data",
-    "cardDescription": "Name and e-mail come from Keycloak. Language, cost center and owner can be changed here."
+    "cardDescription": "Name and e-mail come from Keycloak. The language can be changed here."
   },
   "costCenters": {
     "title": "Cost centers",
@@ -237,7 +237,7 @@
     "keys": "Keys",
     "blocked": "Blocked (budget exhausted)",
     "adminSubtitle": "Maintain the lookup and handle requests",
-    "mySubtitle": "Cost centers for which you manage max budget and report",
+    "mySubtitle": "Cost centers for which you manage members, max budget and report",
     "approved": "Cost center {{number}} approved",
     "rejected": "Request for {{number}} rejected",
     "archived": "Cost center archived",
@@ -247,11 +247,19 @@
     "edit": "Edit cost center",
     "editBudget": "Budget",
     "maxBudgetHint": "Amount in EUR. Leave empty for unlimited.",
+    "models": "Released models",
+    "modelsHint": "Without a selection all models are released. Paid models are only available on own cost centers, not on the default cost center.",
+    "modelsAll": "All models",
     "noRequests": "No pending requests",
-    "searchPlaceholder": "Number or name"
+    "searchPlaceholder": "Number or name",
+    "ownerHint": "A LiteLLM user. They automatically become cost center admin and stay admin while they are the owner.",
+    "ownerNone": "No owner selected yet",
+    "ownerPick": "Select",
+    "ownerRequired": "Please select an owner from LiteLLM.",
+    "ownerMissing": "Owner missing"
   },
   "providers": {
-    "title": "Providers",
+    "title": "Models",
     "sync": "Sync from LiteLLM",
     "model": "Model",
     "provider": "Provider",
@@ -264,13 +272,16 @@
     "subtitle": "Models from LiteLLM, tier and display names",
     "editTitle": "Edit display names",
     "lastSeen": "Last seen",
-    "saved": "Provider saved",
+    "saved": "Model saved",
     "tierSaved": "{{model}}: {{tier}}",
     "price": "Price per 1M tokens",
     "priceIn": "Input",
     "priceOut": "Output",
     "priceUnknown": "No price in LiteLLM",
-    "priceHint": "EUR per 1M tokens, as configured in LiteLLM"
+    "priceHint": "EUR per 1M tokens, as configured in LiteLLM",
+    "noProvider": "No provider",
+    "noProviderHint": "LiteLLM reports no provider for this model. It is not added automatically to keys that use a whole provider. Add it in LiteLLM with a prefix, e.g. openai/gpt-5.",
+    "noProviderBanner": "Models without a detected provider: {{count}}. They are not added automatically to keys that use a whole provider. Add the model in LiteLLM with a prefix (e.g. openai/gpt-5) and sync again."
   },
   "users": {
     "title": "Users / roles",
@@ -344,7 +355,7 @@
     "user": "User",
     "api_key": "API key",
     "cost_center": "Cost center",
-    "provider": "Provider",
+    "provider": "Model",
     "request": "Request",
     "job": "Job"
   },
@@ -382,11 +393,14 @@
       "reject": "Cost center rejected",
       "warn": "Cost center budget at 80 %",
       "block": "Cost center budget exhausted, keys blocked",
-      "unblock": "Cost center block lifted"
+      "unblock": "Cost center block lifted",
+      "member_add": "Member added",
+      "member_role": "Member role changed",
+      "member_remove": "Member removed"
     },
     "provider": {
-      "update": "Provider updated",
-      "sync": "Providers synced"
+      "update": "Model updated",
+      "sync": "Models synced"
     },
     "litellm": {
       "list_users": "LiteLLM: user lookup failed",
@@ -419,7 +433,7 @@
       "adminUsers": "Admin: Users / roles",
       "adminLitellmUsers": "Admin: LiteLLM users",
       "adminCostCenters": "Admin: Cost centers",
-      "adminProviders": "Admin: Providers",
+      "adminProviders": "Admin: Models",
       "adminReports": "Admin: Reports",
       "adminNotifications": "Admin: Notifications",
       "adminEvents": "Admin: Event log"
@@ -437,6 +451,12 @@
     "COST_CENTER_EXISTS": "Cost center already exists.",
     "COST_CENTER_DEFAULT_IMMUTABLE": "The default cost center cannot be changed.",
     "COST_CENTER_REQUEST_PENDING": "There is already a pending request.",
+    "COST_CENTER_NOT_MEMBER": "You are not a member of this cost center. Please contact a cost center admin.",
+    "COST_CENTER_MEMBER_EXISTS": "This person is already a member of the cost center.",
+    "COST_CENTER_OWNER_ONLY": "Only the owner of the cost center can appoint, demote or remove cost center admins.",
+    "USER_DEACTIVATED": "The user is deactivated.",
+    "COST_CENTER_OWNER_MUST_BE_ADMIN": "The owner stays cost center admin. Set another owner first.",
+    "OWNER_NOT_LITELLM_USER": "The owner must be a LiteLLM user with an e-mail address.",
     "PAID_MODEL_REQUIRES_COST_CENTER": "Paid models require a dedicated cost center.",
     "MODEL_NOT_ALLOWED": "Model not available.",
     "KEY_BUDGET_EXCEEDS_USER_BUDGET": "Key budgets exceed the user budget.",
@@ -447,6 +467,7 @@
     "ROLE_MANAGED_BY_IDP": "This role is granted via the Keycloak group.",
     "SELF_DEACTIVATION": "You cannot deactivate yourself.",
     "LITELLM_ERROR": "LiteLLM reported an error.",
+    "RATE_LIMITED": "Too many attempts. Please try again later.",
     "INTERNAL": "Internal error."
   },
   "locale": {
@@ -469,12 +490,37 @@
     "user_deactivated": "User deactivated",
     "deletion_due": "Deletion due",
     "role_changed": "Role changed",
-    "rebooking_created": "Rebooking created"
+    "rebooking_created": "Rebooking created",
+    "cost_center_member_added": "Added to cost center",
+    "cost_center_member_removed": "Removed from cost center"
   },
   "impersonation": {
     "banner": "You are acting as {{name}} ({{email}}).",
     "stop": "End",
     "stopped": "Impersonation ended"
+  },
+  "members": {
+    "title": "Members",
+    "listTitle": "Members of the cost center",
+    "addTitle": "Add member",
+    "addHint": "Search by e-mail (at least 3 characters) or user ID. Only people LiteLLM already knows can be added. They get an e-mail and can then create keys on this cost center.",
+    "searchPlaceholder": "E-mail or user ID",
+    "add": "Add",
+    "added": "{{email}} added",
+    "alreadyMember": "Already a member",
+    "neverSignedIn": "never signed in",
+    "noCandidates": "No matching LiteLLM users found.",
+    "empty": "No members yet",
+    "remove": "Remove",
+    "removeTitle": "Remove member",
+    "removeConfirm": "Remove {{name}} from the cost center? Their keys on this cost center will be blocked.",
+    "removed": "{{name}} removed",
+    "roleChanged": "Role of {{name}} changed",
+    "owner": "Owner",
+    "roles": {
+      "user": "Member",
+      "admin": "Cost center admin"
+    }
   },
   "litellmUsers": {
     "title": "LiteLLM users",

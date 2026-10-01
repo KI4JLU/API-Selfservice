@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, Pencil, TriangleAlert } from 'lucide-react';
+import { BarChart3, Pencil, TriangleAlert, Users } from 'lucide-react';
 import { requireCostCenterAdmin } from '@/lib/guards';
 import { useManagedCostCenters, type CostCenter } from '@/lib/queries';
 import { fmtCostCenter, fmtDate, fmtMoney, fmtPercent } from '@/lib/format';
@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CostCenterEditDialog } from '@/components/cost-centers/CostCenterEditDialog';
 import { CostCenterReportSheet } from '@/components/cost-centers/CostCenterReportSheet';
+import { CostCenterMembersSheet } from '@/components/cost-centers/CostCenterMembersSheet';
 import { BUDGET_WARN_THRESHOLD } from '@api-selfservice/shared';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +27,7 @@ function MyCostCentersPage() {
   const { data, isLoading } = useManagedCostCenters();
   const [editing, setEditing] = useState<CostCenter | null>(null);
   const [report, setReport] = useState<CostCenter | null>(null);
+  const [members, setMembers] = useState<CostCenter | null>(null);
 
   const util = (c: CostCenter) => (c.maxBudget ? c.spendCurrentPeriod / c.maxBudget : null);
 
@@ -87,7 +89,11 @@ function MyCostCentersPage() {
                   <Progress value={u === null ? 0 : Math.min(100, u * 100)} indicatorClassName={danger ? 'bg-destructive' : warn ? 'bg-warning' : undefined} />
                   {c.blocked ? <div className="text-destructive text-xs">{t('costCenters.blocked')}</div> : null}
                 </CardContent>
-                <CardFooter className="justify-end gap-2">
+                <CardFooter className="flex-wrap justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setMembers(c)} disabled={c.isDefault} data-testid="btn-cost-center-members">
+                    <Users />
+                    {t('members.title')}
+                  </Button>
                   <Button variant="outline" size="sm" onClick={() => setReport(c)} data-testid="btn-cost-center-report">
                     <BarChart3 />
                     {t('reports.detail')}
@@ -104,6 +110,7 @@ function MyCostCentersPage() {
       )}
       <CostCenterEditDialog costCenter={editing} onClose={() => setEditing(null)} />
       <CostCenterReportSheet costCenter={report} onClose={() => setReport(null)} />
+      <CostCenterMembersSheet costCenter={members} onClose={() => setMembers(null)} />
     </div>
   );
 }

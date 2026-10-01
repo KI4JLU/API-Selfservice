@@ -28,6 +28,8 @@ export function sessionMiddleware(auth: Auth) {
         if (target) {
           current = target;
           c.set('impersonator', actor);
+          // Everything written to the event log during this request names the admin behind it.
+          c.set('deps', { ...deps, impersonatorId: actor.id });
         } else {
           // Target vanished or was deactivated: never lock the admin out, just drop the impersonation.
           await clearImpersonation(deps, s.session.id);

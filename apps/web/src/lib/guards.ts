@@ -11,7 +11,7 @@ export function requireAdmin(me: Me) {
 }
 
 export function requireCostCenterAdmin(me: Me) {
-  if (me.effectiveRole !== 'cost_center_admin' && me.effectiveRole !== 'admin') {
+  if (me.managedCostCenters.length === 0) {
     toast.error(i18n.t('errors.FORBIDDEN'));
     throw redirect({ to: '/' });
   }

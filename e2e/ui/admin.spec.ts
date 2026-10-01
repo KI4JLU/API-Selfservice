@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { devLogin, uniqueEmail } from './helpers';
 
 test.describe('admin screens', () => {
-  test('providers, reports, notifications, event log and my cost centers render', async ({ page }) => {
+  test('providers, reports, notifications and event log render; my cost centers stay hidden', async ({ page }) => {
     await devLogin(page, { email: uniqueEmail('admin'), name: 'Screen Admin', admin: true });
 
     await page.getByTestId('nav-admin-providers').click();
@@ -34,9 +34,8 @@ test.describe('admin screens', () => {
     await eventRow.click();
     await expect(page.getByTestId('event-detail')).toBeVisible();
 
-    await page.getByTestId('nav-cost-centers').click();
-    await expect(page.getByTestId('page-cost-centers')).toBeVisible();
-    await expect(page.getByTestId('card-cost-center').first()).toBeVisible();
+    // An admin who is not cost center admin of any cost center has no "My cost centers".
+    await expect(page.getByTestId('nav-cost-centers')).toHaveCount(0);
 
     await page.getByTestId('nav-requests').click();
     await expect(page.getByTestId('page-requests')).toBeVisible();

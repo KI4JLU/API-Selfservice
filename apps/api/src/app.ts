@@ -11,6 +11,7 @@ import { createAuth, type Auth } from './auth/auth.js';
 import { onError } from './middleware/error.js';
 import { sessionMiddleware } from './middleware/session.js';
 import { csrfMiddleware } from './middleware/csrf.js';
+import { requireAdmin } from './middleware/roles.js';
 import { meRoutes } from './routes/me.js';
 import { costCenterRoutes } from './routes/cost-centers.js';
 import { keyRoutes } from './routes/keys.js';
@@ -31,7 +32,9 @@ export function createApp(deps: Deps): App {
   app.onError(onError);
   app.use('*', async (c, next) => {
     c.set('deps', deps);
-    c.set('requestId', c.req.header('x-request-id') ?? randomUUID());
+    // A client-supplied id is only taken over when it is short and plain; it ends up in logs and the event log.
+    const given = c.req.header('x-request-id');
+    c.set('requestId', given && /^[\w.-]{1,100}$/.test(given) ? given : randomUUID());
     await next();
     c.header('x-request-id', c.get('requestId'));
   });
@@ -67,7 +70,10 @@ export function createApp(deps: Deps): App {
 
   app.route('/api/v1', v1);
 
-  // OpenAPI + docs
+  // OpenAPI + docs: public in development, admins only in production (PRD 7.1)
+  if (deps.env.NODE_ENV === 'production' || deps.env.API_DOCS_ADMIN_ONLY) {
+    for (const p of ['/api/openapi.json', '/api/docs']) app.use(p, sessionMiddleware(auth), requireAdmin);
+  }
   app.doc31('/api/openapi.json', {
     openapi: '3.1.0',
     info: { title: 'API-Selfservice API', version: '1.0.0', description: 'Self-service portal for LiteLLM. All /api/v1 routes require a session cookie.' },

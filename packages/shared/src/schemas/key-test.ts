@@ -1,7 +1,13 @@
 import { z } from 'zod';
 
 /** F-KEY-9: the plaintext key is only forwarded to LiteLLM, never stored or logged. */
-const KeySecret = z.string().trim().min(1).max(200);
+const KeySecret = z
+  .string()
+  .trim()
+  .min(1)
+  .max(200)
+  // printable ASCII without spaces, so the key always forms a valid Authorization header
+  .regex(/^[\x21-\x7E]+$/);
 
 export const KeyTestModelsRequestSchema = z.object({ key: KeySecret });
 

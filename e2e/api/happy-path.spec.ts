@@ -2,7 +2,7 @@ import { expect, request as playwrightRequest, test, type APIRequestContext } fr
 import { randomUUID } from 'node:crypto';
 
 /**
- * Happy path against the running API (dev schema, DEV_LOGIN_ENABLED=true, LITELLM_MODE=mock).
+ * Happy path against the running API (dev schema, DEV_LOGIN_ENABLED=true, LITELLM_MODE=mock or http).
  * Every run uses fresh users so it can be repeated without cleanup.
  */
 
@@ -46,7 +46,9 @@ test.describe('API happy path', () => {
   test('health and docs are public', async ({ request }) => {
     const h = await request.get('/health');
     expect(h.ok()).toBeTruthy();
-    expect(await h.json()).toMatchObject({ ok: true, mode: 'mock' });
+    const health = (await h.json()) as { ok: boolean; mode: string };
+    expect(health.ok).toBe(true);
+    expect(['mock', 'http']).toContain(health.mode);
     const spec = await request.get('/api/openapi.json');
     expect(spec.ok()).toBeTruthy();
     expect(Object.keys(((await spec.json()) as { paths: object }).paths).length).toBeGreaterThanOrEqual(30);
@@ -71,7 +73,8 @@ test.describe('API happy path', () => {
   });
 
   test('user requests a cost center, admin approves it', async () => {
-    const req = await user.patch('/api/v1/me', { data: { costCenterNumber, costCenterOwnerName: 'Owner', costCenterOwnerEmail: 'owner@example.org' } });
+    // The owner must be a LiteLLM user (F-KST-14); the requester is one.
+    const req = await user.patch('/api/v1/me', { data: { costCenterNumber, costCenterOwnerName: 'Owner', costCenterOwnerEmail: userEmail } });
     expect(req.status(), await req.text()).toBe(200);
     const body = await req.json();
     expect(body.requestCreated).toEqual({ number: costCenterNumber });
@@ -89,7 +92,8 @@ test.describe('API happy path', () => {
     expect(me.costCenter.number).toBe(costCenterNumber);
     costCenterId = me.costCenter.id;
     const cc = await (await user.get(`/api/v1/cost-centers/${costCenterId}`)).json();
-    expect(cc).toMatchObject({ number: costCenterNumber, status: 'approved', ownerEmail: 'owner@example.org' });
+    expect(cc).toMatchObject({ number: costCenterNumber, status: 'approved', ownerEmail: userEmail, ownerUserId: userId });
+    expect(me.managedCostCenters.map((c: { id: string }) => c.id)).toEqual([costCenterId]);
   });
 
   test('admin assigns a budget, user sees it', async () => {
@@ -143,7 +147,9 @@ test.describe('API happy path', () => {
     expect(spend.remaining).toBeCloseTo(Math.max(0, 25 - spend.spend), 6);
     for (const k of spend.byKey) expect(k.keyId).toBe(keyId);
 
-    const logs = await (await user.get('/api/v1/me/logs?pageSize=10')).json();
+    // the spend summary covers the current month; compare with the logs of the same month (mock logs span several days)
+    const from = encodeURIComponent(`${spend.month}-01T00:00:00.000Z`);
+    const logs = await (await user.get(`/api/v1/me/logs?pageSize=10&from=${from}`)).json();
     expect(logs).toMatchObject({ page: 1, pageSize: 10 });
     expect(logs.total).toBe(spend.metrics.totalRequests);
     for (const l of logs.items) {
@@ -151,7 +157,7 @@ test.describe('API happy path', () => {
       expect(l.time).toMatch(ISO);
       expect(['success', 'failure']).toContain(l.status);
     }
-    const filtered = await (await user.get(`/api/v1/me/logs?keyId=${keyId}&status=success`)).json();
+    const filtered = await (await user.get(`/api/v1/me/logs?keyId=${keyId}&status=success&from=${from}`)).json();
     expect(filtered.total).toBe(spend.metrics.successfulRequests);
     // the admin sees only their own (none) logs
     const adminLogs = await (await admin.get('/api/v1/me/logs')).json();

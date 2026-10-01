@@ -13,20 +13,21 @@ test.describe('cost center request, approval and budget assignment', () => {
     const cc = uniqueCostCenter();
     const ccFormatted = formatCc(cc);
 
-    // --- user: request cost center via profile
+    // --- user: the profile has no cost center; the request goes through the API
     const user = await newPage(browser);
     await devLogin(user.page, { email: userEmail, name: 'Flow User' });
     await user.page.getByTestId('btn-user-menu').click();
     await user.page.getByTestId('nav-profile').click();
     await expect(user.page.getByTestId('page-profile')).toBeVisible();
-    await expect(user.page.getByTestId('input-cost-center')).toHaveValue('1111 1111');
-    await user.page.getByTestId('input-cost-center').fill(cc);
-    await expect(user.page.getByTestId('input-cost-center')).toHaveValue(ccFormatted);
-    await user.page.getByTestId('input-owner-name').fill('Prof. Owner');
-    await user.page.getByTestId('input-owner-email').fill('owner@example.org');
-    await user.page.getByTestId('btn-save-profile').click();
-    await expect(user.page.getByTestId('toast-request-created')).toBeVisible();
-    await expect(user.page.getByTestId('request-status')).toHaveAttribute('data-status', 'pending');
+    await expect(user.page.getByTestId('input-cost-center')).toHaveCount(0);
+    const origin = new URL(user.page.url()).origin;
+    const req = await user.page.request.patch('/api/v1/me', {
+      // the owner must be a LiteLLM user (F-KST-14); the requester is one
+      data: { costCenterNumber: cc, costCenterOwnerName: 'Flow User', costCenterOwnerEmail: userEmail },
+      headers: { Origin: origin },
+    });
+    expect(req.status(), await req.text()).toBe(200);
+    expect((await req.json()).pendingRequest).toMatchObject({ number: cc, status: 'pending' });
 
     // --- admin: approve the request
     const admin = await newPage(browser);
@@ -65,9 +66,9 @@ test.describe('cost center request, approval and budget assignment', () => {
     await expect(admin.page.getByTestId('toast-budget-saved')).toBeVisible();
     await expect(userRow.getByTestId('user-budget')).toContainText('50,00');
 
-    // --- user: sees the approved cost center and the budget
+    // --- user: has the approved cost center and sees the budget
+    expect((await (await user.page.request.get('/api/v1/me')).json()).costCenter.number).toBe(cc);
     await user.page.reload();
-    await expect(user.page.getByTestId('input-cost-center')).toHaveValue(ccFormatted);
     await user.page.getByTestId('nav-dashboard').click();
     await expect(user.page.getByTestId('stat-budget')).toContainText('50,00');
 

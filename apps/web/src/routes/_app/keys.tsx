@@ -5,7 +5,7 @@ import { Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useDeleteKey, useExtendKey, useKeys, type ApiKey, type CreatedApiKey } from '@/lib/queries';
-import { fmtCostCenter, fmtDate, fmtMoney } from '@/lib/format';
+import { fmtDate, fmtMoney } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page';
@@ -51,18 +51,19 @@ function KeysPage() {
       {
         header: t('common.costCenter'),
         accessorKey: 'costCenter',
-        cell: ({ row }) => (
-          <span title={row.original.costCenter.name}>
-            <span className="tabular-nums">{fmtCostCenter(row.original.costCenter.number)}</span>
-            <span className="ml-1 hidden text-xs text-muted-foreground xl:inline">{row.original.costCenter.name}</span>
-          </span>
-        ),
+        // Members see the name only; the internal cost center number is not shown to them.
+        cell: ({ row }) => <span data-testid="key-cost-center">{row.original.costCenter.name}</span>,
       },
       {
         header: t('keys.models'),
         accessorKey: 'models',
         cell: ({ row }) => (
           <div className="flex max-w-xs flex-wrap gap-1">
+            {row.original.providers.map((p) => (
+              <Badge key={p} variant="outline" data-testid="key-provider">
+                {t('keys.providerAll', { provider: p })}
+              </Badge>
+            ))}
             {row.original.models.slice(0, 3).map((m) => (
               <Badge key={m} variant="secondary" className="font-mono">
                 {m}
@@ -76,7 +77,16 @@ function KeysPage() {
           </div>
         ),
       },
-      { header: t('common.budget'), accessorKey: 'budget', cell: ({ row }) => (row.original.budget === null ? t('common.unlimited') : fmtMoney(row.original.budget)), meta: { className: 'text-right tabular-nums' } },
+      {
+        header: t('common.budget'),
+        accessorKey: 'budget',
+        cell: ({ row }) => {
+          const { budget, budgetPeriod } = row.original;
+          if (budget === null) return t('common.unlimited');
+          return budgetPeriod === 'monthly' ? t('keys.perMonth', { amount: fmtMoney(budget) }) : fmtMoney(budget);
+        },
+        meta: { className: 'text-right tabular-nums' },
+      },
       { header: t('common.spend'), accessorKey: 'spend', cell: ({ row }) => fmtMoney(row.original.spend, { precise: true }), meta: { className: 'text-right tabular-nums' } },
       { header: t('common.status'), accessorKey: 'status', cell: ({ row }) => <StatusBadge status={row.original.status} testId="key-status" /> },
       { header: t('common.createdAt'), accessorKey: 'createdAt', cell: ({ row }) => fmtDate(row.original.createdAt), meta: { className: 'whitespace-nowrap' } },

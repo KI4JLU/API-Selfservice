@@ -2,7 +2,7 @@ import {
   account,
   and,
   apiKeys,
-  costCenterAdmins,
+  costCenterMembers,
   costCenterRequests,
   costCenters,
   count,
@@ -23,6 +23,7 @@ import { audit, auditError } from './audit.js';
 import { notifyAdmins, notifyUser } from './notifications.js';
 import { blockAllKeysOfUser, unblockKeysOfUser } from './keys.js';
 import { getDefaultCostCenter, syncTeamMembership } from './cost-centers.js';
+import { getMembership, memberCostCenters } from './cost-center-members.js';
 import { getBudgetState } from './budgets.js';
 import { KEYCLOAK_PROVIDER_ID } from '../auth/claims.js';
 
@@ -40,7 +41,10 @@ export async function findLitellmUserIdByEmail(deps: Deps, email: string): Promi
   }
 }
 
-/** First login (F-AUTH-2): registers the user in LiteLLM under the same id (unless adopted) and in the default team. */
+/**
+ * First login (F-AUTH-2): registers the user in LiteLLM under the same id (unless adopted) and in the default team.
+ * Cost centers an adopted LiteLLM user was added to before (F-KST-11) apply right away.
+ */
 export async function onUserCreated(deps: Deps, u: { id: string; email: string; name: string }) {
   const def = await getDefaultCostCenter(deps);
   let adopted = false;
@@ -51,7 +55,8 @@ export async function onUserCreated(deps: Deps, u: { id: string; email: string; 
   } catch (e) {
     await auditError(deps, { action: 'litellm.create_user', entity: 'user', entityId: u.id, err: e });
   }
-  await deps.db.update(user).set({ costCenterId: def.id, updatedAt: deps.now() }).where(eq(user.id, u.id));
+  const own = (await memberCostCenters(deps, u.id)).find((c) => c.id !== def.id);
+  await deps.db.update(user).set({ costCenterId: own?.id ?? def.id, updatedAt: deps.now() }).where(eq(user.id, u.id));
   await audit(deps, { actorId: null, action: 'user.create', entity: 'user', entityId: u.id, payload: { email: u.email, adoptedFromLitellm: adopted } });
   await syncTeamMembership(deps, u.id, def.id);
 }
@@ -135,7 +140,7 @@ export async function loadCurrentUser(deps: Deps, userId: string): Promise<Curre
   if (!u) return null;
   if (u.deletedAt) throw new ApiError(u.deletedReason === 'affiliation' ? 'ACCOUNT_INVALID_AFFILIATION' : 'ACCOUNT_DEACTIVATED');
   if (!u.affiliationValid) throw new ApiError('ACCOUNT_INVALID_AFFILIATION');
-  const managed = await deps.db.query.costCenterAdmins.findMany({ where: eq(costCenterAdmins.userId, u.id) });
+  const managed = await deps.db.query.costCenterMembers.findMany({ where: and(eq(costCenterMembers.userId, u.id), eq(costCenterMembers.role, 'admin')) });
   const managedCostCenterIds = managed.map((m) => m.costCenterId);
   return {
     id: u.id,
@@ -159,9 +164,9 @@ async function ccRef(deps: Deps, id: string | null) {
 async function managedRefs(deps: Deps, userId: string) {
   const rows = await deps.db
     .select({ id: costCenters.id, number: costCenters.number, name: costCenters.name })
-    .from(costCenterAdmins)
-    .innerJoin(costCenters, eq(costCenters.id, costCenterAdmins.costCenterId))
-    .where(eq(costCenterAdmins.userId, userId));
+    .from(costCenterMembers)
+    .innerJoin(costCenters, eq(costCenters.id, costCenterMembers.costCenterId))
+    .where(and(eq(costCenterMembers.userId, userId), eq(costCenterMembers.role, 'admin')));
   return rows;
 }
 
@@ -194,6 +199,7 @@ export async function getMe(deps: Deps, cu: CurrentUser) {
     costCenterOwnerName: u.costCenterOwnerName,
     costCenterOwnerEmail: u.costCenterOwnerEmail,
     managedCostCenters: await managedRefs(deps, u.id),
+    memberCostCenters: await memberCostCenters(deps, u.id),
     pendingRequest: p
       ? { id: p.id, number: p.number, name: p.name, status: p.status, reason: p.reason, createdAt: p.createdAt.toISOString() }
       : null,
@@ -216,23 +222,21 @@ export async function updateMe(
     if (!number) throw new ApiError('VALIDATION_ERROR', 'Cost center must be 8 digits');
     const existing = await deps.db.query.costCenters.findFirst({ where: eq(costCenters.number, number) });
     if (existing && existing.status === 'approved') {
+      // F-KST-12: joining a cost center is up to its admins; the profile only switches between memberships.
+      if (!existing.isDefault && !(await getMembership(deps, cu.id, existing.id))) throw new ApiError('COST_CENTER_NOT_MEMBER');
       patch.costCenterId = existing.id;
     } else if (existing && existing.status === 'archived') {
       throw new ApiError('COST_CENTER_NOT_APPROVED', 'Cost center is archived');
     } else {
       // unknown or pending -> request (needs owner data)
-      const ownerName = input.costCenterOwnerName ?? cu.name;
+      // The owner must be a LiteLLM user (F-KST-14); without one, the requester is the owner.
       const ownerEmail = input.costCenterOwnerEmail ?? cu.email;
       const { requestCostCenter } = await import('./cost-centers.js');
-      await requestCostCenter(deps, cu, { number, name: `Kostenstelle ${number}`, ownerName, ownerEmail });
+      await requestCostCenter(deps, cu, { number, name: `Kostenstelle ${number}`, ownerEmail });
       requestCreated = { number };
     }
   }
   await deps.db.update(user).set(patch).where(eq(user.id, cu.id));
-  if (patch.costCenterId && patch.costCenterId !== cu.costCenterId) {
-    if (cu.costCenterId) await syncTeamMembership(deps, cu.id, cu.costCenterId);
-    await syncTeamMembership(deps, cu.id, patch.costCenterId);
-  }
   return { me: await getMe(deps, cu), requestCreated };
 }
 
@@ -321,11 +325,26 @@ export async function setCostCenterAdmin(deps: Deps, actor: CurrentUser, targetI
     const found = await deps.db.query.costCenters.findMany({ where: inArray(costCenters.id, costCenterIds) });
     if (found.length !== new Set(costCenterIds).size) throw notFound('Cost center');
   }
-  const before = await deps.db.query.costCenterAdmins.findMany({ where: eq(costCenterAdmins.userId, targetId) });
+  const def = await getDefaultCostCenter(deps);
+  const before = await deps.db.query.costCenterMembers.findMany({ where: and(eq(costCenterMembers.userId, targetId), eq(costCenterMembers.role, 'admin')) });
+  const dropped = before.map((b) => b.costCenterId).filter((id) => !costCenterIds.includes(id));
+  // F-KST-14: owners stay admins of their cost centers until another owner is set.
+  if (dropped.length) {
+    const owned = await deps.db.query.costCenters.findFirst({ where: and(inArray(costCenters.id, dropped), eq(costCenters.ownerUserId, targetId)) });
+    if (owned) throw new ApiError('COST_CENTER_OWNER_MUST_BE_ADMIN', `Owner of ${owned.number}`);
+  }
   await deps.db.transaction(async (tx) => {
-    await tx.delete(costCenterAdmins).where(eq(costCenterAdmins.userId, targetId));
-    if (costCenterIds.length) {
-      await tx.insert(costCenterAdmins).values(costCenterIds.map((costCenterId) => ({ userId: targetId, costCenterId, assignedBy: actor.id })));
+    // Admins taken off a cost center stay members of it (keys keep working); the default has no explicit members.
+    for (const ccId of dropped) {
+      const where = and(eq(costCenterMembers.userId, targetId), eq(costCenterMembers.costCenterId, ccId));
+      if (ccId === def.id) await tx.delete(costCenterMembers).where(where);
+      else await tx.update(costCenterMembers).set({ role: 'user' }).where(where);
+    }
+    for (const costCenterId of costCenterIds) {
+      await tx
+        .insert(costCenterMembers)
+        .values({ userId: targetId, costCenterId, email: u.email, role: 'admin', addedBy: actor.id })
+        .onConflictDoUpdate({ target: [costCenterMembers.costCenterId, costCenterMembers.userId], set: { role: 'admin' } });
     }
   });
   await audit(deps, { actorId: actor.id, action: 'user.set_cost_center_admin', entity: 'user', entityId: targetId, payload: { costCenterIds } });

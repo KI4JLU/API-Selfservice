@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AdminBudgetRowSchema, BudgetSchema, CostCenterSchema, SpendSummarySchema, paginated } from '@api-selfservice/shared';
-import { approvedCostCenterFor, createTestApp, DAY, expectError, expectShape, randomCostCenter, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
+import { addMember, approvedCostCenterFor, createTestApp, litellmOwner, DAY, expectError, expectShape, randomCostCenter, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
 
 describe('budgets & spend', () => {
   let t: TestApp;
@@ -183,15 +183,16 @@ describe('budgets & spend', () => {
     it('blocks all keys of the cost center at 100 %, mails owner + cost center admins, unblocks when raised', async () => {
       const number = randomCostCenter();
       const ownerEmail = `owner-${number}@x.de`;
-      const created = await admin.post('/admin/cost-centers', { number, name: 'Capped', ownerName: 'Owner', ownerEmail, maxBudget: 5 });
+      const owner = await litellmOwner(t, ownerEmail);
+      const created = await admin.post('/admin/cost-centers', { number, name: 'Capped', ownerUserId: owner.userId, maxBudget: 5 });
       expect(created.status).toBe(201);
       const ccId = created.body.id as string;
       const ccAdmin = await t.login();
       await admin.put(`/admin/users/${ccAdmin.userId}/cost-center-admin`, { costCenterIds: [ccId] });
       const u1 = await t.login();
       const u2 = await t.login();
-      await u1.patch('/me', { costCenterNumber: number });
-      await u2.patch('/me', { costCenterNumber: number });
+      await addMember(admin, ccId, u1);
+      await addMember(admin, ccId, u2);
       const k1 = (await u1.post('/api-keys', { name: 'k1', models: ['gpt-4o'], costCenterId: ccId })).body;
       const k2 = (await u2.post('/api-keys', { name: 'k2', models: ['gpt-4o'], costCenterId: ccId })).body;
       const unrelated = await userWithKey();
@@ -232,9 +233,9 @@ describe('budgets & spend', () => {
       expect(await t.notificationsOf('cost_center_budget_80', ccAdmin.email)).toHaveLength(1);
       await t.ingest();
       expect(await t.notificationsOf('cost_center_budget_80', ownerEmail)).toHaveLength(1);
-      // report row reflects the budget
+      // report row reflects the budget; members are u1, u2, the cost center admin and the owner
       const row = (await ccAdmin.get('/reports/cost-centers')).body.find((r: { costCenter: { id: string } }) => r.costCenter.id === ccId);
-      expect(row).toMatchObject({ budget: 7, spend: 6, remaining: 1, keyCount: 2, userCount: 2, requests: 2 });
+      expect(row).toMatchObject({ budget: 7, spend: 6, remaining: 1, keyCount: 2, userCount: 4, requests: 2 });
       // removing the budget clears any block
       await t.addLog(k1.id, { spend: 5, startTime: t.ago(1) });
       await t.ingest();

@@ -26,8 +26,9 @@ export const onError: ErrorHandler<AppEnv> = async (err, c) => {
     return c.json({ code: 'VALIDATION_ERROR', message: 'Validation failed', details: err.issues }, 400);
   }
   if (err instanceof LiteLLMHttpError) {
+    // The LiteLLM path and body only go to the event log, never to the client (PRD 7.1).
     await record('request.litellm_error');
-    return c.json({ code: 'LITELLM_ERROR', message: err.message }, 502);
+    return c.json({ code: 'LITELLM_ERROR', message: 'LiteLLM request failed' }, 502);
   }
   await record('request.internal_error');
   return c.json({ code: 'INTERNAL', message: 'Internal error' }, 500);

@@ -55,6 +55,8 @@ const EnvSchema = z.object({
   DEV_LOGIN_ENABLED: bool,
   /** Admins may act as another user for debugging (POST /admin/users/{id}/impersonate). Off by default. */
   IMPERSONATION_ENABLED: bool,
+  /** OpenAPI spec and docs only for signed-in admins. Always on in production (PRD 7.1), optional elsewhere (e.g. staging). */
+  API_DOCS_ADMIN_ONLY: bool,
 });
 
 export type Env = z.infer<typeof EnvSchema>;

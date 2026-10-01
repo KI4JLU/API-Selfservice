@@ -11,6 +11,7 @@ import { createMailer } from './mail/mailer.js';
 import { createApp } from './app.js';
 import { startJobs } from './jobs/index.js';
 import { syncProviders } from './services/providers.js';
+import { syncMigratedMembershipsOnce } from './services/cost-center-members.js';
 import type { Deps } from './context.js';
 
 async function main() {
@@ -26,6 +27,12 @@ async function main() {
     logger.info(r, 'providers synced');
   } catch (e) {
     logger.warn({ err: e }, 'initial provider sync failed');
+  }
+  try {
+    const r = await syncMigratedMembershipsOnce(deps);
+    if (r.synced) logger.info(r, 'migrated cost center memberships mirrored to LiteLLM');
+  } catch (e) {
+    logger.warn({ err: e }, 'mirroring migrated cost center memberships failed');
   }
   const stopJobs = env.JOBS_ENABLED ? startJobs(deps) : () => {};
 

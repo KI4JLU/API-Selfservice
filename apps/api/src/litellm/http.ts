@@ -23,12 +23,17 @@ function mapUser(r: Raw): LiteLLMUser {
   };
 }
 
+/** Exact e-mail lookups page through LiteLLM's substring matches (largest page LiteLLM allows, bounded). */
+const EMAIL_LOOKUP_PAGE_SIZE = 100;
+const EMAIL_LOOKUP_MAX_PAGES = 20;
+
 function mapTeam(r: Raw): LiteLLMTeam {
   return {
     teamId: String(r.team_id),
     alias: String(r.team_alias ?? ''),
     maxBudget: r.max_budget == null ? null : Number(r.max_budget),
     budgetDuration: (r.budget_duration as string | null) ?? null,
+    models: Array.isArray(r.models) ? (r.models as unknown[]).map(String) : [],
     blocked: Boolean(r.blocked ?? false),
     spend: Number(r.spend ?? 0),
   };
@@ -40,7 +45,7 @@ const isNotFound = (e: unknown) =>
 /**
  * REST adapter for the LiteLLM proxy. Uses the documented admin endpoints:
  * /user/{new,update,info,list}, /team/{new,update,info,block,unblock,member_add,member_update,member_delete},
- * /key/{generate,update,delete}, /model/info, /spend/logs.
+ * /key/{generate,update,delete}, /model/info, /spend/logs/v2.
  */
 export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
   const f = opts.fetchImpl ?? fetch;
@@ -90,14 +95,24 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
       return u;
     },
     async listUsers({ page, pageSize, email, search }) {
+      if (email) {
+        // LiteLLM matches user_email as a substring, so the exact address can sit behind other matches on a
+        // later page (sven@x.de behind xsven@x.de). Collect the exact matches of all pages, then paginate those.
+        const exact: LiteLLMUser[] = [];
+        for (let p = 1; p <= EMAIL_LOOKUP_MAX_PAGES; p++) {
+          const qs = new URLSearchParams({ page: String(p), page_size: String(EMAIL_LOOKUP_PAGE_SIZE), user_email: email });
+          const rows = (await call<{ users?: Raw[] }>('GET', `/user/list?${qs.toString()}`)).users ?? [];
+          exact.push(...rows.map(mapUser).filter((u) => u.email?.toLowerCase() === email.toLowerCase()));
+          if (rows.length < EMAIL_LOOKUP_PAGE_SIZE) break;
+        }
+        return { items: exact.slice((page - 1) * pageSize, page * pageSize), total: exact.length };
+      }
       const qs = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
-      if (email) qs.set('user_email', email);
-      else if (search && UUID_RE.test(search)) qs.set('user_ids', search);
+      if (search && UUID_RE.test(search)) qs.set('user_ids', search);
       else if (search) qs.set('user_email', search); // LiteLLM filters case-insensitively by substring
       const r = await call<{ users?: Raw[]; total?: number }>('GET', `/user/list?${qs.toString()}`);
-      let items = (r.users ?? []).map(mapUser);
-      if (email) items = items.filter((u) => u.email?.toLowerCase() === email.toLowerCase());
-      return { items, total: email ? items.length : Number(r.total ?? items.length) };
+      const items = (r.users ?? []).map(mapUser);
+      return { items, total: Number(r.total ?? items.length) };
     },
     async createUser({ userId, email, alias, ssoUserId }) {
       const r = await call<{ user_id: string }>('POST', '/user/new', {
@@ -137,12 +152,13 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
         throw e;
       }
     },
-    async createTeam({ teamId, alias, maxBudget, budgetDuration, metadata }) {
+    async createTeam({ teamId, alias, maxBudget, budgetDuration, models, metadata }) {
       const r = await call<{ team_id?: string }>('POST', '/team/new', {
         team_id: teamId,
         team_alias: alias,
         max_budget: maxBudget,
         budget_duration: toDuration(budgetDuration),
+        models: models ?? [],
         metadata: metadata ?? {},
       });
       return { teamId: r.team_id ?? teamId };
@@ -152,6 +168,7 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
       if (patch.alias !== undefined) body.team_alias = patch.alias;
       if (patch.maxBudget !== undefined) body.max_budget = patch.maxBudget;
       if (patch.budgetDuration !== undefined) body.budget_duration = toDuration(patch.budgetDuration);
+      if (patch.models !== undefined) body.models = patch.models;
       await call('POST', '/team/update', body);
     },
     async setTeamBlocked(teamId, blocked) {
@@ -175,7 +192,7 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
     },
 
     // ---------- keys ----------
-    async createKey({ litellmUserId, teamId, alias, models, maxBudget, expiresAt, metadata }) {
+    async createKey({ litellmUserId, teamId, alias, models, maxBudget, budgetDuration, expiresAt, metadata }) {
       const r = await call<{
         key: string;
         token?: string;
@@ -183,6 +200,7 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
         key_alias?: string;
         models?: string[];
         max_budget?: number | null;
+        budget_duration?: string | null;
         expires?: string | null;
         team_id?: string | null;
       }>('POST', '/key/generate', {
@@ -191,6 +209,7 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
         key_alias: alias,
         models,
         max_budget: maxBudget,
+        ...(budgetDuration ? { budget_duration: toDuration(budgetDuration) } : {}),
         duration: `${seconds(expiresAt)}s`,
         metadata: metadata ?? {},
       });
@@ -201,6 +220,7 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
         alias: r.key_alias ?? alias,
         models: r.models ?? models,
         maxBudget: r.max_budget ?? maxBudget,
+        budgetDuration: r.budget_duration ?? budgetDuration,
         expires: r.expires ?? expiresAt.toISOString(),
         blocked: false,
         spend: 0,
@@ -211,6 +231,7 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
       const body: Record<string, unknown> = { key: keyId };
       if (patch.models) body.models = patch.models;
       if (patch.maxBudget !== undefined) body.max_budget = patch.maxBudget;
+      if (patch.budgetDuration !== undefined) body.budget_duration = toDuration(patch.budgetDuration);
       if (patch.alias !== undefined) body.key_alias = patch.alias;
       if (patch.blocked !== undefined) body.blocked = patch.blocked;
       if (patch.expiresAt) body.duration = `${seconds(patch.expiresAt)}s`;
@@ -261,40 +282,59 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
       };
     },
     async getSpendLogs(since, until) {
-      // /spend/logs supports start_date/end_date (YYYY-MM-DD). We over-fetch by day and filter.
-      const start = since.toISOString().slice(0, 10);
-      const end = until.toISOString().slice(0, 10);
-      const rows = await call<Array<Record<string, unknown>>>('GET', `/spend/logs?start_date=${start}&end_date=${end}`);
+      // /spend/logs without summarize=false only returns per-day aggregates (no request_id), so we use
+      // /spend/logs/v2: filters to the second (UTC) and pages. Its `total` is capped, so we page until a short page.
+      const fmt = (d: Date) => d.toISOString().slice(0, 19).replace('T', ' ');
+      const pageSize = 1000;
+      const str = (v: unknown) => (typeof v === 'string' && v ? v : null);
+      const errorText = (v: unknown) =>
+        v && typeof v === 'object' ? str((v as Raw).error_message) ?? str((v as Raw).error_class) : v ? String(v) : null;
       const out: LiteLLMSpendLog[] = [];
-      for (const r of rows ?? []) {
-        const startTime = String(r.startTime ?? r.start_time ?? '');
-        const t = new Date(startTime);
-        if (Number.isNaN(t.getTime()) || t < since || t >= until) continue;
-        const endTime = r.endTime ? String(r.endTime) : null;
-        const meta = (r.metadata as Record<string, unknown> | undefined) ?? {};
-        const status = String(meta.status ?? r.status ?? 'success') === 'failure' ? 'failure' : 'success';
-        const tags = Array.isArray(r.request_tags) ? (r.request_tags as string[]) : [];
-        const duration = endTime ? new Date(endTime).getTime() - t.getTime() : null;
-        const ttft = typeof r.completionStartTime === 'string' ? new Date(r.completionStartTime).getTime() - t.getTime() : null;
-        out.push({
-          requestId: String(r.request_id),
-          sessionId: (r.session_id as string | null) ?? null,
-          startTime: t.toISOString(),
-          endTime,
-          callType: String(r.call_type ?? 'llm'),
-          status,
-          model: String(r.model ?? ''),
-          provider: (r.custom_llm_provider as string | null) ?? null,
-          apiKey: String(r.api_key ?? ''),
-          litellmUserId: (r.user as string | null) ?? null,
-          spend: Number(r.spend ?? 0),
-          promptTokens: Number(r.prompt_tokens ?? 0),
-          completionTokens: Number(r.completion_tokens ?? 0),
-          durationMs: duration,
-          ttftMs: ttft !== null && ttft >= 0 ? ttft : null,
-          tags,
-          error: status === 'failure' ? String(meta.error_information ?? meta.error ?? '') || null : null,
+      for (let page = 1; ; page++) {
+        const qs = new URLSearchParams({
+          start_date: fmt(since),
+          end_date: fmt(new Date(until.getTime() + 1000)),
+          page: String(page),
+          page_size: String(pageSize),
+          sort_by: 'startTime',
+          sort_order: 'asc',
         });
+        const res = await call<{ data?: Raw[] }>('GET', `/spend/logs/v2?${qs.toString()}`);
+        const rows = res.data ?? [];
+        for (const r of rows) {
+          if (!str(r.request_id)) continue;
+          const startTime = String(r.startTime ?? r.start_time ?? '');
+          const t = new Date(startTime);
+          if (Number.isNaN(t.getTime()) || t < since || t >= until) continue;
+          const endTime = r.endTime ? String(r.endTime) : null;
+          const meta = (r.metadata as Raw | undefined) ?? {};
+          const status = String(r.status ?? meta.status ?? 'success') === 'failure' ? 'failure' : 'success';
+          const tags = Array.isArray(r.request_tags) ? (r.request_tags as string[]) : [];
+          const duration =
+            typeof r.request_duration_ms === 'number' ? r.request_duration_ms : endTime ? new Date(endTime).getTime() - t.getTime() : null;
+          const ttft = typeof r.completionStartTime === 'string' ? new Date(r.completionStartTime).getTime() - t.getTime() : null;
+          out.push({
+            requestId: String(r.request_id),
+            sessionId: str(r.session_id),
+            startTime: t.toISOString(),
+            endTime,
+            callType: str(r.call_type) ?? 'llm',
+            status,
+            // model_group is the public model name keys are created with; model is the deployment (e.g. azure/...)
+            model: str(r.model_group) ?? String(r.model ?? ''),
+            provider: str(r.custom_llm_provider),
+            apiKey: String(r.api_key ?? ''),
+            litellmUserId: str(r.user),
+            spend: Number(r.spend ?? 0),
+            promptTokens: Number(r.prompt_tokens ?? 0),
+            completionTokens: Number(r.completion_tokens ?? 0),
+            durationMs: duration,
+            ttftMs: ttft !== null && ttft >= 0 ? ttft : null,
+            tags,
+            error: status === 'failure' ? errorText(meta.error_information ?? meta.error) : null,
+          });
+        }
+        if (rows.length < pageSize) break;
       }
       return out;
     },

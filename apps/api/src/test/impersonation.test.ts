@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { MeSchema } from '@api-selfservice/shared';
-import { createTestApp, expectError, expectShape, type Client, type TestApp } from './harness.js';
+import { createTestApp, expectError, expectShape, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
 
 describe('admin impersonation (IMPERSONATION_ENABLED)', () => {
   let t: TestApp;
@@ -36,6 +36,25 @@ describe('admin impersonation (IMPERSONATION_ENABLED)', () => {
     const { auditLog, eq, and } = await import('@api-selfservice/db');
     const entries = await t.db.query.auditLog.findMany({ where: and(eq(auditLog.actorId, admin.userId), eq(auditLog.entityId, user.userId)) });
     expect(entries.map((e) => e.action).sort()).toEqual(['user.impersonate', 'user.impersonate_stop']);
+  });
+
+  it('actions taken while impersonating name the admin in the event log', async () => {
+    await syncProvidersWithFree(admin);
+    const costCenterId = (await user.get('/me')).body.costCenter.id;
+    expect((await admin.post(`/admin/users/${user.userId}/impersonate`)).status).toBe(200);
+    const asUser = await admin.post('/api-keys', { name: 'as-user', models: ['gemma-local'], costCenterId });
+    expect(asUser.status).toBe(201);
+    expect((await admin.delete('/me/impersonation')).status).toBe(200);
+    const own = await user.post('/api-keys', { name: 'own', models: ['gemma-local'], costCenterId });
+    expect(own.status).toBe(201);
+
+    const { auditLog, eq, and } = await import('@api-selfservice/db');
+    const entryOf = async (id: string) => (await t.db.query.auditLog.findFirst({ where: and(eq(auditLog.action, 'key.create'), eq(auditLog.entityId, id)) }))!;
+    const e = await entryOf(asUser.body.id);
+    expect(e.actorId).toBe(user.userId);
+    expect(e.payload).toMatchObject({ name: 'as-user', impersonatedBy: admin.userId });
+    // without impersonation nothing is added
+    expect((await entryOf(own.body.id)).payload).not.toHaveProperty('impersonatedBy');
   });
 
   it('refuses self, unknown, deactivated users and non-admins', async () => {

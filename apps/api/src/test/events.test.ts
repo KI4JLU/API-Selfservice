@@ -35,7 +35,7 @@ describe('admin event log', () => {
     const [budgetSet] = await eventsOf('budget.set', u.userId);
     expect(budgetSet).toMatchObject({ severity: 'info', entity: 'user', entityLabel: u.email, actor: { id: admin.userId }, payload: { amount: 10, period: 'monthly' } });
 
-    const [ccCreated] = await eventsOf('cost_center.approve', cc.id);
+    const [ccCreated] = await eventsOf('cost_center.create', cc.id);
     expect(ccCreated).toMatchObject({ entity: 'cost_center', entityLabel: expect.stringContaining(cc.number), actor: { id: admin.userId } });
 
     // newest first, paginated

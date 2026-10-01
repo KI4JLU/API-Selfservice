@@ -1,0 +1,1 @@
+DROP TABLE "api_selfservice"."cost_center_admins" CASCADE;

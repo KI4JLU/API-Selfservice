@@ -35,6 +35,8 @@ export function createAuth(deps: Deps) {
     trustedOrigins: [env.APP_URL, env.API_URL],
     database: drizzleAdapter(db, { provider: 'pg', schema: { user, session, account, verification } }),
     emailAndPassword: { enabled: false },
+    // Name and e-mail come from Keycloak; users must not change them (they show up in mails, member lists and reports).
+    disabledPaths: ['/update-user'],
     session: {
       expiresIn: 60 * 60 * 8,
       updateAge: 60 * 15,

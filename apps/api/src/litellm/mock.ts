@@ -15,6 +15,7 @@ export interface MockTeam {
   alias: string;
   maxBudget: number | null;
   budgetDuration: string | null;
+  models: string[];
   blocked: boolean;
   members: Map<string, TeamRole>;
 }
@@ -28,6 +29,7 @@ export function createMockAdapter(opts: { seedLogs?: boolean; now?: () => Date }
   users: Map<string, MockUser>;
   teams: Map<string, MockTeam>;
   logs: LiteLLMSpendLog[];
+  models: LiteLLMModel[];
   addLog(log: Partial<LiteLLMSpendLog> & { apiKey: string }): LiteLLMSpendLog;
 } {
   const now = opts.now ?? (() => new Date());
@@ -100,6 +102,7 @@ export function createMockAdapter(opts: { seedLogs?: boolean; now?: () => Date }
     users,
     teams,
     logs,
+    models,
     addLog,
     async health() {
       return { ok: true, detail: 'mock' };
@@ -143,11 +146,11 @@ export function createMockAdapter(opts: { seedLogs?: boolean; now?: () => Date }
       const t = teams.get(teamId);
       if (!t) return null;
       const spend = [...keys.values()].filter((k) => k.teamId === teamId).reduce((a, k) => a + k.spend, 0);
-      return { teamId, alias: t.alias, maxBudget: t.maxBudget, budgetDuration: t.budgetDuration, blocked: t.blocked, spend };
+      return { teamId, alias: t.alias, maxBudget: t.maxBudget, budgetDuration: t.budgetDuration, models: [...t.models], blocked: t.blocked, spend };
     },
-    async createTeam({ teamId, alias, maxBudget, budgetDuration }) {
+    async createTeam({ teamId, alias, maxBudget, budgetDuration, models: ms }) {
       if (teams.has(teamId)) throw new Error(`mock: team ${teamId} exists`);
-      teams.set(teamId, { alias, maxBudget, budgetDuration, blocked: false, members: new Map() });
+      teams.set(teamId, { alias, maxBudget, budgetDuration, models: ms ?? [], blocked: false, members: new Map() });
       return { teamId };
     },
     async updateTeam(teamId, patch) {
@@ -156,6 +159,7 @@ export function createMockAdapter(opts: { seedLogs?: boolean; now?: () => Date }
       if (patch.alias !== undefined) t.alias = patch.alias;
       if (patch.maxBudget !== undefined) t.maxBudget = patch.maxBudget;
       if (patch.budgetDuration !== undefined) t.budgetDuration = patch.budgetDuration;
+      if (patch.models !== undefined) t.models = patch.models;
     },
     async setTeamBlocked(teamId, blocked) {
       const t = teams.get(teamId);
@@ -174,10 +178,10 @@ export function createMockAdapter(opts: { seedLogs?: boolean; now?: () => Date }
     },
 
     // ---------- keys ----------
-    async createKey({ litellmUserId, teamId, alias, models: ms, maxBudget, expiresAt }) {
+    async createKey({ litellmUserId, teamId, alias, models: ms, maxBudget, budgetDuration, expiresAt }) {
       const secret = `sk-${randomBytes(24).toString('hex')}`;
       const keyId = createHash('sha256').update(secret).digest('hex');
-      const k = { keyId, alias, models: ms, maxBudget, expires: expiresAt.toISOString(), blocked: false, spend: 0, teamId, userId: litellmUserId };
+      const k = { keyId, alias, models: ms, maxBudget, budgetDuration, expires: expiresAt.toISOString(), blocked: false, spend: 0, teamId, userId: litellmUserId };
       keys.set(keyId, k);
       if (opts.seedLogs) {
         // A few synthetic requests over the last days for demo purposes.
@@ -193,6 +197,7 @@ export function createMockAdapter(opts: { seedLogs?: boolean; now?: () => Date }
       if (!k) throw new Error(`mock: key ${keyId} not found`);
       if (patch.models) k.models = patch.models;
       if (patch.maxBudget !== undefined) k.maxBudget = patch.maxBudget;
+      if (patch.budgetDuration !== undefined) k.budgetDuration = patch.budgetDuration;
       if (patch.alias !== undefined) k.alias = patch.alias;
       if (patch.blocked !== undefined) k.blocked = patch.blocked;
       if (patch.expiresAt) k.expires = patch.expiresAt.toISOString();
@@ -209,6 +214,9 @@ export function createMockAdapter(opts: { seedLogs?: boolean; now?: () => Date }
     async chatWithKey(secret, { model, prompt }) {
       const k = keyBySecret(secret, '/v1/chat/completions');
       if (!k.models.includes(model)) throw new LiteLLMHttpError(401, 'key not allowed to access model', '/v1/chat/completions');
+      // Like LiteLLM: team models restrict every key of the team (F-KST-15).
+      const team = k.teamId ? teams.get(k.teamId) : undefined;
+      if (team && team.models.length > 0 && !team.models.includes(model)) throw new LiteLLMHttpError(401, 'team not allowed to access model', '/v1/chat/completions');
       const promptTokens = Math.ceil(prompt.length / 4);
       const completionTokens = 8;
       addLog({ apiKey: k.keyId, model, promptTokens, completionTokens });

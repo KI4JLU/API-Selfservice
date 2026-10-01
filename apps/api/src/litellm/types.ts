@@ -19,6 +19,8 @@ export interface LiteLLMKey {
   alias: string;
   models: string[];
   maxBudget: number | null;
+  /** LiteLLM `budget_duration`, e.g. `30d`; null = the budget never resets */
+  budgetDuration: string | null;
   expires: string | null;
   blocked: boolean;
   spend: number;
@@ -49,6 +51,8 @@ export interface LiteLLMTeam {
   alias: string;
   maxBudget: number | null;
   budgetDuration: string | null;
+  /** models the team may use; empty = all models */
+  models: string[];
   blocked: boolean;
   spend: number;
 }
@@ -98,9 +102,11 @@ export interface LiteLLMAdapter {
     alias: string;
     maxBudget: number | null;
     budgetDuration: string | null;
+    /** F-KST-15: empty = all models */
+    models?: string[];
     metadata?: Record<string, unknown>;
   }): Promise<{ teamId: string }>;
-  updateTeam(teamId: string, patch: { alias?: string; maxBudget?: number | null; budgetDuration?: string | null }): Promise<void>;
+  updateTeam(teamId: string, patch: { alias?: string; maxBudget?: number | null; budgetDuration?: string | null; models?: string[] }): Promise<void>;
   setTeamBlocked(teamId: string, blocked: boolean): Promise<void>;
   /** Adds the user to the team or changes their role; idempotent. */
   setTeamMember(teamId: string, userId: string, role: TeamRole): Promise<void>;
@@ -114,12 +120,14 @@ export interface LiteLLMAdapter {
     alias: string;
     models: string[];
     maxBudget: number | null;
+    /** F-KEY-11: null = the key budget never resets */
+    budgetDuration: string | null;
     expiresAt: Date;
     metadata?: Record<string, unknown>;
   }): Promise<LiteLLMKey & { secret: string }>;
   updateKey(
     keyId: string,
-    patch: { models?: string[]; maxBudget?: number | null; expiresAt?: Date; blocked?: boolean; alias?: string },
+    patch: { models?: string[]; maxBudget?: number | null; budgetDuration?: string | null; expiresAt?: Date; blocked?: boolean; alias?: string },
   ): Promise<void>;
   deleteKey(keyId: string): Promise<void>;
   listModels(): Promise<LiteLLMModel[]>;

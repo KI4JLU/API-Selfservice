@@ -88,6 +88,33 @@ describe('api keys', () => {
     expectError(await user.patch(`/api-keys/${k.id}`, { name: '' }), 400, 'VALIDATION_ERROR');
   });
 
+  it('a key budget resets monthly or applies once; monthly keys show this month’s spend (F-KEY-11)', async () => {
+    const once = expectShape(CreatedApiKeySchema, (await create(user, { name: 'once', budget: 5 })).body);
+    expect(once.budgetPeriod).toBeNull();
+    expect(t.mock.keys.get(await t.litellmKeyIdOf(once.id))!.budgetDuration).toBeNull();
+
+    const k = expectShape(CreatedApiKeySchema, (await create(user, { name: 'monthly', budget: 5, budgetPeriod: 'monthly' })).body);
+    expect(k).toMatchObject({ budget: 5, budgetPeriod: 'monthly' });
+    const mk = t.mock.keys.get(await t.litellmKeyIdOf(k.id))!;
+    expect(mk.budgetDuration).toBe('30d');
+    // last month's spend does not count against this month's budget
+    await t.storeLogs([await t.addLog(k.id, { spend: 2, startTime: '2026-08-20T10:00:00.000Z' })]);
+    await t.addLog(k.id, { spend: 0.5 });
+    await t.ingest();
+    expect((await user.get('/api-keys')).body.items.find((x: { id: string }) => x.id === k.id).spend).toBe(0.5);
+
+    // switching to "once" and back is mirrored; removing the amount removes the period
+    expect((await user.patch(`/api-keys/${k.id}`, { budgetPeriod: null })).body).toMatchObject({ budgetPeriod: null, spend: 2.5 });
+    expect(mk.budgetDuration).toBeNull();
+    expect((await user.patch(`/api-keys/${k.id}`, { budgetPeriod: 'monthly' })).body.budgetPeriod).toBe('monthly');
+    expect(mk.budgetDuration).toBe('30d');
+    expect((await user.patch(`/api-keys/${k.id}`, { budget: null })).body).toMatchObject({ budget: null, budgetPeriod: null });
+    expect(mk.budgetDuration).toBeNull();
+    // a period without an amount is ignored
+    expect((await create(user, { name: 'no-amount', budgetPeriod: 'monthly' })).body.budgetPeriod).toBeNull();
+    expectError(await create(user, { budget: 1, budgetPeriod: 'weekly' }), 400, 'VALIDATION_ERROR');
+  });
+
   it('DELETE marks the key deleted, removes it from LiteLLM and keeps its spend in reports', async () => {
     const k = (await create(user, { name: 'doomed' })).body;
     const litellmKeyId = await t.litellmKeyIdOf(k.id);
@@ -142,7 +169,8 @@ describe('api keys', () => {
     expect((await other.get('/api-keys')).body.items.find((x: { id: string }) => x.id === k.id)).toBeUndefined();
     expectError(await other.patch('/api-keys/does-not-exist', { name: 'x' }), 404, 'NOT_FOUND');
     expectError(await other.delete('/api-keys/does-not-exist'), 404, 'NOT_FOUND');
-    // a user cannot create a key on a cost center that is not theirs? (allowed by design: any approved cost center)
+    // keys only on the default or on cost centers the user is a member of (F-KST-12)
+    expectError(await other.post('/api-keys', { name: 'x', models: ['gemma-local'], costCenterId: cc.id }), 409, 'COST_CENTER_NOT_MEMBER');
     expect((await other.post('/api-keys', { name: 'x', models: ['gemma-local'], costCenterId: defaultId })).status).toBe(201);
     expect(t.mock.keys.get(await t.litellmKeyIdOf(k.id))).toBeDefined();
   });
@@ -173,5 +201,77 @@ describe('api keys', () => {
     expect(u.body.status).toBe('active');
     expect(t.mock.keys.get(await t.litellmKeyIdOf(k.id))!.blocked).toBe(false);
     expectError(await admin.post('/admin/api-keys/nope/block', { blocked: true }), 404, 'NOT_FOUND');
+  });
+});
+
+describe('provider keys (F-KEY-10)', () => {
+  let t: TestApp;
+  let admin: Client;
+  let user: Client;
+  let cc: { id: string; number: string };
+  let defaultId: string;
+
+  beforeAll(async () => {
+    t = await createTestApp();
+    admin = await t.login({ admin: true });
+    await syncProvidersWithFree(admin);
+    user = await t.login();
+    defaultId = (await user.get('/me')).body.costCenter.id;
+    cc = await approvedCostCenterFor(t, admin, user);
+  });
+  afterAll(() => t.close());
+
+  const create = (body: Record<string, unknown>) => user.post('/api-keys', { name: 'key', costCenterId: cc.id, ...body });
+  const mockModels = async (id: string) => t.mock.keys.get(await t.litellmKeyIdOf(id))!.models;
+
+  it('a provider selects all current models of that provider, combined with single models', async () => {
+    const r = await create({ providers: ['anthropic'] });
+    expect(r.status).toBe(201);
+    const k = expectShape(CreatedApiKeySchema, r.body);
+    expect(k).toMatchObject({ models: ['claude-opus-5', 'claude-sonnet-5'], providers: ['anthropic'] });
+    expect(await mockModels(k.id)).toEqual(['claude-opus-5', 'claude-sonnet-5']);
+
+    const both = expectShape(CreatedApiKeySchema, (await create({ models: ['gpt-4o', 'claude-opus-5'], providers: ['anthropic'] })).body);
+    expect(both).toMatchObject({ models: ['gpt-4o', 'claude-opus-5', 'claude-sonnet-5'], providers: ['anthropic'] });
+    expect(expectShape(paginated(ApiKeySchema), (await user.get('/api-keys')).body).items.find((x) => x.id === both.id)!.providers).toEqual(['anthropic']);
+  });
+
+  it('validates providers against the cost center', async () => {
+    expectError(await create({ models: [], providers: [] }), 400, 'VALIDATION_ERROR');
+    expectError(await create({}), 400, 'VALIDATION_ERROR');
+    expectError(await create({ providers: ['does-not-exist'] }), 409, 'MODEL_NOT_ALLOWED');
+    // only paid models -> not on the default cost center
+    expectError(await create({ providers: ['anthropic'], costCenterId: defaultId }), 409, 'PAID_MODEL_REQUIRES_COST_CENTER');
+    const free = await create({ providers: ['hosted_vllm'], costCenterId: defaultId });
+    expect(free.status).toBe(201);
+    expect(free.body.models).toEqual(['gemma-local']);
+  });
+
+  it('future models of the provider are added on provider sync; tier rules still apply', async () => {
+    const anthropic = (await create({ name: 'anthropic', providers: ['anthropic'] })).body;
+    const single = (await create({ name: 'single', models: ['claude-sonnet-5'] })).body;
+    const local = (await create({ name: 'local', providers: ['hosted_vllm'], costCenterId: defaultId })).body;
+
+    t.mock.models.push(
+      { modelName: 'claude-haiku-5', modelId: 'm-claude-haiku', provider: 'anthropic', inputCostPerToken: null, outputCostPerToken: null },
+      { modelName: 'qwen-local', modelId: 'm-qwen', provider: 'hosted_vllm', inputCostPerToken: null, outputCostPerToken: null },
+    );
+    expect((await admin.post('/admin/providers/sync')).status).toBe(200);
+
+    expect(await mockModels(anthropic.id)).toEqual(['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-5']);
+    expect((await t.keyRow(anthropic.id)).models).toEqual(['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-5']);
+    expect(await mockModels(single.id)).toEqual(['claude-sonnet-5']);
+    // new models arrive as paid (F-PRV-2): the default cost center key gets qwen-local only once it is free
+    expect(await mockModels(local.id)).toEqual(['gemma-local']);
+    const qwen = (await admin.get('/admin/providers')).body.find((p: { modelName: string }) => p.modelName === 'qwen-local');
+    expect((await admin.patch(`/admin/providers/${qwen.id}`, { tier: 'free' })).status).toBe(200);
+    expect(await mockModels(local.id)).toEqual(['gemma-local', 'qwen-local']);
+    expect((await user.get('/api-keys')).body.items.find((x: { id: string }) => x.id === local.id).models).toEqual(['gemma-local', 'qwen-local']);
+
+    // deleted keys are left alone
+    expect((await user.delete(`/api-keys/${anthropic.id}`)).status).toBe(200);
+    t.mock.models.push({ modelName: 'claude-mini-5', modelId: 'm-claude-mini', provider: 'anthropic', inputCostPerToken: null, outputCostPerToken: null });
+    expect((await admin.post('/admin/providers/sync')).status).toBe(200);
+    expect((await t.keyRow(anthropic.id)).models).not.toContain('claude-mini-5');
   });
 });

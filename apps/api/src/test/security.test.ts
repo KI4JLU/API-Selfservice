@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AdminUserSchema, MeSchema, paginated } from '@api-selfservice/shared';
-import { approvedCostCenterFor, CostCenterSchemaLenient, createTestApp, expectError, expectShape, type Client, type TestApp } from './harness.js';
+import { LiteLLMHttpError } from '../litellm/types.js';
+import { approvedCostCenterFor, CostCenterSchemaLenient, createTestApp, expectError, expectShape, randomCostCenter, uniqEmail, type Client, type TestApp } from './harness.js';
 
 describe('security chain', () => {
   let t: TestApp;
@@ -120,7 +121,7 @@ describe('security chain', () => {
 
     it('cost_center_admin cannot change name / owner of the own cost center', async () => {
       expectError(await ccAdmin.patch(`/cost-centers/${ownCc.id}`, { name: 'renamed' }), 403, 'FORBIDDEN');
-      expectError(await ccAdmin.patch(`/cost-centers/${ownCc.id}`, { ownerEmail: 'x@y.de' }), 403, 'FORBIDDEN');
+      expectError(await ccAdmin.patch(`/cost-centers/${ownCc.id}`, { ownerUserId: ccAdmin.userId }), 403, 'FORBIDDEN');
       const cc = await admin.get(`/cost-centers/${ownCc.id}`);
       expect(cc.body.name).not.toBe('renamed');
     });
@@ -133,6 +134,11 @@ describe('security chain', () => {
       expect((rep.body as { costCenter: { id: string } }[]).map((r) => r.costCenter.id)).toEqual([ownCc.id]);
       expectError(await ccAdmin.get(`/reports/cost-centers/${otherCc.id}`), 403, 'FORBIDDEN');
       expect((await ccAdmin.get(`/reports/cost-centers/${ownCc.id}`)).status).toBe(200);
+    });
+
+    it('admin sees only cost centers assigned as cost center admin under /managed', async () => {
+      const managed = expectShape(paginated(CostCenterSchemaLenient), (await admin.get('/cost-centers/managed')).body);
+      expect(managed.items).toEqual([]);
     });
 
     it('cost_center_admin still has no admin rights', async () => {
@@ -185,5 +191,89 @@ describe('security chain', () => {
       const r = await user.get('/me', { headers: { 'x-request-id': 'req-123' } });
       expect(r.headers.get('x-request-id')).toBe('req-123');
     });
+
+    it('a client request id is only taken over when short and plain (it ends up in logs)', async () => {
+      for (const id of ['x'.repeat(101), 'two words', '<script>']) {
+        const r = await user.get('/me', { headers: { 'x-request-id': id } });
+        expect(r.headers.get('x-request-id')).toMatch(/^[0-9a-f-]{36}$/);
+      }
+    });
+  });
+
+  describe('hardening (security review 2026-10-01)', () => {
+    it('a malformed Referer is refused like a missing Origin, not with a 500', async () => {
+      expectError(await user.patch('/me', { locale: 'de' }, { origin: null, headers: { referer: 'not a url' } }), 403, 'CSRF_ORIGIN_MISMATCH');
+    });
+
+    it('LiteLLM error texts go to the event log, never to the client', async () => {
+      const orig = t.mock.listUsers;
+      t.mock.listUsers = async () => {
+        throw new LiteLLMHttpError(500, 'internal detail of the proxy', '/user/list');
+      };
+      let r;
+      try {
+        r = await admin.get('/admin/litellm-users?q=xyz', { headers: { 'x-request-id': 'req-litellm-err' } });
+      } finally {
+        t.mock.listUsers = orig;
+      }
+      expectError(r, 502, 'LITELLM_ERROR');
+      expect(JSON.stringify(r.body)).not.toContain('internal detail');
+      expect(JSON.stringify(r.body)).not.toContain('/user/list');
+      const events = await admin.get('/admin/events?entityId=req-litellm-err');
+      expect(JSON.stringify(events.body)).toContain('internal detail of the proxy');
+    });
+
+    it('models of a cost center are only listed for its members and admins', async () => {
+      expect((await user.get(`/providers?costCenterId=${otherCc.id}`)).status).toBe(200);
+      expectError(await user.get(`/providers?costCenterId=${ownCc.id}`), 403, 'FORBIDDEN');
+      const defaultId = (await user.get('/me')).body.memberCostCenters[0].id as string;
+      expect((await user.get(`/providers?costCenterId=${defaultId}`)).status).toBe(200);
+      expect((await admin.get(`/providers?costCenterId=${ownCc.id}`)).status).toBe(200);
+    });
+
+    it('users cannot rename themselves through Better Auth', async () => {
+      const before = (await user.get('/me')).body.name;
+      const r = await t.request('POST', '/api/auth/update-user', { body: { name: 'Mallory' }, cookie: user.cookie });
+      expect(r.status).toBe(404);
+      expect((await user.get('/me')).body.name).toBe(before);
+    });
+
+    it('owner e-mails in requests: one answer for unknown and deactivated accounts, failed lookups capped per user', async () => {
+      const prober = await t.login();
+      const gone = await t.login();
+      expect((await admin.post(`/admin/users/${gone.userId}/deactivate`)).status).toBe(200);
+      const ask = (c: Client, ownerEmail: string) => c.post('/cost-centers', { number: randomCostCenter(), name: 'probe', ownerEmail });
+      expectError(await ask(prober, gone.email), 409, 'OWNER_NOT_LITELLM_USER');
+      for (let i = 0; i < 4; i++) expectError(await ask(prober, uniqEmail('nobody')), 409, 'OWNER_NOT_LITELLM_USER');
+      expectError(await ask(prober, uniqEmail('nobody')), 429, 'RATE_LIMITED');
+      // other users are not affected; after an hour the prober may try again
+      expectError(await ask(user, uniqEmail('nobody')), 409, 'OWNER_NOT_LITELLM_USER');
+      const saved = t.clock.now;
+      t.clock.now = new Date(saved.getTime() + 61 * 60_000);
+      try {
+        expectError(await ask(prober, uniqEmail('nobody')), 409, 'OWNER_NOT_LITELLM_USER');
+      } finally {
+        t.clock.now = saved;
+      }
+    });
+  });
+});
+
+describe('API docs with API_DOCS_ADMIN_ONLY (always on in production)', () => {
+  let t: TestApp;
+  beforeAll(async () => {
+    t = await createTestApp({ API_DOCS_ADMIN_ONLY: 'true' });
+  });
+  afterAll(() => t.close());
+
+  it('only signed-in admins get the spec and the docs', async () => {
+    const user = await t.login();
+    const admin = await t.login({ admin: true });
+    for (const path of ['/api/openapi.json', '/api/docs']) {
+      expectError(await t.request('GET', path), 401, 'UNAUTHORIZED');
+      expectError(await t.request('GET', path, { cookie: user.cookie }), 403, 'FORBIDDEN');
+      expect((await t.request('GET', path, { cookie: admin.cookie })).status).toBe(200);
+    }
+    expect((await t.request('GET', '/health')).status).toBe(200);
   });
 });

@@ -6,11 +6,12 @@ import { LiteLLMHttpError } from '../litellm/types.js';
 const MAX_TOKENS = 512;
 
 /**
- * LiteLLM errors of calls made with the user's key. The raw LiteLLM body is not passed on
- * (it can echo parts of the key) and these errors do not go to the admin event log.
+ * Errors of calls made with the user's key. Neither the raw LiteLLM body nor any other error text is
+ * passed on, since both can contain the key (e.g. fetch rejects a malformed Authorization header with
+ * its value in the message). These errors do not go to the server log or the admin event log.
  */
-function keyTestError(e: unknown): unknown {
-  if (!(e instanceof LiteLLMHttpError)) return e;
+function keyTestError(e: unknown): ApiError {
+  if (!(e instanceof LiteLLMHttpError)) return new ApiError('KEY_TEST_FAILED', 'LiteLLM could not be called');
   if (e.status === 401 || e.status === 403) return new ApiError('KEY_INVALID', 'LiteLLM rejected the key');
   return new ApiError('KEY_TEST_FAILED', `LiteLLM answered with status ${e.status}`, { status: e.status });
 }

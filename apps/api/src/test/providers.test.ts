@@ -64,7 +64,9 @@ describe('providers', () => {
     const u3 = await t.login();
     await u3.patch('/me', { costCenterNumber: '23456789' });
     const pending = (await admin.get('/cost-centers?status=pending')).body.items.find((c: { number: string }) => c.number === '23456789');
-    expect((await u3.get(`/providers?costCenterId=${pending.id}`)).body).toHaveLength(1);
+    expect((await admin.get(`/providers?costCenterId=${pending.id}`)).body).toHaveLength(1);
+    // the requester is no member (yet), so the cost center's models are not listed for them
+    expectError(await u3.get(`/providers?costCenterId=${pending.id}`), 403, 'FORBIDDEN');
   });
 
   it('creating a key with a paid model on the default cost center -> PAID_MODEL_REQUIRES_COST_CENTER', async () => {

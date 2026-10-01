@@ -252,16 +252,27 @@ export function expectError(res: Res, status: number, code: string) {
   expect({ status: res.status, code: res.body?.code }, JSON.stringify(res.body)).toEqual({ status, code });
 }
 
-/** Convenience: user with an approved (non-default) cost center. */
+/** A LiteLLM user who never signed in, as owner of cost centers (F-KST-14). */
+export async function litellmOwner(t: TestApp, email = uniqEmail('owner'), alias = 'Owner') {
+  const userId = `owner-${uniq()}`;
+  await t.mock.createUser({ userId, email, alias });
+  return { userId, email };
+}
+
+/** Convenience: user as plain member of a new approved (non-default) cost center, which becomes their profile cost center. */
 export async function approvedCostCenterFor(t: TestApp, admin: Client, user: Client, number = randomCostCenter()) {
-  const r = await user.patch('/me', { costCenterNumber: number });
-  if (r.status !== 200) throw new Error(`request cost center failed: ${JSON.stringify(r.body)}`);
-  const pending = await admin.get('/cost-center-requests?status=pending');
-  const req = (pending.body.items as { id: string; user: { id: string } }[]).find((x) => x.user.id === user.userId);
-  if (!req) throw new Error('pending request not found');
-  const a = await admin.post(`/cost-center-requests/${req.id}/approve`);
-  if (a.status !== 200) throw new Error(`approve failed: ${JSON.stringify(a.body)}`);
-  return { id: a.body.costCenter.id as string, number };
+  const owner = await litellmOwner(t, `o-${number}@x.de`);
+  const r = await admin.post('/admin/cost-centers', { number, name: `CC ${number}`, ownerUserId: owner.userId });
+  if (r.status !== 201) throw new Error(`create cost center failed: ${JSON.stringify(r.body)}`);
+  await addMember(admin, r.body.id, user);
+  return { id: r.body.id as string, number };
+}
+
+/** Adds `user` to the cost center via the members API (F-KST-10). */
+export async function addMember(by: Client, costCenterId: string, user: Pick<Client, 'userId'>, role: 'user' | 'admin' = 'user') {
+  const r = await by.post(`/cost-centers/${costCenterId}/members`, { userId: user.userId, role });
+  if (r.status !== 201) throw new Error(`add member failed: ${JSON.stringify(r.body)}`);
+  return r.body;
 }
 
 export function randomCostCenter() {

@@ -24,6 +24,8 @@ export interface Deps {
   mailer: Mailer;
   log: Logger;
   now: () => Date;
+  /** Set on the request's deps while an admin acts as another user (F-USR-7); event log entries record it. */
+  impersonatorId?: string;
 }
 
 export type AppEnv = {

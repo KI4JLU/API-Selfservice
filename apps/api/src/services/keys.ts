@@ -1,12 +1,14 @@
-import { and, apiKeys, count, costCenters, desc, eq, inArray, ne, user } from '@api-selfservice/db';
-import type { KeyStatus } from '@api-selfservice/shared';
+import { and, apiKeys, count, costCenters, desc, eq, inArray, ne, providers, user } from '@api-selfservice/db';
+import { currentPeriod, type KeyBudgetPeriod, type KeyStatus } from '@api-selfservice/shared';
 import type { CurrentUser, Deps } from '../context.js';
 import { ApiError, forbidden, notFound } from '../errors.js';
 import { audit, auditError } from './audit.js';
 import { ensureTeam, getCostCenter } from './cost-centers.js';
+import { isMember } from './cost-center-members.js';
 import { spendForKey } from './spend.js';
 import { allowedModelsForCostCenter } from './providers.js';
 import { getBudgetState } from './budgets.js';
+import { budgetDurationFor } from '../litellm/types.js';
 
 type KeyRow = typeof apiKeys.$inferSelect;
 
@@ -22,8 +24,11 @@ export async function keyView(deps: Deps, k: KeyRow) {
     maskedKey: k.maskedKey,
     costCenter: { id: k.costCenterId, number: cc?.number ?? '', name: cc?.name ?? '' },
     models: k.models,
+    providers: k.providers,
     budget: k.budget === null ? null : Number(k.budget),
-    spend: await spendForKey(deps, k.id),
+    budgetPeriod: k.budgetPeriod,
+    // F-KEY-11: a monthly budget is compared with this month's spend
+    spend: await spendForKey(deps, k.id, k.budgetPeriod ? currentPeriod(k.budgetPeriod, deps.now()) : undefined),
     status: k.status,
     createdAt: k.createdAt.toISOString(),
     expiresAt: k.expiresAt.toISOString(),
@@ -56,13 +61,19 @@ async function assertKeyBudgets(deps: Deps, userId: string, additional: number |
   if (sum > state.budget.amount + 1e-9) throw new ApiError('KEY_BUDGET_EXCEEDS_USER_BUDGET');
 }
 
+/** F-KEY-10: allowed models of the given providers that the key does not have yet. */
+function missingProviderModels(allowed: { modelName: string; provider: string | null }[], keyProviders: string[], models: string[]) {
+  return allowed.filter((p) => p.provider !== null && keyProviders.includes(p.provider) && !models.includes(p.modelName)).map((p) => p.modelName);
+}
+
 export async function createKey(
   deps: Deps,
   cu: CurrentUser,
-  input: { name: string; models: string[]; costCenterId: string; budget?: number | null },
+  input: { name: string; models: string[]; providers: string[]; costCenterId: string; budget?: number | null; budgetPeriod?: KeyBudgetPeriod | null },
 ) {
   const cc = await getCostCenter(deps, input.costCenterId);
   if (cc.status !== 'approved') throw new ApiError('COST_CENTER_NOT_APPROVED');
+  if (!(await isMember(deps, cu.id, cc))) throw new ApiError('COST_CENTER_NOT_MEMBER');
   const allowed = await allowedModelsForCostCenter(deps, cc);
   for (const m of input.models) {
     const p = allowed.find((a) => a.modelName === m);
@@ -72,17 +83,30 @@ export async function createKey(
       throw new ApiError('MODEL_NOT_ALLOWED', `Model ${m} is not available`);
     }
   }
+  const keyProviders = [...new Set(input.providers)];
+  for (const pr of keyProviders) {
+    if (!allowed.some((a) => a.provider === pr)) {
+      const paid = await deps.db.query.providers.findFirst({ where: and(eq(providers.provider, pr), eq(providers.available, true)) });
+      if (paid && cc.isDefault) throw new ApiError('PAID_MODEL_REQUIRES_COST_CENTER', `Provider ${pr} requires a cost center`);
+      throw new ApiError('MODEL_NOT_ALLOWED', `Provider ${pr} is not available`);
+    }
+  }
+  const models = [...new Set(input.models)];
+  models.push(...missingProviderModels(allowed, keyProviders, models));
   const budgetState = await getBudgetState(deps, cu.id);
   if (budgetState.blocked || cc.blockedAt) throw new ApiError('KEY_NOT_ACTIVE', 'Budget exhausted');
   await assertKeyBudgets(deps, cu.id, input.budget ?? null);
+  // A period only makes sense with an amount (F-KEY-11).
+  const budgetPeriod = input.budget == null ? null : (input.budgetPeriod ?? null);
   const expiresAt = new Date(deps.now().getTime() + deps.env.KEY_LIFETIME_DAYS * 86400000);
   // Keys hang on the cost center's LiteLLM team (E-8); the user id is shared with LiteLLM (E-7).
   const created = await deps.litellm.createKey({
     litellmUserId: cu.id,
     teamId: await ensureTeam(deps, cc),
     alias: `${cu.email}:${input.name}`,
-    models: input.models,
+    models,
     maxBudget: input.budget ?? null,
+    budgetDuration: budgetDurationFor(budgetPeriod),
     expiresAt,
     metadata: { api_selfservice_user: cu.id, cost_center: cc.number },
   });
@@ -95,22 +119,41 @@ export async function createKey(
       maskedKey: mask(created.secret),
       name: input.name,
       costCenterId: cc.id,
-      models: input.models,
+      models,
+      providers: keyProviders,
       budget: input.budget == null ? null : String(input.budget),
+      budgetPeriod,
       expiresAt,
     })
     .returning();
-  await audit(deps, { actorId: cu.id, action: 'key.create', entity: 'api_key', entityId: row!.id, payload: { name: input.name, models: input.models, costCenter: cc.number } });
+  await audit(deps, { actorId: cu.id, action: 'key.create', entity: 'api_key', entityId: row!.id, payload: { name: input.name, models, providers: keyProviders, costCenter: cc.number } });
   return { ...(await keyView(deps, row!)), secret: created.secret };
 }
 
-export async function updateKey(deps: Deps, cu: CurrentUser, id: string, input: { budget?: number | null; name?: string }) {
+export async function updateKey(
+  deps: Deps,
+  cu: CurrentUser,
+  id: string,
+  input: { budget?: number | null; budgetPeriod?: KeyBudgetPeriod | null; name?: string },
+) {
   const k = await getOwnKey(deps, cu, id);
   if (input.budget !== undefined) await assertKeyBudgets(deps, cu.id, input.budget, k.id);
-  await deps.litellm.updateKey(k.litellmKeyId, { maxBudget: input.budget, alias: input.name ? `${cu.email}:${input.name}` : undefined });
+  // F-KEY-11: removing the amount also removes the period.
+  const budget = input.budget !== undefined ? input.budget : k.budget === null ? null : Number(k.budget);
+  const budgetPeriod = budget === null ? null : input.budgetPeriod !== undefined ? input.budgetPeriod : k.budgetPeriod;
+  const periodChanged = budgetPeriod !== k.budgetPeriod;
+  await deps.litellm.updateKey(k.litellmKeyId, {
+    maxBudget: input.budget,
+    ...(periodChanged ? { budgetDuration: budgetDurationFor(budgetPeriod) } : {}),
+    alias: input.name ? `${cu.email}:${input.name}` : undefined,
+  });
   const [row] = await deps.db
     .update(apiKeys)
-    .set({ ...(input.budget !== undefined ? { budget: input.budget == null ? null : String(input.budget) } : {}), ...(input.name ? { name: input.name } : {}) })
+    .set({
+      ...(input.budget !== undefined ? { budget: input.budget == null ? null : String(input.budget) } : {}),
+      ...(periodChanged ? { budgetPeriod } : {}),
+      ...(input.name ? { name: input.name } : {}),
+    })
     .where(eq(apiKeys.id, id))
     .returning();
   await audit(deps, { actorId: cu.id, action: 'key.update', entity: 'api_key', entityId: id, payload: input });
@@ -137,6 +180,37 @@ export async function extendKey(deps: Deps, cu: CurrentUser, id: string) {
     .returning();
   await audit(deps, { actorId: cu.id, action: 'key.extend', entity: 'api_key', entityId: id, payload: { expiresAt } });
   return keyView(deps, row!);
+}
+
+/**
+ * F-KEY-10: adds new allowed models of the key's providers to the key (LiteLLM and DB).
+ * Runs after a provider sync or tier change. Models are only added, never removed, like
+ * models picked one by one.
+ */
+export async function syncProviderKeyModels(deps: Deps) {
+  const rows = (await deps.db.query.apiKeys.findMany({ where: ne(apiKeys.status, 'deleted') })).filter((k) => k.providers.length > 0);
+  const allowedByCc = new Map<string, Awaited<ReturnType<typeof allowedModelsForCostCenter>>>();
+  let updated = 0;
+  for (const k of rows) {
+    let allowed = allowedByCc.get(k.costCenterId);
+    if (!allowed) {
+      allowed = await allowedModelsForCostCenter(deps, await getCostCenter(deps, k.costCenterId));
+      allowedByCc.set(k.costCenterId, allowed);
+    }
+    const added = missingProviderModels(allowed, k.providers, k.models);
+    if (added.length === 0) continue;
+    const models = [...k.models, ...added];
+    try {
+      await deps.litellm.updateKey(k.litellmKeyId, { models });
+    } catch (e) {
+      await auditError(deps, { action: 'litellm.update_key', entity: 'api_key', entityId: k.id, err: e, payload: { models } });
+      continue;
+    }
+    await deps.db.update(apiKeys).set({ models }).where(eq(apiKeys.id, k.id));
+    await audit(deps, { actorId: null, action: 'key.models_added', entity: 'api_key', entityId: k.id, payload: { added } });
+    updated++;
+  }
+  return { updated };
 }
 
 // ---------- Admin ----------
@@ -210,6 +284,21 @@ export async function blockKeysOfCostCenter(deps: Deps, costCenterId: string, re
 export async function unblockKeysOfCostCenter(deps: Deps, costCenterId: string) {
   const rows = await deps.db.query.apiKeys.findMany({
     where: and(eq(apiKeys.costCenterId, costCenterId), eq(apiKeys.status, 'blocked'), eq(apiKeys.blockedReason, 'cost_center_budget')),
+  });
+  await setBlocked(deps, rows, false, null);
+}
+
+/** Keys one user holds on one cost center (F-KST-12: blocked while the user is not a member). */
+export async function blockKeysOfMember(deps: Deps, userId: string, costCenterId: string, reason: string) {
+  const rows = await deps.db.query.apiKeys.findMany({
+    where: and(eq(apiKeys.userId, userId), eq(apiKeys.costCenterId, costCenterId), inArray(apiKeys.status, ['active', 'expired'])),
+  });
+  await setBlocked(deps, rows, true, reason);
+}
+
+export async function unblockKeysOfMember(deps: Deps, userId: string, costCenterId: string, reason: string) {
+  const rows = await deps.db.query.apiKeys.findMany({
+    where: and(eq(apiKeys.userId, userId), eq(apiKeys.costCenterId, costCenterId), eq(apiKeys.status, 'blocked'), eq(apiKeys.blockedReason, reason)),
   });
   await setBlocked(deps, rows, false, null);
 }

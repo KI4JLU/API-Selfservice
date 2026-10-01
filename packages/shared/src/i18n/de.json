@@ -14,7 +14,7 @@
     "adminUsers": "User / Rollen",
     "adminLitellmUsers": "LiteLLM-User",
     "adminCostCenters": "Kostenstellen",
-    "adminProviders": "Provider",
+    "adminProviders": "Modelle",
     "adminReports": "Reports",
     "adminNotifications": "Benachrichtigungen",
     "adminEvents": "Ereignisprotokoll",
@@ -86,7 +86,8 @@
     "failure": "Fehler",
     "sent": "Gesendet",
     "failed": "Fehlgeschlagen",
-    "skipped": "Übersprungen"
+    "skipped": "Übersprungen",
+    "never_signed_in": "Noch nie angemeldet"
   },
   "period": {
     "monthly": "Monatlich",
@@ -145,17 +146,26 @@
     "secretHint": "Dieser Key wird nur einmal angezeigt. Kopieren Sie ihn jetzt.",
     "budget": "Key-Budget (EUR)",
     "budgetHint": "Optional, Betrag in EUR. Die Summe aller Key-Budgets darf Ihr User-Budget nicht überschreiten.",
+    "budgetPeriod": "Zeitfenster",
+    "budgetOnce": "Ohne Zeitfenster",
+    "budgetPeriodHint": "Monatlich: Das Budget gilt pro Monat und startet danach neu. Ohne Zeitfenster: Das Budget gilt einmal für die ganze Laufzeit.",
+    "perMonth": "{{amount}} / Monat",
     "paidRequiresCostCenter": "Kostenpflichtige Modelle sind nur mit einer freigegebenen Kostenstelle wählbar.",
     "extended": "Key verlängert bis {{date}}",
     "created": "Key angelegt",
     "deleted": "Key gelöscht",
     "key": "Key",
-    "createHint": "Name, Kostenstelle und Modelle wählen. Der Key wird nach dem Anlegen einmalig angezeigt.",
+    "createHint": "Name, Kostenstelle und Modelle oder Provider wählen. Der Key wird nach dem Anlegen einmalig angezeigt.",
     "empty": "Noch keine Keys. Legen Sie Ihren ersten Key an.",
     "extendHint": "Laufzeit um 6 Monate ab jetzt verlängern",
     "modelsSelected": "{{count}} ausgewählt",
     "secretClose": "Ich habe den Key kopiert",
-    "selectModel": "Bitte mindestens ein Modell wählen."
+    "selectModel": "Bitte mindestens ein Modell oder einen Provider wählen.",
+    "tabModels": "Modelle",
+    "tabProviders": "Provider",
+    "providersHint": "Der Key erhält alle aktuellen Modelle des Providers. Neue Modelle des Providers kommen automatisch hinzu.",
+    "providerModels": "Aktuell: {{models}}",
+    "providerAll": "{{provider}} (alle Modelle)"
   },
   "keyTest": {
     "title": "Key testen",
@@ -200,20 +210,10 @@
   },
   "profile": {
     "title": "Profil",
-    "costCenter": "Kostenstelle",
-    "costCenterHint": "8 Ziffern, z. B. 1234 5678. Unbekannte Kostenstellen werden als Antrag an die Administration gesendet.",
-    "ownerName": "Kostenstellenverantwortlicher",
-    "ownerEmail": "E-Mail des Verantwortlichen",
-    "requestStatus": "Antragsstatus",
-    "requestPending": "Ihr Antrag für Kostenstelle {{number}} wird geprüft.",
-    "requestRejected": "Ihr Antrag für Kostenstelle {{number}} wurde abgelehnt: {{reason}}",
     "saved": "Profil gespeichert",
-    "requestCreated": "Antrag für Kostenstelle {{number}} gesendet",
     "costCenterInvalid": "Die Kostenstelle muss aus 8 Ziffern bestehen.",
-    "currentCostCenter": "Aktive Kostenstelle",
-    "requestApproved": "Ihr Antrag für Kostenstelle {{number}} wurde freigegeben.",
     "cardTitle": "Profildaten",
-    "cardDescription": "Name und E-Mail kommen aus Keycloak. Sprache, Kostenstelle und Verantwortlicher sind hier änderbar."
+    "cardDescription": "Name und E-Mail kommen aus Keycloak. Die Sprache ist hier änderbar."
   },
   "costCenters": {
     "title": "Kostenstellen",
@@ -237,7 +237,7 @@
     "keys": "Keys",
     "blocked": "Gesperrt (Budget erschöpft)",
     "adminSubtitle": "Lookup pflegen und Anträge bearbeiten",
-    "mySubtitle": "Kostenstellen, für die Sie Max-Budget und Report verwalten",
+    "mySubtitle": "Kostenstellen, für die Sie Mitglieder, Max-Budget und Report verwalten",
     "approved": "Kostenstelle {{number}} freigegeben",
     "rejected": "Antrag für {{number}} abgelehnt",
     "archived": "Kostenstelle archiviert",
@@ -247,11 +247,19 @@
     "edit": "Kostenstelle bearbeiten",
     "editBudget": "Budget",
     "maxBudgetHint": "Betrag in EUR. Leer lassen für unbegrenzt.",
+    "models": "Freigegebene Modelle",
+    "modelsHint": "Ohne Auswahl sind alle Modelle freigegeben. Kostenpflichtige Modelle gibt es nur auf eigenen Kostenstellen, nicht auf der Default-Kostenstelle.",
+    "modelsAll": "Alle Modelle",
     "noRequests": "Keine offenen Anträge",
-    "searchPlaceholder": "Nummer oder Bezeichnung"
+    "searchPlaceholder": "Nummer oder Bezeichnung",
+    "ownerHint": "Ein LiteLLM-User. Er wird automatisch Kostenstellen-Admin und bleibt es, solange er Verantwortlicher ist.",
+    "ownerNone": "Noch kein Verantwortlicher gewählt",
+    "ownerPick": "Auswählen",
+    "ownerRequired": "Bitte einen Verantwortlichen aus LiteLLM wählen.",
+    "ownerMissing": "Verantwortlicher fehlt"
   },
   "providers": {
-    "title": "Provider",
+    "title": "Modelle",
     "sync": "Aus LiteLLM synchronisieren",
     "model": "Modell",
     "provider": "Provider",
@@ -264,13 +272,16 @@
     "subtitle": "Modelle aus LiteLLM, Klasse und Bezeichnungen",
     "editTitle": "Bezeichnungen bearbeiten",
     "lastSeen": "Zuletzt gesehen",
-    "saved": "Provider gespeichert",
+    "saved": "Modell gespeichert",
     "tierSaved": "{{model}}: {{tier}}",
     "price": "Preis pro 1 Mio. Tokens",
     "priceIn": "Eingabe",
     "priceOut": "Ausgabe",
     "priceUnknown": "Kein Preis in LiteLLM",
-    "priceHint": "EUR pro 1 Mio. Tokens, wie in LiteLLM konfiguriert"
+    "priceHint": "EUR pro 1 Mio. Tokens, wie in LiteLLM konfiguriert",
+    "noProvider": "Kein Provider",
+    "noProviderHint": "LiteLLM liefert für dieses Modell keinen Provider. Es kommt nicht automatisch zu Keys, die einen ganzen Provider nutzen. In LiteLLM mit Präfix eintragen, z. B. openai/gpt-5.",
+    "noProviderBanner": "Modelle ohne erkannten Provider: {{count}}. Sie kommen nicht automatisch zu Keys, die einen ganzen Provider nutzen. Tragen Sie das Modell in LiteLLM mit Präfix ein (z. B. openai/gpt-5) und synchronisieren Sie neu."
   },
   "users": {
     "title": "User / Rollen",
@@ -344,7 +355,7 @@
     "user": "User",
     "api_key": "API-Key",
     "cost_center": "Kostenstelle",
-    "provider": "Provider",
+    "provider": "Modell",
     "request": "Request",
     "job": "Job"
   },
@@ -382,11 +393,14 @@
       "reject": "Kostenstelle abgelehnt",
       "warn": "Kostenstellen-Budget bei 80 %",
       "block": "Kostenstellen-Budget erschöpft, Keys gesperrt",
-      "unblock": "Kostenstellen-Sperre aufgehoben"
+      "unblock": "Kostenstellen-Sperre aufgehoben",
+      "member_add": "Mitglied hinzugefügt",
+      "member_role": "Rolle eines Mitglieds geändert",
+      "member_remove": "Mitglied entfernt"
     },
     "provider": {
-      "update": "Provider geändert",
-      "sync": "Provider synchronisiert"
+      "update": "Modell geändert",
+      "sync": "Modelle synchronisiert"
     },
     "litellm": {
       "list_users": "LiteLLM: User-Suche fehlgeschlagen",
@@ -419,7 +433,7 @@
       "adminUsers": "Admin: User / Rollen",
       "adminLitellmUsers": "Admin: LiteLLM-User",
       "adminCostCenters": "Admin: Kostenstellen",
-      "adminProviders": "Admin: Provider",
+      "adminProviders": "Admin: Modelle",
       "adminReports": "Admin: Reports",
       "adminNotifications": "Admin: Benachrichtigungen",
       "adminEvents": "Admin: Ereignisprotokoll"
@@ -437,6 +451,12 @@
     "COST_CENTER_EXISTS": "Kostenstelle existiert bereits.",
     "COST_CENTER_DEFAULT_IMMUTABLE": "Die Default-Kostenstelle kann nicht geändert werden.",
     "COST_CENTER_REQUEST_PENDING": "Es gibt bereits einen offenen Antrag.",
+    "COST_CENTER_NOT_MEMBER": "Sie sind nicht Mitglied dieser Kostenstelle. Bitte wenden Sie sich an einen Kostenstellen-Admin.",
+    "COST_CENTER_MEMBER_EXISTS": "Die Person ist bereits Mitglied dieser Kostenstelle.",
+    "COST_CENTER_OWNER_ONLY": "Nur der Verantwortliche der Kostenstelle kann Kostenstellen-Admins ernennen, herabstufen oder entfernen.",
+    "USER_DEACTIVATED": "Der User ist deaktiviert.",
+    "COST_CENTER_OWNER_MUST_BE_ADMIN": "Der Verantwortliche bleibt Kostenstellen-Admin. Setzen Sie zuerst einen anderen Verantwortlichen.",
+    "OWNER_NOT_LITELLM_USER": "Der Verantwortliche muss ein LiteLLM-User mit E-Mail-Adresse sein.",
     "PAID_MODEL_REQUIRES_COST_CENTER": "Kostenpflichtige Modelle benötigen eine eigene Kostenstelle.",
     "MODEL_NOT_ALLOWED": "Modell nicht verfügbar.",
     "KEY_BUDGET_EXCEEDS_USER_BUDGET": "Key-Budgets übersteigen das User-Budget.",
@@ -447,6 +467,7 @@
     "ROLE_MANAGED_BY_IDP": "Diese Rolle wird über die Keycloak-Gruppe vergeben.",
     "SELF_DEACTIVATION": "Sie können sich nicht selbst deaktivieren.",
     "LITELLM_ERROR": "LiteLLM hat einen Fehler gemeldet.",
+    "RATE_LIMITED": "Zu viele Versuche. Bitte versuchen Sie es später erneut.",
     "INTERNAL": "Interner Fehler."
   },
   "locale": {
@@ -469,12 +490,37 @@
     "user_deactivated": "User deaktiviert",
     "deletion_due": "Löschfrist erreicht",
     "role_changed": "Rolle geändert",
-    "rebooking_created": "Umbuchung erzeugt"
+    "rebooking_created": "Umbuchung erzeugt",
+    "cost_center_member_added": "Zur Kostenstelle hinzugefügt",
+    "cost_center_member_removed": "Aus Kostenstelle entfernt"
   },
   "impersonation": {
     "banner": "Sie handeln als {{name}} ({{email}}).",
     "stop": "Beenden",
     "stopped": "Impersonation beendet"
+  },
+  "members": {
+    "title": "Mitglieder",
+    "listTitle": "Mitglieder der Kostenstelle",
+    "addTitle": "Mitglied hinzufügen",
+    "addHint": "Suchen Sie nach E-Mail (mind. 3 Zeichen) oder User-ID. Es lassen sich nur Personen hinzufügen, die LiteLLM bereits kennt. Sie erhalten eine E-Mail und können danach Keys auf diese Kostenstelle anlegen.",
+    "searchPlaceholder": "E-Mail oder User-ID",
+    "add": "Hinzufügen",
+    "added": "{{email}} hinzugefügt",
+    "alreadyMember": "Bereits Mitglied",
+    "neverSignedIn": "noch nie angemeldet",
+    "noCandidates": "Keine passenden LiteLLM-User gefunden.",
+    "empty": "Noch keine Mitglieder",
+    "remove": "Entfernen",
+    "removeTitle": "Mitglied entfernen",
+    "removeConfirm": "{{name}} aus der Kostenstelle entfernen? Die Keys der Person auf dieser Kostenstelle werden gesperrt.",
+    "removed": "{{name}} entfernt",
+    "roleChanged": "Rolle von {{name}} geändert",
+    "owner": "Verantwortlich",
+    "roles": {
+      "user": "Mitglied",
+      "admin": "Kostenstellen-Admin"
+    }
   },
   "litellmUsers": {
     "title": "LiteLLM-User",
