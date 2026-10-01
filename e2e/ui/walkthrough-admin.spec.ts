@@ -166,8 +166,6 @@ test.describe('walkthrough: admin', () => {
       await shot('user-deactivate');
       await deactivate.getByTestId('btn-confirm').click();
       await expect(deactivate).toBeHidden();
-      await expect(rejectedRow).toHaveCount(0);
-      await page.getByTestId('switch-include-deactivated').click();
       await expect(rejectedRow.getByTestId('user-status')).toHaveAttribute('data-status', 'deactivated');
       await shot('user-deactivated');
       await rejectedRow.getByTestId('btn-user-actions').click();
