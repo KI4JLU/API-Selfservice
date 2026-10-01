@@ -40,6 +40,7 @@ agents.md
 *.local.md
 scripts
 docker-compose.yml
+docker-compose.coolify.yml
 Dockerfile
 .dockerignore
 
