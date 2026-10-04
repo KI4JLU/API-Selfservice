@@ -73,7 +73,8 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
     mode: 'http',
     async health() {
       try {
-        const res = await f(`${base}/health/readiness`);
+        // Short timeout: /health backs the container healthcheck (5 s) and must not wait for an unreachable proxy.
+        const res = await f(`${base}/health/readiness`, { signal: AbortSignal.timeout(3000) });
         return { ok: res.ok, detail: await res.text() };
       } catch (e) {
         return { ok: false, detail: (e as Error).message };

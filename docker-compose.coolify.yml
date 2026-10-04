@@ -9,13 +9,14 @@ services:
       dockerfile: Dockerfile
     env_file: .env
     environment:
-      DATABASE_URL: postgres://api_selfservice:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/api_selfservice
+      DATABASE_URL: postgres://api_selfservice:${SERVICE_PASSWORD_POSTGRES}@apiselfservice-db:5432/api_selfservice
       PORT: "3030"
     depends_on:
-      postgres:
+      apiselfservice-db:
         condition: service_healthy
 
-  postgres:
+  # Unique service name: Coolify attaches services to a shared network where a plain `postgres` can resolve to another app's database.
+  apiselfservice-db:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: api_selfservice
