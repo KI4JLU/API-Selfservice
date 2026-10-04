@@ -39,7 +39,12 @@ function LoginPage() {
     setBusy(true);
     try {
       const target = search.redirect ? new URL(search.redirect, window.location.origin).toString() : window.location.origin;
-      await signInWithKeycloak(target);
+      // The Better Auth client reports API errors (e.g. PROVIDER_NOT_FOUND) in `error` instead of throwing.
+      const { error } = await signInWithKeycloak(target);
+      if (error) {
+        toast.error(t('auth.loginFailed'));
+        setBusy(false);
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
       setBusy(false);
