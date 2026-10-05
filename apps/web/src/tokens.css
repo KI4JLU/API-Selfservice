@@ -1,0 +1,686 @@
+/* ============================================================================
+ * @ki4jlu/design-system — Design Tokens
+ *
+ * Tailwind-4-Quelldatei (enthält @theme). Einbindung im Konsumenten-CSS:
+ *   @import "tailwindcss";
+ *   @import "@ki4jlu/design-system/tokens.css";
+ *   @source "../node_modules/@ki4jlu/design-system";
+ * Fonts (Inter, Manrope) lädt die App selbst — siehe README. Monospace nur für
+ * den Inhalt von Code-Boxen (`font-mono`, System-Schriften, kein Webfont) —
+ * nie für Buttons.
+ * ========================================================================== */
+
+
+/* ============================================================================
+ * PRIMITIVE TOKENS — Ebene 1
+ * Rohwerte OHNE Bedeutung. NIEMALS direkt in Komponenten verwenden.
+ * Nur die semantischen Tokens (im @theme-Block unten) dürfen sie referenzieren.
+ * Bewusst außerhalb von @theme, damit Tailwind KEINE `--p-*`-Utilities erzeugt.
+ * Werte stammen 1:1 aus der Material-3-Palette "Modern Clean Desktop" (Stitch);
+ * die semantische Ebene bildet sie exakt ab (keine Farbänderung ggü. Phase 0).
+ * ========================================================================== */
+:root {
+  /* Blau (Marke / primary) */
+  --p-blue-50: #e8f0ff;
+  --p-blue-100: #d1e4ff;
+  --p-blue-200: #adc6ff;
+  --p-blue-300: #7cb3ff;
+  --p-blue-600: #0052ff;
+  --p-blue-700: #0056b3;
+  --p-blue-800: #003366;
+  --p-blue-900: #001a4d;
+  --p-blue-950: #001433;
+
+  /* Slate (secondary) */
+  --p-slate-50: #d8e3fa;
+  --p-slate-100: #d5e0f7;
+  --p-slate-150: #dbe2f5;
+  --p-slate-200: #bcc7dd;
+  --p-slate-500: #545f72;
+  --p-slate-600: #586377;
+  --p-slate-700: #3c475a;
+  --p-slate-800: #38415a;
+  --p-slate-950: #111c2c;
+
+  /* Rose (tertiary) */
+  --p-rose-50: #fffbff;
+  --p-rose-100: #ffdad8;
+  --p-rose-200: #ffb3b0;
+  --p-rose-500: #ba5555;
+  --p-rose-600: #9a3e3f;
+  --p-rose-800: #7f292b;
+  --p-rose-950: #410007;
+
+  /* Neutral / Grau (kühl) — Flächen, Text, Ränder (hell → dunkel) */
+  --p-white: #ffffff;
+  --p-black: #000000;
+  --p-gray-50: #f7fafc;
+  --p-gray-75: #f1f4f6;
+  --p-gray-100: #eef1f3;
+  --p-gray-125: #e3e3e7;
+  --p-gray-150: #ebeef0;
+  --p-gray-175: #e5e9eb;
+  --p-gray-200: #e0e3e5;
+  --p-gray-250: #d7dadc;
+  --p-gray-300: #bccac0;
+  --p-gray-350: #c2c7cf;
+  --p-gray-450: #8c9199;
+  --p-gray-500: #6d7a72;
+  --p-gray-700: #3d4a42;
+  --p-gray-800: #2d3133;
+  --p-gray-820: #43474e;
+  --p-gray-825: #42474e;
+  --p-gray-835: #383b3e;
+  --p-gray-840: #373b3f;
+  --p-gray-870: #2e3135;
+  --p-gray-880: #2c3034;
+  --p-gray-900: #181c1e;
+  --p-gray-910: #22262a;
+  --p-gray-925: #1e2125;
+  --p-gray-940: #1a1d21;
+  --p-gray-950: #121417;
+  --p-gray-975: #0f1114;
+
+  /* Rot (error / danger) */
+  --p-red-100: #ffdad6;
+  --p-red-300: #ffb4ab;
+  --p-red-600: #ba1a1a;
+  --p-red-900: #93000a;
+  --p-red-950: #690005;
+
+  /* Grün (success) */
+  --p-green-100: #d1f0dd;
+  --p-green-200: #b7f0c8;
+  --p-green-400: #4ade80;
+  --p-green-600: #15803d;
+  --p-green-900: #14532d;
+
+  /* Amber (warning) */
+  --p-amber-100: #fef3c7;
+  --p-amber-200: #fde68a;
+  --p-amber-400: #fbbf24;
+  --p-amber-500: #d97706;
+  --p-amber-700: #b45309;
+  --p-amber-900: #78350f;
+
+  /* Ink / Emerald — Code-/Terminal-Viewer (Editor-Optik) */
+  --p-ink-900: #1e1e2e;
+  --p-ink-100: #f1f5f9;
+  --p-emerald-300: #6ee7b7;
+
+  /* Teal (info) */
+  --p-teal-100: #ccfbf1;
+  --p-teal-200: #99f6e4;
+  --p-teal-400: #2dd4bf;
+  --p-teal-600: #0d9488;
+  --p-teal-900: #134e4a;
+}
+
+/* ============================================================================
+ * ELEVATION-RAMPE — vier Stufen, theme-abhängig
+ *
+ * Warum eine eigene Ebene statt der Werte direkt in --shadow-*: Tailwind
+ * INLINED Shadow-Werte aus @theme in die Utility (`--tw-shadow:0 1px 2px 0
+ * #0000000d`), anders als Farben, die als var(--color-*) referenziert bleiben.
+ * Ein Override von --shadow-card im [data-theme="dark"]-Block wäre deshalb
+ * wirkungslos. Nur ein var() im Token überlebt den Theme-Wechsel — also steht
+ * hier der Wert und im @theme nur der Verweis.
+ *
+ * Auf dunklem Grund brauchen Schatten deutlich mehr Deckkraft, sonst
+ * verschwinden sie: 0.05/0.1 sind auf #121417 faktisch unsichtbar.
+ * In Komponenten NICHT direkt nutzen — dafür gibt es shadow-card,
+ * shadow-card-hover, shadow-overlay, shadow-modal.
+ * ========================================================================== */
+:root {
+  /* 1 — ruhende Karte */
+  --elevation-1: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  /* 2 — angehobene Karte (Hover) */
+  --elevation-2: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  /* 3 — schwebendes Panel: Popover, Dropdown, Select */
+  --elevation-3: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  /* 4 — modale Schicht über dem Scrim: Dialog, Drawer */
+  --elevation-4: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+/* ============================================================================
+ * SEMANTISCHE TOKENS — Ebene 2
+ * Beschreiben ABSICHT und referenzieren ausschließlich Primitive (var(--p-*)).
+ * Nur diese Tokens werden in der Anwendung/Komponenten benutzt.
+ * ========================================================================== */
+@theme {
+  /* Primary */
+  --color-primary: var(--p-blue-700);
+  --color-on-primary: var(--p-white);
+  --color-primary-container: var(--p-blue-700);
+  --color-on-primary-container: var(--p-white);
+  --color-primary-fixed: var(--p-blue-100);
+  --color-on-primary-fixed: var(--p-blue-950);
+  --color-primary-fixed-dim: var(--p-blue-200);
+  --color-on-primary-fixed-variant: var(--p-blue-900);
+
+  /* Secondary */
+  --color-secondary: var(--p-slate-500);
+  --color-on-secondary: var(--p-white);
+  --color-secondary-container: var(--p-slate-100);
+  --color-on-secondary-container: var(--p-slate-600);
+  --color-secondary-fixed: var(--p-slate-50);
+  --color-on-secondary-fixed: var(--p-slate-950);
+  --color-secondary-fixed-dim: var(--p-slate-200);
+  --color-on-secondary-fixed-variant: var(--p-slate-700);
+
+  /* Tertiary */
+  --color-tertiary: var(--p-rose-600);
+  --color-on-tertiary: var(--p-white);
+  --color-tertiary-container: var(--p-rose-500);
+  --color-on-tertiary-container: var(--p-rose-50);
+  --color-tertiary-fixed: var(--p-rose-100);
+  --color-on-tertiary-fixed: var(--p-rose-950);
+  --color-tertiary-fixed-dim: var(--p-rose-200);
+  --color-on-tertiary-fixed-variant: var(--p-rose-800);
+
+  /* Error */
+  --color-error: var(--p-red-600);
+  --color-on-error: var(--p-white);
+  --color-error-container: var(--p-red-100);
+  --color-on-error-container: var(--p-red-900);
+
+  /* Background / Surface / Text */
+  --color-background: var(--p-gray-50);
+  --color-on-background: var(--p-gray-900);
+
+  --color-surface: var(--p-gray-50);
+  --color-surface-dim: var(--p-gray-250);
+  --color-surface-bright: var(--p-gray-50);
+  --color-on-surface: var(--p-gray-900);
+  --color-on-surface-variant: var(--p-gray-700);
+  --color-surface-variant: var(--p-gray-200);
+
+  --color-surface-container-lowest: var(--p-white);
+  --color-surface-container-low: var(--p-gray-75);
+  --color-surface-container: var(--p-gray-150);
+  --color-surface-container-high: var(--p-gray-175);
+  --color-surface-container-highest: var(--p-gray-200);
+
+  --color-inverse-surface: var(--p-gray-800);
+  --color-inverse-on-surface: var(--p-gray-100);
+  --color-inverse-primary: var(--p-blue-200);
+
+  --color-outline: var(--p-gray-500);
+  --color-outline-variant: var(--p-gray-100);
+  --color-surface-tint: var(--p-blue-700);
+
+  /* Scrim — abdunkelnde Schicht unter modalen Flächen (Dialog, Drawer).
+   * Nutzung IMMER mit Deckkraft-Modifier: `bg-scrim/50`. Bleibt in beiden
+   * Themes schwarz: der Scrim trennt Ebenen, er ist keine Themefarbe. */
+  --color-scrim: var(--p-black);
+
+  /* Border radius */
+  --radius-DEFAULT: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  /* 2xl (0.42.0): the corner a pill-shaped frame keeps once it is taller than
+   * a single row — half the height of one 48px control row, so the frame's
+   * corners follow the circular controls inside it instead of snapping to
+   * the 12px card radius. Overrides Tailwind's default 1rem. */
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* Interaktions-Radien — EIN Regler pro Kontrollart. `rounded-action` steuert
+   * Buttons UND Navigations-Items gemeinsam, `rounded-field` die
+   * Formularfelder. Hier ändern = überall geändert. */
+  --radius-action: var(--radius-lg);
+  --radius-field: var(--radius-lg);
+
+  /* Spacing tokens */
+  --spacing-gutter: 24px;
+  --spacing-stack-sm: 8px;
+  --spacing-stack-md: 16px;
+  --spacing-stack-lg: 32px;
+  --spacing-margin-page: 40px;
+
+  /* Seitenbreiten-Skala — die drei Breiten, die `Container size` benennt
+   * (`page` / `content` / `reading`). EINE Stelle zum Nachjustieren; ein
+   * `max-w-[…]` am Aufrufort ist immer ein Fehler, weil er hier nicht sichtbar
+   * ist. Referenziert werden sie als `max-w-(--max-width-container-*)`, nicht
+   * als `max-w-container-*` — Begründung in `container-variants.ts`.
+   *
+   * `page` und `content` sind Geräteraum (px): eine Seitenbreite begrenzt
+   * Karten, Raster und Tabellen. `reading` ist ein TEXTmaß und deshalb in rem —
+   * es soll mit der Schriftgröße des Nutzers mitwachsen. 42rem = 672px bei
+   * 16px-Wurzelgröße und ist damit derselbe Wert wie Tailwinds `--container-2xl`
+   * (`max-w-2xl`), den diese Breite vorher direkt benutzt hat.
+   *
+   * Der Name `container-max` (nicht `container-page`) bleibt, obwohl die
+   * Variante `page` heißt: dieses Token ist veröffentlicht und wird in
+   * CampusAgents direkt als `max-w-container-max` geschrieben — eine Umbenennung
+   * wäre dort ein stiller Ausfall (Klasse kompiliert zu nichts). */
+  --max-width-container-max: 1440px;
+  --max-width-container-content: 1000px;
+  --max-width-container-reading: 42rem;
+
+  /* Sidebar-Breiten — die Navigationsspalte in ihren beiden Zuständen.
+   * Referenziert als `w-(--width-sidebar)` bzw. `w-(--width-sidebar-collapsed)`,
+   * aus demselben Grund wie bei den Container-Breiten (Begründung ausführlich
+   * in `container-variants.ts`): tailwind-merge kennt einen eigenen Theme-Key
+   * nicht als `w`-Konflikt, die Arbitrary-Variable-Form dagegen schon — eine
+   * Breitenklasse am Aufrufort gewinnt damit weiterhin.
+   *
+   * `16rem` ist exakt der Wert, den das bisherige `w-64` aufgelöst hat
+   * (Tailwind-Spacing 64 × 0.25rem). Die Umstellung auf das Token ändert die
+   * ausgeklappte Breite also nicht — auch nicht bei abweichender
+   * Wurzelschriftgröße, und deshalb rem statt px: die Spalte ist bisher mit
+   * der Schriftgröße mitgewachsen.
+   *
+   * `5rem` (80px bei 16px-Wurzel) ist die eingeklappte Breite. Hergeleitet,
+   * nicht gewählt: die <nav>-Spalte behält eingeklappt `px-2` (2 × 8px), eine
+   * NavItem-Zeile bringt ihre eigenen `px-4` (2 × 16px) aus `navItemVariants`
+   * mit — 80 − 16 − 32 = 32px freie Fläche, in der ein 16px- (1em) wie ein
+   * 20px-Icon (h-5) zentriert Platz hat.
+   *
+   * Bewusst NICHT `SIDE_PANEL_RAIL_WIDTH` (60px): dort steht ein einzelner
+   * Icon-Button ohne Zeilen-Innenabstand, hier eine vollbreite Zeile. Ein
+   * gemeinsames „Chrome-Maß" über AppShell/SidePanel/BottomTabBar/Sidebar wäre
+   * das aufgeräumtere System — siehe das TODO in `side-panel-variants.ts`;
+   * das ist eine Eigentümer-Entscheidung und hier nicht getroffen. */
+  --width-sidebar: 16rem;
+  --width-sidebar-collapsed: 5rem;
+
+  /* Font families */
+  --font-display-lg: "Manrope", sans-serif;
+  --font-headline-md: "Manrope", sans-serif;
+  --font-headline-md-mobile: "Manrope", sans-serif;
+  /* Labels, buttons, tabs, chips: Inter like the body. Was JetBrains Mono,
+     which put a monospace face on every control; mono is for code only. */
+  --font-label-sm: "Inter", sans-serif;
+  --font-stat-lg: "Inter", sans-serif;
+  --font-body-base: "Inter", sans-serif;
+  /* Code-box CONTENT only (`font-mono` on CodeBlock's <pre>) — never on
+     buttons, including the code box's own copy button. The system's own
+     monospace faces; no webfont to ship for one use. */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Font sizes (size / line-height / weight) */
+  --text-display-lg: 32px;
+  --text-display-lg--line-height: 1.2;
+  --text-display-lg--font-weight: 700;
+
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 1.3;
+  --text-headline-md--font-weight: 600;
+
+  --text-headline-md-mobile: 20px;
+  --text-headline-md-mobile--line-height: 1.3;
+  --text-headline-md-mobile--font-weight: 600;
+
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 1;
+  --text-label-sm--font-weight: 500;
+
+  --text-stat-lg: 36px;
+  --text-stat-lg--line-height: 1;
+  --text-stat-lg--font-weight: 600;
+
+  --text-body-base: 16px;
+  --text-body-base--line-height: 1.5;
+  --text-body-base--font-weight: 400;
+
+  /* --------------------------------------------------------------------------
+   * SEMANTISCHE STATUS-/FEEDBACK-TOKENS
+   * Ersetzen die verstreuten `green-*` / `teal-*` / `amber-*` Utilities.
+   * In Komponenten: bg-success, text-on-success-container, bg-warning, ...
+   * ------------------------------------------------------------------------ */
+  --color-success: var(--p-green-600);
+  --color-on-success: var(--p-white);
+  --color-success-container: var(--p-green-100);
+  --color-on-success-container: var(--p-green-900);
+
+  /* amber-700 statt -500: 4.5:1-Kontrast als Textfarbe auf Surface (WCAG AA) */
+  --color-warning: var(--p-amber-700);
+  --color-on-warning: var(--p-white);
+  --color-warning-container: var(--p-amber-100);
+  --color-on-warning-container: var(--p-amber-900);
+
+  --color-info: var(--p-teal-600);
+  --color-on-info: var(--p-white);
+  --color-info-container: var(--p-teal-100);
+  --color-on-info-container: var(--p-teal-900);
+
+  /* --------------------------------------------------------------------------
+   * BRAND — Plattform-Wortmarke (Logo: „JLU [CampusAgents]").
+   * Werte aus der Brand-Vorlage: Badge #0056b3, Prefix-Navy #003366.
+   * Das Brand-Blau (--p-blue-700) ist zugleich die Basis von
+   * --color-primary — Marke und Primäraktion teilen EINE Farbe.
+   * `brand`/`on-brand` (Badge) bleiben BEWUSST in beiden Themes gleich —
+   * Markenfarbe ist Identität (wie code-surface). Nur die Wortmarke
+   * (`brand-wordmark`) invertiert im Dark-Mode zur Lesbarkeit.
+   * ------------------------------------------------------------------------ */
+  --color-brand: var(--p-blue-700);
+  --color-on-brand: var(--p-white);
+  --color-brand-wordmark: var(--p-blue-800);
+
+  /* --------------------------------------------------------------------------
+   * CODE-SURFACE — Editor-Optik für Code-/Terminal-Viewer (CodeBlock).
+   * Diese Tokens schalten BEWUSST NICHT im Dark-Mode um (kein Override im
+   * [data-theme="dark"]-Block): ein Code-Viewer bleibt in hell UND dunkel
+   * identisch dunkel, wie ein Editor-Fenster.
+   * ------------------------------------------------------------------------ */
+  --color-code-surface: var(--p-ink-900);
+  --color-on-code-surface: var(--p-ink-100);
+  --color-code-accent: var(--p-emerald-300);
+
+  /* --------------------------------------------------------------------------
+   * INTERAKTIONS-ZUSTÄNDE (hover/active/focus/disabled)
+   * Die häufigste Quelle für Theme-Bugs, wenn sie fehlen (siehe Plan).
+   * ------------------------------------------------------------------------ */
+  --color-primary-hover: var(--p-blue-900);
+  --color-primary-active: var(--p-blue-950);
+  --color-focus-ring: var(--p-blue-700);
+  --color-disabled: var(--color-surface-container-high);
+  --color-on-disabled: var(--color-outline);
+
+  /* --------------------------------------------------------------------------
+   * CHART-SERIEN — für SVG-Diagramme (fill-chart-1, stroke-chart-2, bg-chart-3
+   * für Legenden-Punkte, fill-chart-track für Donut-/Balken-Hintergründe).
+   * Serienfarben sind Absicht („1. Serie"), keine Markenfarben — im Dark-Mode
+   * hellen sie auf, damit sie auf dunklen Flächen lesbar bleiben.
+   * ------------------------------------------------------------------------ */
+  --color-chart-1: var(--p-blue-700);
+  --color-chart-2: var(--p-blue-300);
+  --color-chart-3: var(--p-gray-300);
+  --color-chart-4: var(--p-gray-175);
+  --color-chart-track: var(--p-gray-75);
+
+  /* --------------------------------------------------------------------------
+   * ELEVATION / SCHATTEN (eigene Namen, um Tailwind-Defaults nicht zu clobbern)
+   * Nutzung: shadow-card, hover:shadow-card-hover, shadow-overlay, shadow-modal
+   * Die Werte stehen in der Elevation-Rampe oben (--elevation-*), damit der
+   * Dark-Mode sie verstärken kann — siehe Kommentar dort.
+   * ------------------------------------------------------------------------ */
+  --shadow-card: var(--elevation-1);
+  --shadow-card-hover: var(--elevation-2);
+  --shadow-overlay: var(--elevation-3);
+  --shadow-modal: var(--elevation-4);
+}
+
+/*
+ * Dark theme — überschreibt die semantischen Farb-Tokens. Aktiv, wenn
+ * <html data-theme="dark"> gesetzt ist. Der ThemeProvider (src/theme) löst die
+ * Nutzerwahl (hell / dunkel / system) auf und setzt data-theme; ein Inline-
+ * Skript in index.html tut dasselbe VOR dem ersten Paint (kein FOUC). "system"
+ * wird per matchMedia in JS aufgelöst, daher braucht es hier KEINE
+ * prefers-color-scheme-Media-Query mehr. Da die Regel ungelayert ist, gewinnt
+ * sie gegen die @theme-Defaults, sodass ALLE Komponenten, die die Tokens nutzen,
+ * automatisch mitschalten. Auch hier: nur Primitive referenzieren.
+ */
+[data-theme="dark"] {
+    color-scheme: dark;
+
+    --color-background: var(--p-gray-950);
+    --color-on-background: var(--p-gray-125);
+
+    --color-surface: var(--p-gray-950);
+    --color-surface-dim: var(--p-gray-975);
+    --color-surface-bright: var(--p-gray-835);
+    --color-on-surface: var(--p-gray-125);
+    --color-on-surface-variant: var(--p-gray-350);
+    --color-surface-variant: var(--p-gray-820);
+
+    /* Chrome-Flächen (Sidebar, Header, Card, …) sind schwarz — das dunkle
+     * Gegenstück zum reinen Weiß im Hellmodus. Sie heben sich damit bewusst
+     * dunkler ab als der Seitenhintergrund (surface, dunkelgrau), analog zur
+     * Beziehung Weiß-auf-Hellgrau im Light-Theme. */
+    --color-surface-container-lowest: var(--p-black);
+    --color-surface-container-low: var(--p-gray-925);
+    --color-surface-container: var(--p-gray-910);
+    --color-surface-container-high: var(--p-gray-880);
+    --color-surface-container-highest: var(--p-gray-840);
+
+    /* Inverse-Tokens sind jetzt die echte Umkehrung: hell auf dunkel. */
+    --color-inverse-surface: var(--p-gray-125);
+    --color-inverse-on-surface: var(--p-gray-870);
+
+    --color-outline: var(--p-gray-450);
+    /* Dividers spiegeln im Dunkeln das Hell-Verhältnis: dort eine Spur dunkler
+     * als das weiße Chrome, hier eine Spur heller als das schwarze — gedämpft,
+     * nie als helle Linie auf dunklem Grund. */
+    --color-outline-variant: var(--p-gray-880);
+
+    /* Sekundär-Container (Hover/aktive Sub-Navigation) gedämpftes Blau. */
+    --color-secondary-container: var(--p-slate-800);
+    --color-on-secondary-container: var(--p-slate-150);
+
+    /* Fehlerfarben für dunklen Grund (heller Rot-Ton). */
+    --color-error: var(--p-red-300);
+    --color-on-error: var(--p-red-950);
+    --color-error-container: var(--p-red-900);
+    --color-on-error-container: var(--p-red-100);
+
+    /* Status-Tokens auf dunklem Grund: hellere Akzente, dunkle Container. */
+    --color-success: var(--p-green-400);
+    --color-on-success: var(--p-green-900);
+    --color-success-container: var(--p-green-900);
+    --color-on-success-container: var(--p-green-200);
+
+    --color-warning: var(--p-amber-400);
+    --color-on-warning: var(--p-amber-900);
+    --color-warning-container: var(--p-amber-900);
+    --color-on-warning-container: var(--p-amber-200);
+
+    --color-info: var(--p-teal-400);
+    --color-on-info: var(--p-teal-900);
+    --color-info-container: var(--p-teal-900);
+    --color-on-info-container: var(--p-teal-200);
+
+    /* Brand: Badge bleibt markenkonstant (kein Override); nur die Wortmarke
+       wird hell, damit sie auf dunklem Grund lesbar ist. */
+    --color-brand-wordmark: var(--p-gray-125);
+
+    /* Primary kehrt sich um: im Dunkeln ist die Primärfarbe ein HELLER Akzent
+       mit dunkler Schrift darauf (M3). Vorher blieb --color-primary in beiden
+       Themes #0056b3, während hover/active bereits aufhellten — in sich
+       widersprüchlich, und als Textfarbe (`text-primary`, `border-primary`)
+       auf dunkler Fläche unlesbar (1,4:1 bis 2,6:1 je nach Container).
+       Jetzt: text-primary 10,8:1 auf surface, 6,6:1 auf der hellsten dunklen
+       Fläche (surface-container-highest); bg-primary + text-on-primary 9,8:1.
+       Wer eine dunkle Fläche mit hellem Primary-Text braucht, nutzt weiterhin
+       --color-inverse-primary. */
+    --color-primary: var(--p-blue-200);
+    --color-on-primary: var(--p-blue-900);
+
+    /* Interaktions-Zustände: im Dunkeln hellt der Hover auf statt abzudunkeln.
+       Eine Stufe heller als primary (blue-200), sonst fiele Hover mit dem
+       Ruhezustand zusammen. */
+    --color-primary-hover: var(--p-blue-100);
+    --color-primary-active: var(--p-blue-50);
+    --color-focus-ring: var(--p-blue-200);
+
+    /* Chart-Serien: hellere Akzente, gedämpfte Neutrale, dunkler Track. */
+    --color-chart-1: var(--p-blue-200);
+    --color-chart-2: var(--p-blue-700);
+    --color-chart-3: var(--p-gray-450);
+    --color-chart-4: var(--p-gray-820);
+    --color-chart-track: var(--p-gray-880);
+
+    /* Elevation: auf dunklem Grund braucht ein schwarzer Schatten deutlich
+       mehr Deckkraft, sonst ist er nicht wahrnehmbar. Geometrie bleibt gleich,
+       nur die Alpha-Werte steigen. */
+    --elevation-1: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+    --elevation-2: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
+    --elevation-3: 0 10px 15px -3px rgb(0 0 0 / 0.6), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+    --elevation-4: 0 20px 25px -5px rgb(0 0 0 / 0.7), 0 8px 10px -6px rgb(0 0 0 / 0.6);
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  background-color: var(--color-surface);
+}
+
+/* ==========================================================================
+ * Style (UiShapeProvider → <html data-ui-shape>): radii for consumer CSS that
+ * should follow the global rounded / pill switch. DS components read the
+ * shape themselves; these exist for surfaces an app builds on its own.
+ *   card    — a one-line row (sidebar card)
+ *   box     — a multi-line surface (pill → 24px, not a capsule)
+ *   control — a button
+ *   tile    — an icon tile
+ * ========================================================================== */
+:root,
+[data-ui-shape="rounded"] {
+  --ui-radius-card: var(--radius-xl);
+  --ui-radius-box: var(--radius-xl);
+  --ui-radius-control: var(--radius-action);
+  --ui-radius-tile: 6px;
+}
+
+[data-ui-shape="pill"] {
+  --ui-radius-card: 9999px;
+  --ui-radius-box: var(--radius-2xl);
+  --ui-radius-control: 9999px;
+  --ui-radius-tile: 9999px;
+}
+
+/* ==========================================================================
+ * Accent colour (AppearanceProvider → <html data-accent>). `standard` is the
+ * JLU blue defined above; each other accent replaces the whole primary family,
+ * light and dark, so everything drawn in `primary` follows it. Light values
+ * keep ≥ 6:1 against white; dark values are the light-on-dark M3 inversion
+ * with the accent's darkest shade as `on-primary`.
+ * The swatches are what pickers show (AccentSwatch).
+ * ========================================================================== */
+:root {
+  --accent-swatch-standard: var(--p-blue-700);
+  --accent-swatch-teal: #00696b;
+  --accent-swatch-violet: #5b3fbf;
+  --accent-swatch-green: #2e6b30;
+  --accent-swatch-rose: #a8325a;
+  --accent-swatch-amber: #8a5100;
+}
+
+[data-accent="teal"] {
+  --color-primary: #00696b;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #00696b;
+  --color-on-primary-container: #ffffff;
+  --color-primary-fixed: #b2efee;
+  --color-on-primary-fixed: #002021;
+  --color-primary-fixed-dim: #80d5d4;
+  --color-on-primary-fixed-variant: #003738;
+  --color-inverse-primary: #80d5d4;
+  --color-primary-hover: #003738;
+  --color-primary-active: #002021;
+  --color-focus-ring: #00696b;
+}
+[data-theme="dark"][data-accent="teal"] {
+  --color-primary: #80d5d4;
+  --color-on-primary: #003738;
+  --color-primary-hover: #b2efee;
+  --color-primary-active: #dcfaf9;
+  --color-focus-ring: #80d5d4;
+}
+
+[data-accent="violet"] {
+  --color-primary: #5b3fbf;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #5b3fbf;
+  --color-on-primary-container: #ffffff;
+  --color-primary-fixed: #e6deff;
+  --color-on-primary-fixed: #1a0848;
+  --color-primary-fixed-dim: #cabeff;
+  --color-on-primary-fixed-variant: #2a1070;
+  --color-inverse-primary: #cabeff;
+  --color-primary-hover: #2a1070;
+  --color-primary-active: #1a0848;
+  --color-focus-ring: #5b3fbf;
+}
+[data-theme="dark"][data-accent="violet"] {
+  --color-primary: #cabeff;
+  --color-on-primary: #2a1070;
+  --color-primary-hover: #e6deff;
+  --color-primary-active: #f4f0ff;
+  --color-focus-ring: #cabeff;
+}
+
+[data-accent="green"] {
+  --color-primary: #2e6b30;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #2e6b30;
+  --color-on-primary-container: #ffffff;
+  --color-primary-fixed: #c3efc0;
+  --color-on-primary-fixed: #07260a;
+  --color-primary-fixed-dim: #a7d5a4;
+  --color-on-primary-fixed-variant: #0f3a12;
+  --color-inverse-primary: #a7d5a4;
+  --color-primary-hover: #0f3a12;
+  --color-primary-active: #07260a;
+  --color-focus-ring: #2e6b30;
+}
+[data-theme="dark"][data-accent="green"] {
+  --color-primary: #a7d5a4;
+  --color-on-primary: #0f3a12;
+  --color-primary-hover: #c3efc0;
+  --color-primary-active: #e6f7e4;
+  --color-focus-ring: #a7d5a4;
+}
+
+[data-accent="rose"] {
+  --color-primary: #a8325a;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #a8325a;
+  --color-on-primary-container: #ffffff;
+  --color-primary-fixed: #ffd9e2;
+  --color-on-primary-fixed: #3f071d;
+  --color-primary-fixed-dim: #ffb1c5;
+  --color-on-primary-fixed-variant: #5c0f2c;
+  --color-inverse-primary: #ffb1c5;
+  --color-primary-hover: #5c0f2c;
+  --color-primary-active: #3f071d;
+  --color-focus-ring: #a8325a;
+}
+[data-theme="dark"][data-accent="rose"] {
+  --color-primary: #ffb1c5;
+  --color-on-primary: #5c0f2c;
+  --color-primary-hover: #ffd9e2;
+  --color-primary-active: #fff0f3;
+  --color-focus-ring: #ffb1c5;
+}
+
+[data-accent="amber"] {
+  --color-primary: #8a5100;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #8a5100;
+  --color-on-primary-container: #ffffff;
+  --color-primary-fixed: #ffdcbc;
+  --color-on-primary-fixed: #2e1800;
+  --color-primary-fixed-dim: #ffb86e;
+  --color-on-primary-fixed-variant: #4a2800;
+  --color-inverse-primary: #ffb86e;
+  --color-primary-hover: #4a2800;
+  --color-primary-active: #2e1800;
+  --color-focus-ring: #8a5100;
+}
+[data-theme="dark"][data-accent="amber"] {
+  --color-primary: #ffb86e;
+  --color-on-primary: #4a2800;
+  --color-primary-hover: #ffdcbc;
+  --color-primary-active: #fff1e4;
+  --color-focus-ring: #ffb86e;
+}
+
+/* ==========================================================================
+ * Contrast (AppearanceProvider → <html data-contrast>). `normal` is the design
+ * as drawn: focus shown by highlight backgrounds, subtle rules. `more` — the
+ * user's choice, or the OS asking for it (prefers-contrast: more, forced
+ * colours) — strengthens rules and muted text, and forces a visible focus
+ * ring on EVERY focusable element: `!important` because components switch
+ * the outline off (`focus-visible:outline-none`) in favour of their own
+ * subtler treatment, which is exactly what this mode overrides.
+ * ========================================================================== */
+[data-contrast="more"] {
+  --color-outline-variant: var(--color-outline);
+  --color-on-surface-variant: var(--color-on-surface);
+}
+
+[data-contrast="more"] :focus-visible {
+  outline: 3px solid var(--color-focus-ring) !important;
+  outline-offset: 2px !important;
+}

@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
-/* JLU Design System: https://github.com/KI4JLU/JLU-Design-System */
-@import '@ki4jlu/design-system/tokens.css';
+/* Copied from the JLU Design System v0.43.0 (https://github.com/KI4JLU/Design-System, dist/tokens.css). */
+@import './tokens.css';
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
