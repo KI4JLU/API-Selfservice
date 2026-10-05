@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.1] - 2026-10-05
+
+### Added
+
+- Show app version in the sidebar footer and on the login page
+
+### Changed
+
+- Copy JLU Design System tokens into the web app instead of installing the package
+
+### Fixed
+
+- Coolify Docker build failing on the git-based design system dependency
+
 ## [0.8.0] - 2026-10-05
 
 ### Added

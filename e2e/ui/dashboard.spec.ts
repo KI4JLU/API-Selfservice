@@ -15,6 +15,13 @@ test.describe('login and dashboard', () => {
     await expect(page.getByTestId('nav-admin-users')).toHaveCount(0);
   });
 
+  test('app version shows on the login page and in the sidebar', async ({ page }) => {
+    await page.goto('/login');
+    await expect(page.getByTestId('app-version')).toHaveText(/^v\d+\.\d+\.\d+$/);
+    await devLogin(page, { email: uniqueEmail(), name: 'Version User' });
+    await expect(page.getByTestId('app-version')).toHaveText(/^v\d+\.\d+\.\d+$/);
+  });
+
   test('dashboard shows key hints and cost centers; the directory lists the default as member', async ({ page }) => {
     await devLogin(page, { email: uniqueEmail(), name: 'Overview User' });
     await expect(page.getByTestId('hint-no-key')).toBeVisible();

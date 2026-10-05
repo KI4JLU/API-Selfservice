@@ -1,7 +1,7 @@
 {
   "name": "api-selfservice",
   "private": true,
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Self-service portal for an existing LiteLLM proxy: Keycloak SSO, roles, cost centers with approval workflow, budgets, API key self-service, request logs, reports and email notifications.",
   "packageManager": "pnpm@10.33.0",
   "engines": {

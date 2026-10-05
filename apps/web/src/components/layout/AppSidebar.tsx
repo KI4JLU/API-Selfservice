@@ -81,6 +81,9 @@ export function AppSidebar({ me, ...props }: { me: Me } & ComponentProps<typeof 
       </SidebarContent>
       <SidebarFooter>
         <NavUser me={me} />
+        <div className="text-muted-foreground px-2 text-xs" data-testid="app-version">
+          v{__APP_VERSION__}
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

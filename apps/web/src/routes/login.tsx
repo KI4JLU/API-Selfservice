@@ -80,6 +80,9 @@ function LoginPage() {
           </CardContent>
         </Card>
       </div>
+      <div className="text-muted-foreground p-4 text-center text-xs" data-testid="app-version">
+        v{__APP_VERSION__}
+      </div>
     </div>
   );
 }
