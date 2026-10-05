@@ -31,6 +31,13 @@ describe('openapi / docs / health', () => {
       '/cost-centers/{id}/members',
       '/cost-centers/{id}/members/{userId}',
       '/cost-centers/{id}/member-candidates',
+      '/cost-centers/{id}/member-candidates/resolve',
+      '/cost-centers/{id}/members/bulk',
+      '/me/join-requests',
+      '/cost-center-join-requests',
+      '/cost-centers/{id}/join-requests',
+      '/cost-centers/{id}/join-requests/{requestId}/approve',
+      '/cost-centers/{id}/join-requests/{requestId}/reject',
       '/admin/cost-centers',
       '/admin/cost-centers/{id}/archive',
       '/cost-center-requests',
@@ -67,7 +74,10 @@ describe('openapi / docs / health', () => {
     for (const [p, ops] of Object.entries(doc.paths)) {
       for (const [m, op] of Object.entries(ops)) {
         const codes = Object.keys(op.responses);
-        expect(codes.some((c) => c === '200' || c === '201'), `${m} ${p}`).toBe(true);
+        expect(
+          codes.some((c) => c === '200' || c === '201'),
+          `${m} ${p}`,
+        ).toBe(true);
         expect(codes, `${m} ${p}`).toContain('401');
         expect(codes, `${m} ${p}`).toContain('403');
       }

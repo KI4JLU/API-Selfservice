@@ -151,11 +151,7 @@ export async function getCostCenter(deps: Deps, id: string): Promise<CC> {
   return cc;
 }
 
-export async function listCostCenters(
-  deps: Deps,
-  cu: CurrentUser,
-  q: { status?: CostCenterStatus; q?: string; page: number; pageSize: number },
-) {
+export async function listCostCenters(deps: Deps, cu: CurrentUser, q: { status?: CostCenterStatus; q?: string; page: number; pageSize: number }) {
   // Non-admins only see approved (lookup) plus their managed ones.
   const statusFilter = cu.role === 'admin' ? (q.status ? eq(costCenters.status, q.status) : undefined) : eq(costCenters.status, 'approved');
   const where = and(statusFilter, q.q ? or(ilike(costCenters.number, `%${q.q.replace(/\s/g, '')}%`), ilike(costCenters.name, `%${q.q}%`)) : undefined);
@@ -208,11 +204,7 @@ async function resolveRequestedOwner(deps: Deps, cu: CurrentUser, email: string)
 }
 
 /** User requests a new cost center (F-KST-2). */
-export async function requestCostCenter(
-  deps: Deps,
-  cu: CurrentUser,
-  input: { number: string; name: string; ownerEmail: string },
-) {
+export async function requestCostCenter(deps: Deps, cu: CurrentUser, input: { number: string; name: string; ownerEmail: string }) {
   const number = normalizeCostCenter(input.number);
   if (!number) throw new ApiError('VALIDATION_ERROR', 'Cost center must be 8 digits');
   let cc = await deps.db.query.costCenters.findFirst({ where: eq(costCenters.number, number) });
@@ -440,11 +432,11 @@ export async function rejectRequest(deps: Deps, actor: CurrentUser, id: string, 
   if (!req) throw notFound('Request');
   if (req.status !== 'pending') return requestView(deps, id);
   await deps.db.transaction(async (tx) => {
+    await tx.update(costCenterRequests).set({ status: 'rejected', reason, decidedBy: actor.id, decidedAt: deps.now() }).where(eq(costCenterRequests.id, id));
     await tx
-      .update(costCenterRequests)
-      .set({ status: 'rejected', reason, decidedBy: actor.id, decidedAt: deps.now() })
-      .where(eq(costCenterRequests.id, id));
-    await tx.update(costCenters).set({ status: 'rejected', updatedAt: deps.now() }).where(and(eq(costCenters.id, req.costCenterId), eq(costCenters.status, 'pending')));
+      .update(costCenters)
+      .set({ status: 'rejected', updatedAt: deps.now() })
+      .where(and(eq(costCenters.id, req.costCenterId), eq(costCenters.status, 'pending')));
   });
   const cc = await getCostCenter(deps, req.costCenterId);
   await audit(deps, { actorId: actor.id, action: 'cost_center.reject', entity: 'cost_center', entityId: cc.id, payload: { reason } });
@@ -495,7 +487,10 @@ export async function evaluateCostCenterBudget(deps: Deps, cc: CC) {
     const sent = await deps.db.query.jobState.findFirst({ where: eq(jobState.key, key) });
     if (!sent) {
       for (const r of recipients) await notify(deps, { type: 'cost_center_budget_80', to: r.email, locale: r.locale, userId: r.userId, vars });
-      await deps.db.insert(jobState).values({ key, value: { at: deps.now().toISOString() } }).onConflictDoNothing();
+      await deps.db
+        .insert(jobState)
+        .values({ key, value: { at: deps.now().toISOString() } })
+        .onConflictDoNothing();
       await audit(deps, { actorId: null, action: 'cost_center.warn', entity: 'cost_center', entityId: cc.id, payload: vars, severity: 'warning' });
     }
   }
@@ -517,6 +512,9 @@ async function ccBudgetRecipients(deps: Deps, cc: CC) {
 }
 
 export async function keysOfCostCenterCount(deps: Deps, id: string) {
-  const [{ n } = { n: 0 }] = await deps.db.select({ n: count() }).from(apiKeys).where(and(eq(apiKeys.costCenterId, id), ne(apiKeys.status, 'deleted')));
+  const [{ n } = { n: 0 }] = await deps.db
+    .select({ n: count() })
+    .from(apiKeys)
+    .where(and(eq(apiKeys.costCenterId, id), ne(apiKeys.status, 'deleted')));
   return Number(n);
 }

@@ -11,7 +11,7 @@ jobs:
           POSTGRES_USER: api_selfservice
           POSTGRES_PASSWORD: api_selfservice
           POSTGRES_DB: litellm
-        ports: ["5433:5432"]
+        ports: ['5433:5432']
         options: >-
           --health-cmd "pg_isready -U api_selfservice -d litellm" --health-interval 5s --health-timeout 3s --health-retries 20
     steps:
@@ -36,7 +36,7 @@ jobs:
           POSTGRES_USER: api_selfservice
           POSTGRES_PASSWORD: api_selfservice
           POSTGRES_DB: litellm
-        ports: ["5433:5432"]
+        ports: ['5433:5432']
         options: >-
           --health-cmd "pg_isready -U api_selfservice -d litellm" --health-interval 5s --health-timeout 3s --health-retries 20
     steps:

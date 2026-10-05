@@ -14,12 +14,18 @@ function range(deps: Deps, q: { from?: string; to?: string }, cc?: typeof costCe
 
 async function rowFor(deps: Deps, cc: typeof costCenters.$inferSelect, start: Date, end: Date) {
   const where = and(eq(requestLogs.costCenterId, cc.id), gte(requestLogs.time, start), lt(requestLogs.time, end));
-  const [agg] = await deps.db.select({ spend: sum(requestLogs.cost), n: count() }).from(requestLogs).where(where);
+  const [agg] = await deps.db
+    .select({ spend: sum(requestLogs.cost), n: count() })
+    .from(requestLogs)
+    .where(where);
   // Every user belongs to the default cost center; there, count the profiles that still point to it.
   const [{ users } = { users: 0 }] = cc.isDefault
     ? await deps.db.select({ users: count() }).from(user).where(eq(user.costCenterId, cc.id))
     : await deps.db.select({ users: count() }).from(costCenterMembers).where(eq(costCenterMembers.costCenterId, cc.id));
-  const [{ keys } = { keys: 0 }] = await deps.db.select({ keys: count() }).from(apiKeys).where(and(eq(apiKeys.costCenterId, cc.id), ne(apiKeys.status, 'deleted')));
+  const [{ keys } = { keys: 0 }] = await deps.db
+    .select({ keys: count() })
+    .from(apiKeys)
+    .where(and(eq(apiKeys.costCenterId, cc.id), ne(apiKeys.status, 'deleted')));
   const spend = Number(agg?.spend ?? 0);
   const budget = cc.maxBudget === null ? null : Number(cc.maxBudget);
   return {
@@ -70,9 +76,7 @@ export async function costCenterReportDetail(deps: Deps, cu: CurrentUser, id: st
       user: { id: u.userId ?? '', name: u.name ?? '(unknown)', email: u.email ?? '' },
       spend: Number(u.spend ?? 0),
       requests: Number(u.n),
-      keys: perKey
-        .filter((k) => k.userId === u.userId)
-        .map((k) => ({ keyId: k.keyId, keyName: k.keyName ?? '(unknown)', spend: Number(k.spend ?? 0), requests: Number(k.n) })),
+      keys: perKey.filter((k) => k.userId === u.userId).map((k) => ({ keyId: k.keyId, keyName: k.keyName ?? '(unknown)', spend: Number(k.spend ?? 0), requests: Number(k.n) })),
     })),
   };
 }

@@ -46,8 +46,7 @@ export async function memberCostCenters(deps: Deps, userId: string) {
  * Name and e-mail are taken from the portal account if there is one, otherwise from LiteLLM.
  */
 export async function resolveOwner(deps: Deps, ref: { userId: string } | { email: string }) {
-  const known =
-    'userId' in ref ? await deps.litellm.getUser(ref.userId) : ((await deps.litellm.listUsers({ page: 1, pageSize: 1, email: ref.email })).items[0] ?? null);
+  const known = 'userId' in ref ? await deps.litellm.getUser(ref.userId) : ((await deps.litellm.listUsers({ page: 1, pageSize: 1, email: ref.email })).items[0] ?? null);
   if (!known) throw new ApiError('OWNER_NOT_LITELLM_USER');
   const local = await deps.db.query.user.findFirst({ where: eq(user.id, known.userId) });
   if (local?.deletedAt) throw new ApiError('USER_DEACTIVATED');
@@ -83,7 +82,10 @@ export async function syncMigratedMembershipsOnce(deps: Deps, key = 'litellm_tea
   if (!(await deps.litellm.health()).ok) return { synced: 0 };
   const rows = await deps.db.query.costCenterMembers.findMany();
   for (const m of rows) await syncTeamMembership(deps, m.userId, m.costCenterId);
-  await deps.db.insert(jobState).values({ key, value: { at: deps.now().toISOString(), count: rows.length } }).onConflictDoNothing();
+  await deps.db
+    .insert(jobState)
+    .values({ key, value: { at: deps.now().toISOString(), count: rows.length } })
+    .onConflictDoNothing();
   return { synced: rows.length };
 }
 
@@ -113,11 +115,7 @@ async function getMember(deps: Deps, costCenterId: string, userId: string) {
 export async function listMembers(deps: Deps, costCenterId: string) {
   const cc = await getCostCenter(deps, costCenterId);
   assertManageable(cc);
-  const rows = await deps.db
-    .select({ m: costCenterMembers, u: user })
-    .from(costCenterMembers)
-    .leftJoin(user, eq(user.id, costCenterMembers.userId))
-    .where(eq(costCenterMembers.costCenterId, cc.id));
+  const rows = await deps.db.select({ m: costCenterMembers, u: user }).from(costCenterMembers).leftJoin(user, eq(user.id, costCenterMembers.userId)).where(eq(costCenterMembers.costCenterId, cc.id));
   const items = rows.map((r) => memberView(r.m, r.u));
   // Admins first, then by e-mail.
   items.sort((a, b) => (a.role === b.role ? (a.email ?? a.userId).localeCompare(b.email ?? b.userId) : a.role === 'admin' ? -1 : 1));
@@ -138,6 +136,38 @@ export async function searchMemberCandidates(deps: Deps, costCenterId: string, q
   const memberIds = new Set(members.map((m) => m.userId));
   const localIds = new Set(local.map((l) => l.id));
   return r.items.map((u) => ({ userId: u.userId, email: u.email, alias: u.alias, hasAccount: localIds.has(u.userId), isMember: memberIds.has(u.userId) }));
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** Parallel LiteLLM lookups per bulk request; each lookup may page through /user/list. */
+const RESOLVE_CONCURRENCY = 5;
+
+/** Bulk add, step 1: resolves pasted addresses to LiteLLM users by exact e-mail; duplicates are dropped. */
+export async function resolveMemberEmails(deps: Deps, costCenterId: string, emails: string[]) {
+  const cc = await getCostCenter(deps, costCenterId);
+  assertManageable(cc);
+  const unique = [...new Map(emails.filter(Boolean).map((e) => [e.toLowerCase(), e])).values()];
+  const invalid = unique.filter((e) => !EMAIL_RE.test(e));
+  const valid = unique.filter((e) => EMAIL_RE.test(e));
+  const hits = new Array<Awaited<ReturnType<Deps['litellm']['listUsers']>>['items'][number] | null>(valid.length);
+  for (let i = 0; i < valid.length; i += RESOLVE_CONCURRENCY) {
+    const batch = valid.slice(i, i + RESOLVE_CONCURRENCY);
+    const rows = await Promise.all(batch.map((email) => deps.litellm.listUsers({ page: 1, pageSize: 1, email })));
+    rows.forEach((r, j) => (hits[i + j] = r.items[0] ?? null));
+  }
+  const notFound = valid.filter((_, i) => !hits[i]);
+  const known = [...new Map(hits.filter((h) => h !== null).map((h) => [h.userId, h])).values()];
+  const ids = known.map((u) => u.userId);
+  const [members, local] = ids.length
+    ? await Promise.all([
+        deps.db.query.costCenterMembers.findMany({ where: and(eq(costCenterMembers.costCenterId, cc.id), inArray(costCenterMembers.userId, ids)) }),
+        deps.db.query.user.findMany({ where: inArray(user.id, ids), columns: { id: true } }),
+      ])
+    : [[], []];
+  const memberIds = new Set(members.map((m) => m.userId));
+  const localIds = new Set(local.map((l) => l.id));
+  const found = known.map((u) => ({ userId: u.userId, email: u.email, alias: u.alias, hasAccount: localIds.has(u.userId), isMember: memberIds.has(u.userId) }));
+  return { found, notFound, invalid };
 }
 
 /**
@@ -180,6 +210,25 @@ export async function addMember(deps: Deps, actor: CurrentUser, costCenterId: st
   if (local) await notifyUser(deps, local.id, 'cost_center_member_added', vars);
   else if (known.email) await notify(deps, { type: 'cost_center_member_added', to: known.email, locale: 'de', vars });
   return memberView(inserted[0]!, local);
+}
+
+/** Bulk add, step 2: adds each user like addMember; failures are collected instead of aborting the batch. */
+export async function addMembers(deps: Deps, actor: CurrentUser, costCenterId: string, input: { userIds: string[]; role: CostCenterMemberRole }) {
+  const cc = await getCostCenter(deps, costCenterId);
+  assertManageable(cc);
+  if (cc.status !== 'approved') throw new ApiError('COST_CENTER_NOT_APPROVED');
+  if (input.role === 'admin') assertMayManageAdmins(actor, cc);
+  const added: ReturnType<typeof memberView>[] = [];
+  const failed: { userId: string; code: string }[] = [];
+  for (const userId of new Set(input.userIds)) {
+    try {
+      added.push(await addMember(deps, actor, cc.id, { userId, role: input.role }));
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e;
+      failed.push({ userId, code: e.code });
+    }
+  }
+  return { added, failed };
 }
 
 export async function updateMember(deps: Deps, actor: CurrentUser, costCenterId: string, userId: string, role: CostCenterMemberRole) {

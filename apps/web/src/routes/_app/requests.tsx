@@ -55,10 +55,7 @@ function RequestsPage() {
     return [{ value: ALL, label: t('common.all') }, ...[...set].sort().map((m) => ({ value: m, label: m }))];
   }, [providers.data, logs.data, t]);
 
-  const keyOptions = useMemo(
-    () => [{ value: ALL, label: t('common.all') }, ...(keys.data?.items ?? []).map((k) => ({ value: k.id, label: k.name }))],
-    [keys.data, t],
-  );
+  const keyOptions = useMemo(() => [{ value: ALL, label: t('common.all') }, ...(keys.data?.items ?? []).map((k) => ({ value: k.id, label: k.name }))], [keys.data, t]);
 
   const columns = useMemo<ColumnDef<RequestLog>[]>(
     () => [
@@ -97,10 +94,12 @@ function RequestsPage() {
     [t],
   );
 
-  const resetPage = <T,>(setter: (v: T) => void) => (v: T) => {
-    setter(v);
-    setPage(1);
-  };
+  const resetPage =
+    <T,>(setter: (v: T) => void) =>
+    (v: T) => {
+      setter(v);
+      setPage(1);
+    };
 
   return (
     <div data-testid="page-requests">
@@ -140,7 +139,14 @@ function RequestsPage() {
               resetPage(setRequestId)(requestIdInput.trim());
             }}
           >
-            <Input id="log-rid" value={requestIdInput} onChange={(e) => setRequestIdInput(e.target.value)} placeholder={t('requests.searchRequestId')} className="w-56" data-testid="input-log-request-id" />
+            <Input
+              id="log-rid"
+              value={requestIdInput}
+              onChange={(e) => setRequestIdInput(e.target.value)}
+              placeholder={t('requests.searchRequestId')}
+              className="w-56"
+              data-testid="input-log-request-id"
+            />
             <Button type="submit" variant="outline" size="icon" aria-label={t('common.search')}>
               <Search />
             </Button>

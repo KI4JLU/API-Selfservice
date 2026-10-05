@@ -16,9 +16,8 @@ function impersonation(c: Context<AppEnv>) {
 }
 
 export const meRoutes = createRouter()
-  .openapi(
-    createRoute({ method: 'get', path: '/me', tags: ['me'], responses: { 200: json(MeSchema, 'Current user'), ...errors } }),
-    async (c) => c.json({ ...(await getMe(c.get('deps'), c.get('user'))), ...impersonation(c) }, 200),
+  .openapi(createRoute({ method: 'get', path: '/me', tags: ['me'], responses: { 200: json(MeSchema, 'Current user'), ...errors } }), async (c) =>
+    c.json({ ...(await getMe(c.get('deps'), c.get('user'))), ...impersonation(c) }, 200),
   )
   .openapi(
     createRoute({
@@ -48,9 +47,8 @@ export const meRoutes = createRouter()
       return c.json({ ok: true as const }, 200);
     },
   )
-  .openapi(
-    createRoute({ method: 'get', path: '/me/budget', tags: ['budget'], responses: { 200: json(BudgetSchema.nullable(), 'My budget'), ...errors } }),
-    async (c) => c.json(await getMyBudget(c.get('deps'), c.get('user')), 200),
+  .openapi(createRoute({ method: 'get', path: '/me/budget', tags: ['budget'], responses: { 200: json(BudgetSchema.nullable(), 'My budget'), ...errors } }), async (c) =>
+    c.json(await getMyBudget(c.get('deps'), c.get('user')), 200),
   )
   .openapi(
     createRoute({

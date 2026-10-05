@@ -1,6 +1,6 @@
 # Admin: Modelle
 
-Die Liste zeigt alle in LiteLLM konfigurierten Modelle.
+Die Liste zeigt alle in LiteLLM konfigurierten Modelle, gruppiert nach Provider und darin nach Modellname sortiert. Ein Klick auf die Gruppenzeile klappt den Provider ein oder aus; die Zahl daneben ist die Anzahl der Modelle. Modelle ohne Provider stehen unter **Kein Provider** am Ende.
 
 ## Klasse
 
@@ -15,7 +15,7 @@ Der Provider stammt aus LiteLLM (`custom_llm_provider` oder Präfix im Modell, z
 
 ## Bezeichnungen
 
-Mit **Bearbeiten** hinterlegen Sie pro Modell einen Anzeigenamen und eine Beschreibung in Deutsch und Englisch. Sie werden Usern bei der Key-Erstellung angezeigt.
+Mit **Bearbeiten** oder einem Klick auf den Modellnamen hinterlegen Sie pro Modell einen Anzeigenamen und eine Beschreibung in Deutsch und Englisch. Sie werden Usern bei der Key-Erstellung angezeigt.
 
 ## Synchronisieren
 

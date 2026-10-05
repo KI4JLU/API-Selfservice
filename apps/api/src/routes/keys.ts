@@ -10,23 +10,31 @@ r.openapi(createRoute({ method: 'get', path: '/api-keys', tags: ['api-keys'], re
   c.json(await listMyKeys(c.get('deps'), c.get('user')), 200),
 );
 r.openapi(
-  createRoute({ method: 'post', path: '/api-keys', tags: ['api-keys'], request: { body: body(CreateApiKeySchema) }, responses: { 201: json(CreatedApiKeySchema, 'Created; secret shown once'), ...errors } }),
+  createRoute({
+    method: 'post',
+    path: '/api-keys',
+    tags: ['api-keys'],
+    request: { body: body(CreateApiKeySchema) },
+    responses: { 201: json(CreatedApiKeySchema, 'Created; secret shown once'), ...errors },
+  }),
   async (c) => c.json(await createKey(c.get('deps'), c.get('user'), c.req.valid('json')), 201),
 );
 r.openapi(
-  createRoute({ method: 'patch', path: '/api-keys/{id}', tags: ['api-keys'], request: { params: IdParam, body: body(UpdateApiKeySchema) }, responses: { 200: json(ApiKeySchema, 'Updated'), ...errors } }),
+  createRoute({
+    method: 'patch',
+    path: '/api-keys/{id}',
+    tags: ['api-keys'],
+    request: { params: IdParam, body: body(UpdateApiKeySchema) },
+    responses: { 200: json(ApiKeySchema, 'Updated'), ...errors },
+  }),
   async (c) => c.json(await updateKey(c.get('deps'), c.get('user'), c.req.valid('param').id, c.req.valid('json')), 200),
 );
-r.openapi(
-  createRoute({ method: 'delete', path: '/api-keys/{id}', tags: ['api-keys'], request: { params: IdParam }, responses: { 200: json(okBody, 'Deleted'), ...errors } }),
-  async (c) => {
-    await deleteKey(c.get('deps'), c.get('user'), c.req.valid('param').id);
-    return c.json({ ok: true as const }, 200);
-  },
-);
-r.openapi(
-  createRoute({ method: 'post', path: '/api-keys/{id}/extend', tags: ['api-keys'], request: { params: IdParam }, responses: { 200: json(ApiKeySchema, 'Extended'), ...errors } }),
-  async (c) => c.json(await extendKey(c.get('deps'), c.get('user'), c.req.valid('param').id), 200),
+r.openapi(createRoute({ method: 'delete', path: '/api-keys/{id}', tags: ['api-keys'], request: { params: IdParam }, responses: { 200: json(okBody, 'Deleted'), ...errors } }), async (c) => {
+  await deleteKey(c.get('deps'), c.get('user'), c.req.valid('param').id);
+  return c.json({ ok: true as const }, 200);
+});
+r.openapi(createRoute({ method: 'post', path: '/api-keys/{id}/extend', tags: ['api-keys'], request: { params: IdParam }, responses: { 200: json(ApiKeySchema, 'Extended'), ...errors } }), async (c) =>
+  c.json(await extendKey(c.get('deps'), c.get('user'), c.req.valid('param').id), 200),
 );
 
 r.use('/admin/api-keys', requireAdmin);

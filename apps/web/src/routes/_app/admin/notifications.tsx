@@ -31,7 +31,11 @@ function AdminNotificationsPage() {
   const columns = useMemo<ColumnDef<Notification>[]>(
     () => [
       { header: t('notifications.sentAt'), accessorKey: 'sentAt', cell: ({ row }) => <span className="whitespace-nowrap tabular-nums">{fmtDateTime(row.original.sentAt)}</span> },
-      { header: t('notifications.type'), accessorKey: 'type', cell: ({ row }) => <Badge variant="secondary">{t(`notificationTypes.${row.original.type}`, { defaultValue: row.original.type })}</Badge> },
+      {
+        header: t('notifications.type'),
+        accessorKey: 'type',
+        cell: ({ row }) => <Badge variant="secondary">{t(`notificationTypes.${row.original.type}`, { defaultValue: row.original.type })}</Badge>,
+      },
       { header: t('notifications.recipient'), accessorKey: 'recipient' },
       { header: t('notifications.subject'), accessorKey: 'subject', cell: ({ row }) => <span className="line-clamp-2">{row.original.subject}</span> },
       { header: t('common.language'), accessorKey: 'locale', cell: ({ row }) => row.original.locale.toUpperCase() },
@@ -41,7 +45,11 @@ function AdminNotificationsPage() {
         cell: ({ row }) => (
           <div>
             <StatusBadge status={row.original.status} />
-            {row.original.error ? <div className="mt-1 max-w-xs truncate text-xs text-destructive" title={row.original.error}>{row.original.error}</div> : null}
+            {row.original.error ? (
+              <div className="mt-1 max-w-xs truncate text-xs text-destructive" title={row.original.error}>
+                {row.original.error}
+              </div>
+            ) : null}
           </div>
         ),
       },

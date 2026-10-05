@@ -54,7 +54,14 @@ function ProfilePage() {
               </Field>
             </div>
             <Field label={t('common.language')} htmlFor="p-locale">
-              <SimpleSelect id="p-locale" value={locale} onValueChange={(v) => setLocale(v as Locale)} options={LOCALES.map((l) => ({ value: l, label: t(`locale.${l}`) }))} className="sm:w-60" testId="input-locale" />
+              <SimpleSelect
+                id="p-locale"
+                value={locale}
+                onValueChange={(v) => setLocale(v as Locale)}
+                options={LOCALES.map((l) => ({ value: l, label: t(`locale.${l}`) }))}
+                className="sm:w-60"
+                testId="input-locale"
+              />
             </Field>
             <div className="flex justify-end">
               <Button type="submit" loading={update.isPending} data-testid="btn-save-profile">

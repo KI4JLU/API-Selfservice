@@ -76,14 +76,34 @@ export function CostCenterCreateDialog({ open, onOpenChange }: { open: boolean; 
           </DialogHeader>
           <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
             <Field label={t('costCenters.number')} htmlFor="ncc-number" required>
-              <Input id="ncc-number" required inputMode="numeric" value={number} onChange={(e) => setNumber(formatNumberInput(e.target.value))} placeholder="1234 5678" className="font-mono" data-testid="input-cc-number" />
+              <Input
+                id="ncc-number"
+                required
+                inputMode="numeric"
+                value={number}
+                onChange={(e) => setNumber(formatNumberInput(e.target.value))}
+                placeholder="1234 5678"
+                className="font-mono"
+                data-testid="input-cc-number"
+              />
             </Field>
             <Field label={t('costCenters.name')} htmlFor="ncc-name" required>
               <Input id="ncc-name" required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} data-testid="input-cc-name" />
             </Field>
           </div>
           <OwnerPicker value={owner} onChange={setOwner} idPrefix="ncc" />
-          <BudgetFields amount={amount} setAmount={setAmount} period={period} setPeriod={setPeriod} start={start} setStart={setStart} end={end} setEnd={setEnd} amountLabel={t('costCenters.maxBudget')} idPrefix="ncc" />
+          <BudgetFields
+            amount={amount}
+            setAmount={setAmount}
+            period={period}
+            setPeriod={setPeriod}
+            start={start}
+            setStart={setStart}
+            end={end}
+            setEnd={setEnd}
+            amountLabel={t('costCenters.maxBudget')}
+            idPrefix="ncc"
+          />
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t('common.cancel')}

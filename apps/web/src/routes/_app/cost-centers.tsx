@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { BarChart3, Pencil, TriangleAlert, Users } from 'lucide-react';
 import { requireCostCenterAdmin } from '@/lib/guards';
-import { useManagedCostCenters, type CostCenter } from '@/lib/queries';
+import { useManagedCostCenters, useOpenJoinRequestCounts, type CostCenter } from '@/lib/queries';
 import { fmtCostCenter, fmtDate, fmtMoney, fmtPercent } from '@/lib/format';
 import { PageHeader } from '@/components/ui/page';
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +25,7 @@ export const Route = createFileRoute('/_app/cost-centers')({
 function MyCostCentersPage() {
   const { t } = useTranslation();
   const { data, isLoading } = useManagedCostCenters();
+  const openRequests = useOpenJoinRequestCounts();
   const [editing, setEditing] = useState<CostCenter | null>(null);
   const [report, setReport] = useState<CostCenter | null>(null);
   const [members, setMembers] = useState<CostCenter | null>(null);
@@ -93,6 +94,11 @@ function MyCostCentersPage() {
                   <Button variant="outline" size="sm" onClick={() => setMembers(c)} disabled={c.isDefault} data-testid="btn-cost-center-members">
                     <Users />
                     {t('members.title')}
+                    {openRequests.get(c.id) ? (
+                      <Badge className="h-5 min-w-5 px-1 tabular-nums" title={t('joinRequests.openCount', { count: openRequests.get(c.id) })} data-testid="badge-open-join-requests">
+                        {openRequests.get(c.id)}
+                      </Badge>
+                    ) : null}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setReport(c)} data-testid="btn-cost-center-report">
                     <BarChart3 />

@@ -27,6 +27,7 @@ Click a row to see the object ID and the recorded details (e.g. amounts and perc
 | `budget.set` | Admin assigned a user budget |
 | `budget.warn` / `budget.block` | User budget at 80 % / exhausted, keys blocked |
 | `cost_center.warn` / `cost_center.block` | Cost center budget at 80 % / exhausted, keys blocked |
+| `cost_center.join_request` / `cost_center.join_approve` / `cost_center.join_reject` | Join to a cost center requested / approved / rejected |
 | `user.set_role` / `user.deactivate` | Role changed / user deactivated |
 | `litellm.*` | Mirroring a change to LiteLLM failed; the change is kept in LiteLite and retried on the next sync |
 | `job.failed` / `request.internal_error` | A cron job or an API request failed unexpectedly |

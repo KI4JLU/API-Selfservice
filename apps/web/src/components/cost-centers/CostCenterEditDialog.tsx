@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { BUDGET_PERIODS, type BudgetPeriod } from '@api-selfservice/shared';
 import { useAdminProviders, useUpdateCostCenter, type CostCenter } from '@/lib/queries';
 import { fmtCostCenter, toDateInput } from '@/lib/format';
@@ -43,10 +44,26 @@ export function BudgetFields({
     <>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label={amountLabel} htmlFor={`${idPrefix}-amount`} required={required} hint={required ? undefined : t('costCenters.maxBudgetHint')}>
-          <Input id={`${idPrefix}-amount`} type="number" min={0} step="0.01" required={required} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={required ? '' : t('common.unlimited')} data-testid="input-budget-amount" />
+          <Input
+            id={`${idPrefix}-amount`}
+            type="number"
+            min={0}
+            step="0.01"
+            required={required}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder={required ? '' : t('common.unlimited')}
+            data-testid="input-budget-amount"
+          />
         </Field>
         <Field label={t('common.period')} htmlFor={`${idPrefix}-period`}>
-          <SimpleSelect id={`${idPrefix}-period`} value={period} onValueChange={(v) => setPeriod(v as BudgetPeriod)} options={BUDGET_PERIODS.map((p) => ({ value: p, label: t(`period.${p}`) }))} testId="input-budget-period" />
+          <SimpleSelect
+            id={`${idPrefix}-period`}
+            value={period}
+            onValueChange={(v) => setPeriod(v as BudgetPeriod)}
+            options={BUDGET_PERIODS.map((p) => ({ value: p, label: t(`period.${p}`) }))}
+            testId="input-budget-period"
+          />
         </Field>
       </div>
       {period === 'project' ? (
@@ -63,28 +80,86 @@ export function BudgetFields({
   );
 }
 
-/** F-KST-15: models released for a cost center; none selected = all models. */
+/**
+ * F-KST-15: models released for a cost center; none selected = all models (also future ones).
+ * Grouped by provider (collapsed by default): the provider checkbox selects or clears all of its current models.
+ * Fills the remaining dialog height; only the list scrolls.
+ */
 function ModelRelease({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   const { t } = useTranslation();
   const providers = useAdminProviders();
+  const [filter, setFilter] = useState('');
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const needle = filter.trim().toLowerCase();
   // Unavailable models stay visible while selected, so they can be removed.
   const items = (providers.data ?? []).filter((p) => p.available || value.includes(p.modelName));
+  const byProvider = new Map<string, typeof items>();
+  for (const p of items) byProvider.set(p.provider ?? '', [...(byProvider.get(p.provider ?? '') ?? []), p]);
+  // Models without a provider come last.
+  const groups = [...byProvider.entries()].sort(([a], [b]) => (a === '' ? 1 : b === '' ? -1 : a.localeCompare(b)));
+  const selected = new Set(value);
+  const setGroup = (names: string[], on: boolean) => onChange(on ? [...new Set([...value, ...names])] : value.filter((x) => !names.includes(x)));
+  const toggleOpen = (provider: string) =>
+    setOpen((o) => {
+      const n = new Set(o);
+      if (n.has(provider)) n.delete(provider);
+      else n.add(provider);
+      return n;
+    });
+
   return (
-    <div className="grid gap-1.5">
-      <div className="flex items-center justify-between text-sm font-medium">
-        {t('costCenters.models')}
-        <span className="text-xs font-normal text-muted-foreground">{value.length === 0 ? t('costCenters.modelsAll') : t('keys.modelsSelected', { count: value.length })}</span>
+    <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-medium">
+        <span>
+          {t('costCenters.models')}{' '}
+          <span className="text-xs font-normal text-muted-foreground">({value.length === 0 ? t('costCenters.modelsAll') : t('keys.modelsSelected', { count: value.length })})</span>
+        </span>
+        <span className="flex gap-1">
+          <Button type="button" variant="ghost" size="sm" onClick={() => onChange(items.filter((p) => p.available).map((p) => p.modelName))} data-testid="btn-cc-models-all">
+            {t('costCenters.modelsSelectAll')}
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => onChange([])} disabled={!value.length} data-testid="btn-cc-models-none">
+            {t('costCenters.modelsSelectNone')}
+          </Button>
+        </span>
       </div>
       <p className="text-xs text-muted-foreground">{t('costCenters.modelsHint')}</p>
-      <div className="max-h-48 overflow-y-auto rounded-md border" data-testid="list-cc-models">
-        {items.map((p) => (
-          <label key={p.id} className="hover:bg-muted/50 flex cursor-pointer items-center gap-3 border-b px-3 py-1.5 last:border-0" data-testid={`cc-model-${p.modelName}`}>
-            <Checkbox checked={value.includes(p.modelName)} onCheckedChange={(v) => onChange(v === true ? [...value, p.modelName] : value.filter((x) => x !== p.modelName))} />
-            <span className="font-mono text-xs">{p.modelName}</span>
-            <TierBadge tier={p.tier} />
-            {p.provider ? <span className="text-xs text-muted-foreground">{p.provider}</span> : null}
-          </label>
-        ))}
+      <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={t('costCenters.modelsFilter')} className="h-8" data-testid="input-cc-models-filter" />
+      <div className="min-h-24 flex-1 overflow-y-auto rounded-md border" data-testid="list-cc-models">
+        {groups.map(([provider, all]) => {
+          const models = needle ? all.filter((m) => `${m.modelName} ${provider}`.toLowerCase().includes(needle)) : all;
+          if (!models.length) return null;
+          const names = all.map((m) => m.modelName);
+          const count = names.filter((n) => selected.has(n)).length;
+          const expanded = !!needle || open.has(provider);
+          return (
+            <div key={provider || '-'} data-testid={`cc-provider-${provider || 'none'}`}>
+              <div className="bg-muted sticky top-0 z-10 flex items-center gap-3 border-b px-3 py-1.5 text-sm font-medium">
+                <Checkbox
+                  checked={count === 0 ? false : count === names.length ? true : 'indeterminate'}
+                  onCheckedChange={() => setGroup(names, count < names.length)}
+                  aria-label={provider || t('providers.noProvider')}
+                />
+                <button type="button" className="flex flex-1 items-center gap-2 text-left" onClick={() => toggleOpen(provider)} aria-expanded={expanded} data-testid="btn-cc-provider-toggle">
+                  {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                  {provider || t('providers.noProvider')}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {count}/{names.length}
+                  </span>
+                </button>
+              </div>
+              {expanded
+                ? models.map((p) => (
+                    <label key={p.id} className="hover:bg-muted/50 flex cursor-pointer items-center gap-3 border-b py-1.5 pr-3 pl-10 last:border-0" data-testid={`cc-model-${p.modelName}`}>
+                      <Checkbox checked={selected.has(p.modelName)} onCheckedChange={(v) => setGroup([p.modelName], v === true)} />
+                      <span className="font-mono text-xs">{p.modelName}</span>
+                      <TierBadge tier={p.tier} />
+                    </label>
+                  ))
+                : null}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -141,8 +216,9 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
 
   return (
     <Dialog open={!!costCenter} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent data-testid="dialog-edit-cost-center">
-        <form onSubmit={submit} className="grid gap-4">
+      {/* Admin view: fixed max height, the model list takes the remaining space and scrolls on its own. */}
+      <DialogContent className={full ? 'flex max-h-[90svh] flex-col overflow-y-auto sm:max-w-3xl' : undefined} data-testid="dialog-edit-cost-center">
+        <form onSubmit={submit} className={full ? 'flex min-h-0 flex-1 flex-col gap-4' : 'grid gap-4'}>
           <DialogHeader>
             <DialogTitle>{t('costCenters.edit')}</DialogTitle>
             <DialogDescription>{costCenter ? `${fmtCostCenter(costCenter.number)} · ${costCenter.name}` : ''}</DialogDescription>
@@ -155,7 +231,18 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
               <OwnerPicker value={owner} onChange={setOwner} idPrefix="cc" />
             </>
           ) : null}
-          <BudgetFields amount={amount} setAmount={setAmount} period={period} setPeriod={setPeriod} start={start} setStart={setStart} end={end} setEnd={setEnd} amountLabel={t('costCenters.maxBudget')} idPrefix="cc" />
+          <BudgetFields
+            amount={amount}
+            setAmount={setAmount}
+            period={period}
+            setPeriod={setPeriod}
+            start={start}
+            setStart={setStart}
+            end={end}
+            setEnd={setEnd}
+            amountLabel={t('costCenters.maxBudget')}
+            idPrefix="cc"
+          />
           {full ? <ModelRelease value={models} onChange={setModels} /> : null}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

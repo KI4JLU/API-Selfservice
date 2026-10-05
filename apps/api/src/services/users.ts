@@ -1,21 +1,4 @@
-import {
-  account,
-  and,
-  apiKeys,
-  costCenterMembers,
-  costCenterRequests,
-  costCenters,
-  count,
-  desc,
-  eq,
-  ilike,
-  inArray,
-  isNotNull,
-  isNull,
-  ne,
-  or,
-  user,
-} from '@api-selfservice/db';
+import { account, and, apiKeys, costCenterMembers, costCenterRequests, costCenters, count, desc, eq, ilike, inArray, isNotNull, isNull, ne, or, user } from '@api-selfservice/db';
 import { DEFAULT_COST_CENTER, type Role } from '@api-selfservice/shared';
 import type { CurrentUser, Deps } from '../context.js';
 import { ApiError, notFound } from '../errors.js';
@@ -56,7 +39,10 @@ export async function onUserCreated(deps: Deps, u: { id: string; email: string; 
     await auditError(deps, { action: 'litellm.create_user', entity: 'user', entityId: u.id, err: e });
   }
   const own = (await memberCostCenters(deps, u.id)).find((c) => c.id !== def.id);
-  await deps.db.update(user).set({ costCenterId: own?.id ?? def.id, updatedAt: deps.now() }).where(eq(user.id, u.id));
+  await deps.db
+    .update(user)
+    .set({ costCenterId: own?.id ?? def.id, updatedAt: deps.now() })
+    .where(eq(user.id, u.id));
   await audit(deps, { actorId: null, action: 'user.create', entity: 'user', entityId: u.id, payload: { email: u.email, adoptedFromLitellm: adopted } });
   await syncTeamMembership(deps, u.id, def.id);
 }
@@ -200,17 +186,11 @@ export async function getMe(deps: Deps, cu: CurrentUser) {
     costCenterOwnerEmail: u.costCenterOwnerEmail,
     managedCostCenters: await managedRefs(deps, u.id),
     memberCostCenters: await memberCostCenters(deps, u.id),
-    pendingRequest: p
-      ? { id: p.id, number: p.number, name: p.name, status: p.status, reason: p.reason, createdAt: p.createdAt.toISOString() }
-      : null,
+    pendingRequest: p ? { id: p.id, number: p.number, name: p.name, status: p.status, reason: p.reason, createdAt: p.createdAt.toISOString() } : null,
   };
 }
 
-export async function updateMe(
-  deps: Deps,
-  cu: CurrentUser,
-  input: { locale?: 'de' | 'en'; costCenterNumber?: string; costCenterOwnerName?: string | null; costCenterOwnerEmail?: string | null },
-) {
+export async function updateMe(deps: Deps, cu: CurrentUser, input: { locale?: 'de' | 'en'; costCenterNumber?: string; costCenterOwnerName?: string | null; costCenterOwnerEmail?: string | null }) {
   const patch: Partial<typeof user.$inferInsert> = { updatedAt: deps.now() };
   if (input.locale) patch.locale = input.locale;
   if (input.costCenterOwnerName !== undefined) patch.costCenterOwnerName = input.costCenterOwnerName;
@@ -242,10 +222,7 @@ export async function updateMe(
 
 // ---------- Admin ----------
 
-export async function listUsers(
-  deps: Deps,
-  q: { page: number; pageSize: number; q?: string; costCenterId?: string; includeDeactivated: boolean },
-) {
+export async function listUsers(deps: Deps, q: { page: number; pageSize: number; q?: string; costCenterId?: string; includeDeactivated: boolean }) {
   const where = and(
     q.includeDeactivated ? undefined : isNull(user.deletedAt),
     q.costCenterId ? eq(user.costCenterId, q.costCenterId) : undefined,
@@ -307,7 +284,10 @@ export async function setRole(deps: Deps, actor: CurrentUser, targetId: string, 
   if (!u) throw notFound('User');
   if (u.roleFromIdp && role !== 'admin') throw new ApiError('ROLE_MANAGED_BY_IDP');
   if (u.role === 'admin' && role !== 'admin') {
-    const [{ admins } = { admins: 0 }] = await deps.db.select({ admins: count() }).from(user).where(and(eq(user.role, 'admin'), isNull(user.deletedAt)));
+    const [{ admins } = { admins: 0 }] = await deps.db
+      .select({ admins: count() })
+      .from(user)
+      .where(and(eq(user.role, 'admin'), isNull(user.deletedAt)));
     if (Number(admins) <= 1) throw new ApiError('LAST_ADMIN');
   }
   if (u.role !== role) {
@@ -380,10 +360,7 @@ export async function reactivateUser(deps: Deps, targetId: string, actorId: stri
   const u = await deps.db.query.user.findFirst({ where: eq(user.id, targetId) });
   if (!u) throw notFound('User');
   if (!u.deletedAt) return getUserAdmin(deps, targetId);
-  await deps.db
-    .update(user)
-    .set({ deletedAt: null, deletedReason: null, affiliationValid: true, updatedAt: deps.now() })
-    .where(eq(user.id, targetId));
+  await deps.db.update(user).set({ deletedAt: null, deletedReason: null, affiliationValid: true, updatedAt: deps.now() }).where(eq(user.id, targetId));
   try {
     await deps.litellm.blockUser(targetId, false);
   } catch (e) {

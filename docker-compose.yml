@@ -7,11 +7,11 @@ services:
       POSTGRES_PASSWORD: api_selfservice
       POSTGRES_DB: litellm
     ports:
-      - "5433:5432"
+      - '5433:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U api_selfservice -d litellm"]
+      test: ['CMD-SHELL', 'pg_isready -U api_selfservice -d litellm']
       interval: 5s
       timeout: 3s
       retries: 20
@@ -19,25 +19,25 @@ services:
   mailpit:
     image: axllent/mailpit:latest
     ports:
-      - "8025:8025"   # web ui
-      - "1025:1025"   # smtp
+      - '8025:8025' # web ui
+      - '1025:1025' # smtp
     environment:
-      MP_SMTP_AUTH_ACCEPT_ANY: "1"
-      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+      MP_SMTP_AUTH_ACCEPT_ANY: '1'
+      MP_SMTP_AUTH_ALLOW_INSECURE: '1'
 
   api:
     build:
       context: .
       dockerfile: Dockerfile
-    profiles: ["app"]
+    profiles: ['app']
     env_file: .env
     environment:
       DATABASE_URL: postgres://api_selfservice:api_selfservice@postgres:5432/litellm
       SMTP_HOST: mailpit
-      SMTP_PORT: "1025"
-      PORT: "3030"
+      SMTP_PORT: '1025'
+      PORT: '3030'
     ports:
-      - "3030:3030"
+      - '3030:3030'
     depends_on:
       postgres:
         condition: service_healthy

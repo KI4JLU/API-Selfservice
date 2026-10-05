@@ -54,6 +54,13 @@ export function CreateKeyDialog({ open, onOpenChange, me, onCreated }: { open: b
     return [...groups.entries()].map(([name, ms]) => ({ name, models: ms })).sort((a, b) => a.name.localeCompare(b.name));
   }, [providers.data]);
 
+  // Models tab grouped by provider; models without a provider come last.
+  const modelGroups = useMemo(() => {
+    const groups = new Map<string | null, NonNullable<typeof providers.data>>();
+    for (const p of providers.data ?? []) groups.set(p.provider, [...(groups.get(p.provider) ?? []), p]);
+    return [...groups.entries()].map(([name, items]) => ({ name, items })).sort((a, b) => (a.name === null ? 1 : b.name === null ? -1 : a.name.localeCompare(b.name)));
+  }, [providers.data]);
+
   // F-KST-12: keys only on the default and on cost centers the user is a member of.
   const ccOptions = useMemo(() => {
     const map = new Map(me.memberCostCenters.map((c) => [c.id, c]));
@@ -125,28 +132,37 @@ export function CreateKeyDialog({ open, onOpenChange, me, onCreated }: { open: b
               ) : (providers.data ?? []).length === 0 ? (
                 <div className="p-3 text-sm text-muted-foreground">{t('common.empty')}</div>
               ) : (
-                (providers.data ?? []).map((p) => {
-                  const display = (lang === 'en' ? p.displayNameEn : p.displayNameDe) ?? null;
-                  const desc = (lang === 'en' ? p.descriptionEn : p.descriptionDe) ?? null;
-                  // models of a selected provider are part of the key anyway
-                  const covered = p.provider !== null && selectedProviders.includes(p.provider);
-                  const checked = covered || models.includes(p.modelName);
-                  return (
-                    <label key={p.id} className="hover:bg-muted/50 flex cursor-pointer items-start gap-3 border-b px-3 py-2 last:border-0" data-testid={`model-${p.modelName}`}>
-                      <Checkbox className="mt-0.5" checked={checked} disabled={!p.available || covered} onCheckedChange={(v) => setModels((m) => (v === true ? [...m, p.modelName] : m.filter((x) => x !== p.modelName)))} />
-                      <span className="flex min-w-0 flex-1 flex-col">
-                        <span className="flex flex-wrap items-center gap-2 text-sm">
-                          <span className="font-medium">{display ?? p.modelName}</span>
-                          {display ? <span className="font-mono text-xs text-muted-foreground">{p.modelName}</span> : null}
-                          <TierBadge tier={p.tier} />
-                          {p.provider ? <span className="text-muted-foreground text-xs">{p.provider}</span> : null}
-                        </span>
-                        {desc ? <span className="text-xs text-muted-foreground">{desc}</span> : null}
-                        <ModelPrice provider={p} />
-                      </span>
-                    </label>
-                  );
-                })
+                modelGroups.map((g) => (
+                  <div key={g.name ?? ''} className="border-b last:border-0" data-testid={`model-group-${g.name ?? 'none'}`}>
+                    <div className="bg-muted/50 border-b px-3 py-1.5 text-xs font-medium text-muted-foreground">{g.name ?? t('providers.noProvider')}</div>
+                    {g.items.map((p) => {
+                      const display = (lang === 'en' ? p.displayNameEn : p.displayNameDe) ?? null;
+                      const desc = (lang === 'en' ? p.descriptionEn : p.descriptionDe) ?? null;
+                      // models of a selected provider are part of the key anyway
+                      const covered = p.provider !== null && selectedProviders.includes(p.provider);
+                      const checked = covered || models.includes(p.modelName);
+                      return (
+                        <label key={p.id} className="hover:bg-muted/50 flex cursor-pointer items-start gap-3 border-b px-3 py-2 last:border-0" data-testid={`model-${p.modelName}`}>
+                          <Checkbox
+                            className="mt-0.5"
+                            checked={checked}
+                            disabled={!p.available || covered}
+                            onCheckedChange={(v) => setModels((m) => (v === true ? [...m, p.modelName] : m.filter((x) => x !== p.modelName)))}
+                          />
+                          <span className="flex min-w-0 flex-1 flex-col">
+                            <span className="flex flex-wrap items-center gap-2 text-sm">
+                              <span className="font-medium">{display ?? p.modelName}</span>
+                              {display ? <span className="font-mono text-xs text-muted-foreground">{p.modelName}</span> : null}
+                              <TierBadge tier={p.tier} />
+                            </span>
+                            {desc ? <span className="text-xs text-muted-foreground">{desc}</span> : null}
+                            <ModelPrice provider={p} />
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                ))
               )}
             </TabsContent>
             <TabsContent value="providers" className="grid gap-1.5">

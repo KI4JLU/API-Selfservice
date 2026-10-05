@@ -27,6 +27,7 @@ Ein Klick auf eine Zeile zeigt die Objekt-ID und die gespeicherten Details (z. B
 | `budget.set` | Admin hat ein User-Budget zugewiesen |
 | `budget.warn` / `budget.block` | User-Budget bei 80 % / erschöpft, Keys gesperrt |
 | `cost_center.warn` / `cost_center.block` | Kostenstellen-Budget bei 80 % / erschöpft, Keys gesperrt |
+| `cost_center.join_request` / `cost_center.join_approve` / `cost_center.join_reject` | Beitritt zu einer Kostenstelle angefragt / angenommen / abgelehnt |
 | `user.set_role` / `user.deactivate` | Rolle geändert / User deaktiviert |
 | `litellm.*` | Spiegeln einer Änderung nach LiteLLM fehlgeschlagen; die Änderung bleibt in LiteLite erhalten und wird beim nächsten Abgleich nachgeholt |
 | `job.failed` / `request.internal_error` | Ein Cron-Job oder eine API-Anfrage ist unerwartet fehlgeschlagen |

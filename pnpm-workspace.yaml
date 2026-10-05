@@ -2,4 +2,4 @@ packages:
   - apps/*
   - packages/*
 onlyBuiltDependencies:
-  - "@ki4jlu/design-system"
+  - '@ki4jlu/design-system'

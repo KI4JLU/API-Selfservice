@@ -35,10 +35,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     <HelpContext.Provider value={ctx}>
       <SidebarProvider style={{ '--sidebar-width': 'calc(var(--spacing) * 72)', '--header-height': 'calc(var(--spacing) * 12)' } as CSSProperties}>
         <AppSidebar me={me} variant="inset" />
-        <SidebarInset>
+        {/* The content below the header is the only scroll area, so a wide table's horizontal scrollbar stays at the window bottom. */}
+        <SidebarInset className="h-svh overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)]">
           <SiteHeader />
           <ImpersonationBanner me={me} />
-          <div className="flex flex-1 flex-col">
+          <div className="flex min-h-0 flex-1 flex-col overflow-auto" data-scroll-restoration-id="app-content">
             <div className="w-full px-4 py-6 lg:px-6">{children}</div>
           </div>
         </SidebarInset>

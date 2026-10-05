@@ -28,7 +28,12 @@ const EnvSchema = z.object({
   KEYCLOAK_AFFILIATION_VALID: z
     .string()
     .default('')
-    .transform((v) => v.split(',').map((s) => s.trim()).filter(Boolean)),
+    .transform((v) =>
+      v
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
 
   LITELLM_BASE_URL: z.string().url().default('http://localhost:4000'),
   LITELLM_API_KEY: z.string().default(''),
@@ -43,7 +48,12 @@ const EnvSchema = z.object({
   ADMIN_NOTIFY_EMAILS: z
     .string()
     .default('')
-    .transform((v) => v.split(',').map((s) => s.trim()).filter(Boolean)),
+    .transform((v) =>
+      v
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
 
   KEY_LIFETIME_DAYS: z.coerce.number().default(182),
   DELETION_GRACE_DAYS: z.coerce.number().default(365),

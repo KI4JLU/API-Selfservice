@@ -123,3 +123,53 @@ export const MemberCandidateSchema = z.object({
   hasAccount: z.boolean(),
   isMember: z.boolean(),
 });
+
+/** F-KST-16: request to join an approved cost center, decided by its cost center admins or an admin. */
+export const CostCenterJoinRequestSchema = z.object({
+  id: IdSchema,
+  user: z.object({ id: IdSchema, name: z.string(), email: z.string() }),
+  costCenter: z.object({ id: IdSchema, number: z.string(), name: z.string() }),
+  message: z.string().nullable(),
+  status: z.enum(['pending', 'approved', 'rejected']),
+  reason: z.string().nullable(),
+  decidedBy: IdSchema.nullable(),
+  decidedAt: IsoDate.nullable(),
+  createdAt: IsoDate,
+});
+
+export const CreateJoinRequestSchema = z.object({
+  costCenterId: IdSchema,
+  /** Optional note for the cost center admins, e.g. the project the user works on */
+  message: z.string().trim().max(1000).optional(),
+});
+
+export const JoinRequestParam = z.object({ id: z.string().min(1), requestId: z.string().min(1) });
+
+/** Max. addresses per bulk lookup and bulk add, so one request cannot walk the whole LiteLLM user list. */
+export const MEMBER_BULK_MAX = 200;
+
+/** Bulk add, step 1: resolve pasted e-mail addresses to LiteLLM users (exact, case-insensitive match). */
+export const ResolveMemberEmailsSchema = z.object({
+  emails: z.array(z.string().trim().max(320)).min(1).max(MEMBER_BULK_MAX),
+});
+
+export const ResolvedMemberEmailsSchema = z.object({
+  /** One candidate per address that matches a LiteLLM user, in input order */
+  found: z.array(MemberCandidateSchema),
+  /** Valid addresses without a LiteLLM user */
+  notFound: z.array(z.string()),
+  /** Entries that are no e-mail address */
+  invalid: z.array(z.string()),
+});
+
+/** Bulk add, step 2: add the resolved users; each one is handled like POST /cost-centers/{id}/members. */
+export const BulkAddCostCenterMembersSchema = z.object({
+  userIds: z.array(z.string().min(1)).min(1).max(MEMBER_BULK_MAX),
+  role: z.enum(COST_CENTER_MEMBER_ROLES).default('user'),
+});
+
+export const BulkAddCostCenterMembersResultSchema = z.object({
+  added: z.array(CostCenterMemberSchema),
+  /** Users that could not be added, with the error code (e.g. COST_CENTER_MEMBER_EXISTS, USER_DEACTIVATED) */
+  failed: z.array(z.object({ userId: z.string(), code: z.string() })),
+});

@@ -37,6 +37,8 @@ export const NOTIFICATION_TYPES = [
   'cost_center_request_rejected',
   'cost_center_member_added',
   'cost_center_member_removed',
+  'cost_center_join_request_created',
+  'cost_center_join_request_rejected',
   'user_budget_80',
   'user_budget_100',
   'cost_center_budget_80',
@@ -55,6 +57,8 @@ export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export const BUDGET_WARN_THRESHOLD = 0.8;
 export const DEFAULT_KEY_LIFETIME_DAYS = 182;
+/** F-KEY-4: first expiry warning, also the window for the dashboard hint. */
+export const KEY_EXPIRY_WARN_DAYS = 14;
 export const DEFAULT_DELETION_GRACE_DAYS = 365;
 
 /** Event log (audit_log): info = change, warning = alert (e.g. budget exhausted), error = failure. */

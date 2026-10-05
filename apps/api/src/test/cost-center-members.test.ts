@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { costCenterMembers, costCenters, eq } from '@api-selfservice/db';
-import { CostCenterMemberSchema, MeSchema, MemberCandidateSchema } from '@api-selfservice/shared';
+import { BulkAddCostCenterMembersResultSchema, CostCenterMemberSchema, MeSchema, MemberCandidateSchema, ResolvedMemberEmailsSchema } from '@api-selfservice/shared';
 import { syncMigratedMembershipsOnce } from '../services/cost-center-members.js';
 import { addMember, createTestApp, expectError, expectShape, litellmOwner, randomCostCenter, syncProvidersWithFree, uniqEmail, type Client, type TestApp } from './harness.js';
 
@@ -113,6 +113,47 @@ describe('cost center members (F-KST-10 to F-KST-13)', () => {
     expectError(await admin.get('/cost-centers/nope/members'), 404, 'NOT_FOUND');
   });
 
+  it('bulk add: resolves pasted addresses, reports unknown and invalid ones, adds the found users', async () => {
+    const known = uniqEmail('bulk-known');
+    await t.mock.createUser({ userId: 'll-bulk-1', email: known, alias: 'Bulk One' });
+    const signedIn = await t.login();
+    const existing = await t.login();
+    await addMember(ccAdmin, cc.id, existing);
+    const unknown = uniqEmail('bulk-unknown');
+
+    const r = await ccAdmin.post(`/cost-centers/${cc.id}/member-candidates/resolve`, {
+      emails: [known.toUpperCase(), signedIn.email, existing.email, unknown, 'not-an-address', known],
+    });
+    expect(r.status).toBe(200);
+    const res = expectShape(ResolvedMemberEmailsSchema, r.body);
+    expect(res.found.map((c) => [c.userId, c.isMember, c.hasAccount])).toEqual([
+      ['ll-bulk-1', false, false],
+      [signedIn.userId, false, true],
+      [existing.userId, true, true],
+    ]);
+    expect(res.notFound).toEqual([unknown]);
+    expect(res.invalid).toEqual(['not-an-address']);
+
+    const b = await ccAdmin.post(`/cost-centers/${cc.id}/members/bulk`, { userIds: ['ll-bulk-1', signedIn.userId, existing.userId, 'nobody-in-litellm'] });
+    expect(b.status).toBe(200);
+    const out = expectShape(BulkAddCostCenterMembersResultSchema, b.body);
+    expect(out.added.map((m) => m.userId)).toEqual(['ll-bulk-1', signedIn.userId]);
+    expect(out.failed).toEqual([
+      { userId: existing.userId, code: 'COST_CENTER_MEMBER_EXISTS' },
+      { userId: 'nobody-in-litellm', code: 'NOT_FOUND' },
+    ]);
+    expect(t.mock.teams.get(cc.id)?.members.get('ll-bulk-1')).toBe('user');
+    expect(await t.notificationsOf('cost_center_member_added', known)).toHaveLength(1);
+
+    // limits, roles and scope as for single adds
+    expectError(await ccAdmin.post(`/cost-centers/${cc.id}/member-candidates/resolve`, { emails: [] }), 400, 'VALIDATION_ERROR');
+    expectError(await ccAdmin.post(`/cost-centers/${cc.id}/member-candidates/resolve`, { emails: Array.from({ length: 201 }, (_, i) => `a${i}@x.de`) }), 400, 'VALIDATION_ERROR');
+    expectError(await admin.post(`/cost-centers/${defaultId}/members/bulk`, { userIds: [signedIn.userId] }), 409, 'COST_CENTER_DEFAULT_IMMUTABLE');
+    const plainAdmin = await t.login();
+    await addMember(ccAdmin, cc.id, plainAdmin, 'admin');
+    expectError(await plainAdmin.post(`/cost-centers/${cc.id}/members/bulk`, { userIds: [unknown], role: 'admin' }), 403, 'COST_CENTER_OWNER_ONLY');
+  });
+
   it('plain members and admins of other cost centers get FORBIDDEN', async () => {
     const plain = await t.login();
     await addMember(admin, cc.id, plain);
@@ -123,6 +164,8 @@ describe('cost center members (F-KST-10 to F-KST-13)', () => {
       expectError(await c.get(`/cost-centers/${cc.id}/members`), 403, 'FORBIDDEN');
       expectError(await c.get(`/cost-centers/${cc.id}/member-candidates?q=test`), 403, 'FORBIDDEN');
       expectError(await c.post(`/cost-centers/${cc.id}/members`, { userId: c.userId }), 403, 'FORBIDDEN');
+      expectError(await c.post(`/cost-centers/${cc.id}/member-candidates/resolve`, { emails: [c.email] }), 403, 'FORBIDDEN');
+      expectError(await c.post(`/cost-centers/${cc.id}/members/bulk`, { userIds: [c.userId] }), 403, 'FORBIDDEN');
       expectError(await c.patch(`/cost-centers/${cc.id}/members/${ccAdmin.userId}`, { role: 'user' }), 403, 'FORBIDDEN');
       expectError(await c.delete(`/cost-centers/${cc.id}/members/${ccAdmin.userId}`), 403, 'FORBIDDEN');
     }
@@ -176,7 +219,12 @@ describe('cost center members (F-KST-10 to F-KST-13)', () => {
     expectError(await deputy.patch(`/cost-centers/${c4.id}/members/${other.userId}`, { role: 'user' }), 403, 'COST_CENTER_OWNER_ONLY');
     expectError(await deputy.delete(`/cost-centers/${c4.id}/members/${other.userId}`), 403, 'COST_CENTER_OWNER_ONLY');
     expectError(await deputy.delete(`/cost-centers/${c4.id}/members/${deputy.userId}`), 403, 'COST_CENTER_OWNER_ONLY');
-    expect((await members(admin, c4.id)).filter((m) => m.role === 'admin').map((m) => m.userId).sort()).toEqual([owner.userId, deputy.userId, other.userId].sort());
+    expect(
+      (await members(admin, c4.id))
+        .filter((m) => m.role === 'admin')
+        .map((m) => m.userId)
+        .sort(),
+    ).toEqual([owner.userId, deputy.userId, other.userId].sort());
 
     expect((await owner.patch(`/cost-centers/${c4.id}/members/${plain.userId}`, { role: 'admin' })).body.role).toBe('admin');
     expect((await owner.delete(`/cost-centers/${c4.id}/members/${other.userId}`)).status).toBe(200);

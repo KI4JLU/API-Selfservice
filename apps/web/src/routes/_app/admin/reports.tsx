@@ -64,9 +64,19 @@ function AdminReportsPage() {
           </div>
         ),
       },
-      { header: t('common.budget'), accessorKey: 'budget', cell: ({ row }) => (row.original.budget === null ? <span className="text-muted-foreground">{t('common.unlimited')}</span> : fmtMoney(row.original.budget)), meta: { className: 'text-right tabular-nums' } },
+      {
+        header: t('common.budget'),
+        accessorKey: 'budget',
+        cell: ({ row }) => (row.original.budget === null ? <span className="text-muted-foreground">{t('common.unlimited')}</span> : fmtMoney(row.original.budget)),
+        meta: { className: 'text-right tabular-nums' },
+      },
       { header: t('common.spend'), accessorKey: 'spend', cell: ({ row }) => fmtMoney(row.original.spend, { precise: true }), meta: { className: 'text-right tabular-nums font-medium' } },
-      { header: t('common.remaining'), accessorKey: 'remaining', cell: ({ row }) => (row.original.remaining === null ? '–' : fmtMoney(row.original.remaining)), meta: { className: 'text-right tabular-nums' } },
+      {
+        header: t('common.remaining'),
+        accessorKey: 'remaining',
+        cell: ({ row }) => (row.original.remaining === null ? '–' : fmtMoney(row.original.remaining)),
+        meta: { className: 'text-right tabular-nums' },
+      },
       {
         header: t('common.utilization'),
         accessorKey: 'utilization',
@@ -74,8 +84,14 @@ function AdminReportsPage() {
           const u = row.original.utilization;
           return (
             <div className="min-w-32">
-              <div className={`text-xs tabular-nums ${u !== null && u >= 1 ? 'text-destructive' : u !== null && u >= BUDGET_WARN_THRESHOLD ? 'text-warning' : ''}`}>{u === null ? '–' : fmtPercent(u)}</div>
-              <Progress value={u === null ? 0 : Math.min(100, u * 100)} indicatorClassName={u !== null && u >= 1 ? 'bg-destructive' : u !== null && u >= BUDGET_WARN_THRESHOLD ? 'bg-warning' : undefined} className="mt-1.5" />
+              <div className={`text-xs tabular-nums ${u !== null && u >= 1 ? 'text-destructive' : u !== null && u >= BUDGET_WARN_THRESHOLD ? 'text-warning' : ''}`}>
+                {u === null ? '–' : fmtPercent(u)}
+              </div>
+              <Progress
+                value={u === null ? 0 : Math.min(100, u * 100)}
+                indicatorClassName={u !== null && u >= 1 ? 'bg-destructive' : u !== null && u >= BUDGET_WARN_THRESHOLD ? 'bg-warning' : undefined}
+                className="mt-1.5"
+              />
             </div>
           );
         },

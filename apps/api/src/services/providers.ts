@@ -50,7 +50,7 @@ export async function listProvidersForUser(deps: Deps, cu: CurrentUser, costCent
 }
 
 export async function adminListProviders(deps: Deps) {
-  const rows = await deps.db.query.providers.findMany({ orderBy: [providers.modelName] });
+  const rows = await deps.db.query.providers.findMany({ orderBy: [providers.provider, providers.modelName] });
   return rows.map(providerView);
 }
 
@@ -62,7 +62,11 @@ export async function updateProvider(
 ) {
   const p = await deps.db.query.providers.findFirst({ where: eq(providers.id, id) });
   if (!p) throw notFound('Provider');
-  const [row] = await deps.db.update(providers).set({ ...input, updatedAt: deps.now() }).where(eq(providers.id, id)).returning();
+  const [row] = await deps.db
+    .update(providers)
+    .set({ ...input, updatedAt: deps.now() })
+    .where(eq(providers.id, id))
+    .returning();
   await audit(deps, { actorId: actor.id, action: 'provider.update', entity: 'provider', entityId: id, payload: input });
   if (input.tier && input.tier !== p.tier) {
     // F-KEY-10: a model that became free may now belong to provider keys on the default cost center.

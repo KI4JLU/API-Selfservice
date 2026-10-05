@@ -38,7 +38,11 @@ export function createApp(deps: Deps): App {
     await next();
     c.header('x-request-id', c.get('requestId'));
   });
-  if (deps.env.NODE_ENV !== 'test') app.use('*', honoLogger((msg) => deps.log.info(msg)));
+  if (deps.env.NODE_ENV !== 'test')
+    app.use(
+      '*',
+      honoLogger((msg) => deps.log.info(msg)),
+    );
   app.use(
     '/api/*',
     cors({

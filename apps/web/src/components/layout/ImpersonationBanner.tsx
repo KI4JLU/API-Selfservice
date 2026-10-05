@@ -33,7 +33,14 @@ export function ImpersonationBanner({ me }: { me: Me }) {
         <span className="min-w-0 flex-1 truncate" data-testid="impersonation-user" data-user-email={me.email}>
           {t('impersonation.banner', { name: me.name, email: me.email })}
         </span>
-        <Button size="sm" variant="outline" className="h-7 border-current bg-transparent text-white hover:bg-white/15 hover:text-white" onClick={onStop} disabled={stop.isPending} data-testid="btn-stop-impersonation">
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 border-current bg-transparent text-white hover:bg-white/15 hover:text-white"
+          onClick={onStop}
+          disabled={stop.isPending}
+          data-testid="btn-stop-impersonation"
+        >
           {t('impersonation.stop')}
         </Button>
       </div>

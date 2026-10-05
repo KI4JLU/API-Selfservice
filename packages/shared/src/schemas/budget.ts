@@ -54,7 +54,10 @@ export const AdminBudgetRowSchema = z.object({
 
 export const AdminBudgetsQuery = z.object({
   costCenterId: IdSchema.optional(),
-  month: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+  month: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(200).default(50),
 });

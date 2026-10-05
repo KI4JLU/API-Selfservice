@@ -45,7 +45,14 @@ export function RoleDialog({ user, onClose }: { user: AdminUser | null; onClose:
           <Header title={t('users.setRole')} user={user} />
           {user?.roleFromIdp ? <Banner variant="info">{t('users.roleFromIdp')}</Banner> : null}
           <Field label={t('common.role')} htmlFor="u-role">
-            <SimpleSelect id="u-role" value={role} onValueChange={(v) => setRoleValue(v as Role)} options={ROLES.map((r) => ({ value: r, label: t(`roles.${r}`) }))} disabled={user?.roleFromIdp} testId="input-role" />
+            <SimpleSelect
+              id="u-role"
+              value={role}
+              onValueChange={(v) => setRoleValue(v as Role)}
+              options={ROLES.map((r) => ({ value: r, label: t(`roles.${r}`) }))}
+              disabled={user?.roleFromIdp}
+              testId="input-role"
+            />
           </Field>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
@@ -93,7 +100,11 @@ export function CostCenterAdminDialog({ user, onClose }: { user: AdminUser | nul
             ) : (
               (ccs.data?.items ?? []).map((c) => (
                 <label key={c.id} className="hover:bg-muted/50 flex cursor-pointer items-center gap-3 border-b px-3 py-2 text-sm last:border-0">
-                  <Checkbox checked={selected.includes(c.id)} onCheckedChange={(v) => setSelected((s) => (v === true ? [...s, c.id] : s.filter((x) => x !== c.id)))} data-testid={`cc-admin-${c.number}`} />
+                  <Checkbox
+                    checked={selected.includes(c.id)}
+                    onCheckedChange={(v) => setSelected((s) => (v === true ? [...s, c.id] : s.filter((x) => x !== c.id)))}
+                    data-testid={`cc-admin-${c.number}`}
+                  />
                   <span className="font-mono">{fmtCostCenter(c.number)}</span>
                   <span className="truncate">{c.name}</span>
                 </label>
@@ -142,7 +153,19 @@ export function BudgetDialog({ user, onClose }: { user: AdminUser | null; onClos
       <DialogContent data-testid="dialog-assign-budget">
         <form onSubmit={submit} className="grid gap-4">
           <Header title={t('users.assignBudget')} user={user} />
-          <BudgetFields amount={amount} setAmount={setAmount} period={period} setPeriod={setPeriod} start={start} setStart={setStart} end={end} setEnd={setEnd} amountLabel={t('users.budgetAmount')} required idPrefix="u" />
+          <BudgetFields
+            amount={amount}
+            setAmount={setAmount}
+            period={period}
+            setPeriod={setPeriod}
+            start={start}
+            setStart={setStart}
+            end={end}
+            setEnd={setEnd}
+            amountLabel={t('users.budgetAmount')}
+            required
+            idPrefix="u"
+          />
           <p className="text-xs text-muted-foreground">{t('users.budgetHint')}</p>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

@@ -26,7 +26,13 @@ export function SpendBarChart({
         <YAxis tickLine={false} axisLine={false} tickMargin={4} width={60} tickFormatter={(v: number) => fmtMoney(v)} />
         <ChartTooltip
           cursor={false}
-          content={<ChartTooltipContent hideLabel={false} labelFormatter={(l) => (xFormatter ? xFormatter(String(l)) : String(l))} formatter={(v) => <span className="text-foreground ml-auto font-mono font-medium tabular-nums">{fmtMoney(Number(v), { precise: true })}</span>} />}
+          content={
+            <ChartTooltipContent
+              hideLabel={false}
+              labelFormatter={(l) => (xFormatter ? xFormatter(String(l)) : String(l))}
+              formatter={(v) => <span className="text-foreground ml-auto font-mono font-medium tabular-nums">{fmtMoney(Number(v), { precise: true })}</span>}
+            />
+          }
         />
         <Bar dataKey={yKey} fill={`var(--color-${yKey})`} radius={4} maxBarSize={32} />
       </BarChart>

@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+pnpm-lock.yaml
+apps/web/src/routeTree.gen.ts
+packages/db/drizzle
+e2e/test-results
+e2e/screenshots
+docs

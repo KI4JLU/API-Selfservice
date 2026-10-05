@@ -4,12 +4,13 @@
     "tagline": "Self-service portal for LiteLLM"
   },
   "nav": {
-    "dashboard": "Budget",
+    "dashboard": "Dashboard",
     "keys": "API keys",
     "keyTest": "Test key",
-    "requests": "Requests",
+    "requests": "Usage",
     "profile": "Profile",
     "myCostCenters": "My cost centers",
+    "costCenterDirectory": "Cost centers",
     "admin": "Administration",
     "adminUsers": "Users / roles",
     "adminLitellmUsers": "LiteLLM users",
@@ -109,7 +110,7 @@
     "loginFailed": "Sign-in failed. Please try again."
   },
   "dashboard": {
-    "title": "Budget and usage",
+    "title": "Dashboard",
     "budgetAssigned": "Assigned budget (EUR)",
     "spendCurrent": "Spend in period",
     "remaining": "Remaining budget",
@@ -130,7 +131,17 @@
     "historyDescription": "Monthly spend",
     "topKeysDescription": "Spend per key in the period",
     "topModelsDescription": "Spend per model in the period",
-    "byProviderDescription": "Requests, tokens and spend per provider"
+    "byProviderDescription": "Requests, tokens and spend per provider",
+    "budgetTitle": "Budget and usage",
+    "keysActive": "{{count}} of {{total}} keys active",
+    "noKeyHint": "You have no API key yet. Create your first key now.",
+    "keysBlocked": "Blocked ({{count}}): {{names}}. The budget is exhausted or you are no longer a member of the cost center.",
+    "keysExpired": "Expired ({{count}}): {{names}}. Extend the keys under API keys.",
+    "keyExpiring": "Key “{{name}}” expires on {{date}}.",
+    "keysOk": "All keys are active.",
+    "toKeys": "Go to API keys",
+    "costCentersDescription": "Cost centers you can create keys on",
+    "joinCostCenter": "Join a cost center"
   },
   "keys": {
     "title": "API keys",
@@ -189,7 +200,7 @@
     "emptyAnswer": "(The model returned an empty answer.)"
   },
   "requests": {
-    "title": "Requests",
+    "title": "Usage",
     "time": "Time",
     "type": "Type",
     "model": "Model",
@@ -248,7 +259,7 @@
     "editBudget": "Budget",
     "maxBudgetHint": "Amount in EUR. Leave empty for unlimited.",
     "models": "Released models",
-    "modelsHint": "Without a selection all models are released. Paid models are only available on own cost centers, not on the default cost center.",
+    "modelsHint": "Without a selection all models are released, including future ones. With a selection only the chosen ones; a provider checkbox selects all current models of the provider. Paid models are only available on own cost centers, not on the default cost center.",
     "modelsAll": "All models",
     "noRequests": "No pending requests",
     "searchPlaceholder": "Number or name",
@@ -256,7 +267,10 @@
     "ownerNone": "No owner selected yet",
     "ownerPick": "Select",
     "ownerRequired": "Please select an owner from LiteLLM.",
-    "ownerMissing": "Owner missing"
+    "ownerMissing": "Owner missing",
+    "modelsSelectAll": "Select all",
+    "modelsSelectNone": "Clear selection",
+    "modelsFilter": "Filter models"
   },
   "providers": {
     "title": "Models",
@@ -396,7 +410,10 @@
       "unblock": "Cost center block lifted",
       "member_add": "Member added",
       "member_role": "Member role changed",
-      "member_remove": "Member removed"
+      "member_remove": "Member removed",
+      "join_request": "Join requested",
+      "join_approve": "Join approved",
+      "join_reject": "Join rejected"
     },
     "provider": {
       "update": "Model updated",
@@ -453,6 +470,7 @@
     "COST_CENTER_REQUEST_PENDING": "There is already a pending request.",
     "COST_CENTER_NOT_MEMBER": "You are not a member of this cost center. Please contact a cost center admin.",
     "COST_CENTER_MEMBER_EXISTS": "This person is already a member of the cost center.",
+    "COST_CENTER_JOIN_REQUEST_PENDING": "You already have an open join request for this cost center.",
     "COST_CENTER_OWNER_ONLY": "Only the owner of the cost center can appoint, demote or remove cost center admins.",
     "USER_DEACTIVATED": "The user is deactivated.",
     "COST_CENTER_OWNER_MUST_BE_ADMIN": "The owner stays cost center admin. Set another owner first.",
@@ -492,7 +510,9 @@
     "role_changed": "Role changed",
     "rebooking_created": "Rebooking created",
     "cost_center_member_added": "Added to cost center",
-    "cost_center_member_removed": "Removed from cost center"
+    "cost_center_member_removed": "Removed from cost center",
+    "cost_center_join_request_created": "Join request received",
+    "cost_center_join_request_rejected": "Join request rejected"
   },
   "impersonation": {
     "banner": "You are acting as {{name}} ({{email}}).",
@@ -520,7 +540,21 @@
     "roles": {
       "user": "Member",
       "admin": "Cost center admin"
-    }
+    },
+    "bulkAdd": "Add several",
+    "bulkTitle": "Add several members",
+    "bulkHint": "Paste e-mail addresses separated by comma, semicolon or line break. Entries like “Name <mail@uni-giessen.de>” are recognized too.",
+    "bulkInputLabel": "E-mail addresses",
+    "bulkResolve": "Check addresses",
+    "bulkTooMany": "At most {{max}} addresses at once ({{count}} pasted).",
+    "bulkFound": "Found ({{count}})",
+    "bulkNotFound": "No LiteLLM user found ({{count}})",
+    "bulkNotFoundHint": "These people have to sign in once or be created in LiteLLM first.",
+    "bulkInvalid": "Not a valid e-mail address ({{count}})",
+    "bulkBack": "Back",
+    "bulkSubmit": "Add {{count}}",
+    "bulkAdded": "{{count}} members added",
+    "bulkFailed": "Not added ({{count}})"
   },
   "litellmUsers": {
     "title": "LiteLLM users",
@@ -535,5 +569,33 @@
     "notInApiSelfservice": "not yet signed in",
     "hint": "LiteLLM is the user master: an account that exists there is adopted with the same ID on its first API-Selfservice login.",
     "error": "LiteLLM did not answer the user list. The configured LITELLM_API_KEY needs proxy admin rights."
+  },
+  "joinRequests": {
+    "title": "Cost centers",
+    "subtitle": "Your cost centers are listed on top. Join further approved cost centers to create API keys on them.",
+    "searchPlaceholder": "Name",
+    "empty": "No cost centers found.",
+    "join": "Join",
+    "joinTitle": "Request to join",
+    "joinHint": "The cost center admins of “{{name}}” receive your request by e-mail and decide on it.",
+    "messageLabel": "Message (optional)",
+    "messagePlaceholder": "e.g. project or reason",
+    "send": "Send request",
+    "sent": "Join request sent to “{{name}}”",
+    "status": {
+      "member": "Member",
+      "pending": "Requested",
+      "rejected": "Rejected"
+    },
+    "rejectedReason": "Rejected: {{reason}}",
+    "listTitle": "Join requests",
+    "noneOpen": "No open requests",
+    "approve": "Approve",
+    "reject": "Reject",
+    "rejectTitle": "Reject join request",
+    "reasonLabel": "Reason",
+    "approved": "{{name}} is now a member",
+    "rejected": "Request from {{name}} rejected",
+    "openCount": "{{count}} open requests"
   }
 }

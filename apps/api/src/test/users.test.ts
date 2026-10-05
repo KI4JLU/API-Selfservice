@@ -151,7 +151,9 @@ describe('user administration', () => {
     const u = await t.login();
     const a = await approvedCostCenterFor(t, admin, u);
     const b = await approvedCostCenterFor(t, admin, await t.login());
-    expect((await admin.put(`/admin/users/${u.userId}/cost-center-admin`, { costCenterIds: [a.id, b.id] })).body.managedCostCenters.map((c: { id: string }) => c.id).sort()).toEqual([a.id, b.id].sort());
+    expect((await admin.put(`/admin/users/${u.userId}/cost-center-admin`, { costCenterIds: [a.id, b.id] })).body.managedCostCenters.map((c: { id: string }) => c.id).sort()).toEqual(
+      [a.id, b.id].sort(),
+    );
     // mirrored as LiteLLM team admin (E-8)
     expect(t.mock.teams.get(a.id)?.members.get(u.userId)).toBe('admin');
     expect(t.mock.teams.get(b.id)?.members.get(u.userId)).toBe('admin');

@@ -30,8 +30,9 @@ import { runIngestAndBudgets, runKeyExpiry } from '../jobs/index.js';
 const r = createRouter();
 r.use('/admin/*', requireAdmin);
 
-r.openapi(createRoute({ method: 'get', path: '/admin/users', tags: ['users'], request: { query: AdminUsersQuery }, responses: { 200: json(paginated(AdminUserSchema), 'Users'), ...errors } }), async (c) =>
-  c.json(await listUsers(c.get('deps'), c.req.valid('query')), 200),
+r.openapi(
+  createRoute({ method: 'get', path: '/admin/users', tags: ['users'], request: { query: AdminUsersQuery }, responses: { 200: json(paginated(AdminUserSchema), 'Users'), ...errors } }),
+  async (c) => c.json(await listUsers(c.get('deps'), c.req.valid('query')), 200),
 );
 r.openapi(
   createRoute({
@@ -48,18 +49,38 @@ r.openapi(createRoute({ method: 'get', path: '/admin/users/{id}', tags: ['users'
   c.json(await getUserAdmin(c.get('deps'), c.req.valid('param').id), 200),
 );
 r.openapi(
-  createRoute({ method: 'patch', path: '/admin/users/{id}/role', tags: ['users'], request: { params: IdParam, body: body(SetRoleSchema) }, responses: { 200: json(AdminUserSchema, 'Role set'), ...errors } }),
+  createRoute({
+    method: 'patch',
+    path: '/admin/users/{id}/role',
+    tags: ['users'],
+    request: { params: IdParam, body: body(SetRoleSchema) },
+    responses: { 200: json(AdminUserSchema, 'Role set'), ...errors },
+  }),
   async (c) => c.json(await setRole(c.get('deps'), c.get('user'), c.req.valid('param').id, c.req.valid('json').role), 200),
 );
 r.openapi(
-  createRoute({ method: 'put', path: '/admin/users/{id}/cost-center-admin', tags: ['users'], request: { params: IdParam, body: body(SetCostCenterAdminSchema) }, responses: { 200: json(AdminUserSchema, 'Assignments replaced'), ...errors } }),
+  createRoute({
+    method: 'put',
+    path: '/admin/users/{id}/cost-center-admin',
+    tags: ['users'],
+    request: { params: IdParam, body: body(SetCostCenterAdminSchema) },
+    responses: { 200: json(AdminUserSchema, 'Assignments replaced'), ...errors },
+  }),
   async (c) => c.json(await setCostCenterAdmin(c.get('deps'), c.get('user'), c.req.valid('param').id, c.req.valid('json').costCenterIds), 200),
 );
-r.openapi(createRoute({ method: 'post', path: '/admin/users/{id}/deactivate', tags: ['users'], request: { params: IdParam }, responses: { 200: json(AdminUserSchema, 'Deactivated (soft delete)'), ...errors } }), async (c) =>
-  c.json(await deactivateUser(c.get('deps'), c.req.valid('param').id, 'admin', c.get('user').id), 200),
+r.openapi(
+  createRoute({
+    method: 'post',
+    path: '/admin/users/{id}/deactivate',
+    tags: ['users'],
+    request: { params: IdParam },
+    responses: { 200: json(AdminUserSchema, 'Deactivated (soft delete)'), ...errors },
+  }),
+  async (c) => c.json(await deactivateUser(c.get('deps'), c.req.valid('param').id, 'admin', c.get('user').id), 200),
 );
-r.openapi(createRoute({ method: 'post', path: '/admin/users/{id}/reactivate', tags: ['users'], request: { params: IdParam }, responses: { 200: json(AdminUserSchema, 'Reactivated'), ...errors } }), async (c) =>
-  c.json(await reactivateUser(c.get('deps'), c.req.valid('param').id, c.get('user').id), 200),
+r.openapi(
+  createRoute({ method: 'post', path: '/admin/users/{id}/reactivate', tags: ['users'], request: { params: IdParam }, responses: { 200: json(AdminUserSchema, 'Reactivated'), ...errors } }),
+  async (c) => c.json(await reactivateUser(c.get('deps'), c.req.valid('param').id, c.get('user').id), 200),
 );
 r.openapi(
   createRoute({
@@ -76,14 +97,33 @@ r.openapi(
   },
 );
 r.openapi(
-  createRoute({ method: 'put', path: '/admin/users/{id}/budget', tags: ['budget'], request: { params: IdParam, body: body(SetBudgetSchema) }, responses: { 200: json(BudgetSchema.nullable(), 'Budget set'), ...errors } }),
+  createRoute({
+    method: 'put',
+    path: '/admin/users/{id}/budget',
+    tags: ['budget'],
+    request: { params: IdParam, body: body(SetBudgetSchema) },
+    responses: { 200: json(BudgetSchema.nullable(), 'Budget set'), ...errors },
+  }),
   async (c) => c.json(await setUserBudget(c.get('deps'), c.get('user'), c.req.valid('param').id, c.req.valid('json')), 200),
 );
-r.openapi(createRoute({ method: 'get', path: '/admin/budgets', tags: ['budget'], request: { query: AdminBudgetsQuery }, responses: { 200: json(paginated(AdminBudgetRowSchema), 'Budgets and spend per user'), ...errors } }), async (c) =>
-  c.json(await adminBudgets(c.get('deps'), c.req.valid('query')), 200),
+r.openapi(
+  createRoute({
+    method: 'get',
+    path: '/admin/budgets',
+    tags: ['budget'],
+    request: { query: AdminBudgetsQuery },
+    responses: { 200: json(paginated(AdminBudgetRowSchema), 'Budgets and spend per user'), ...errors },
+  }),
+  async (c) => c.json(await adminBudgets(c.get('deps'), c.req.valid('query')), 200),
 );
 r.openapi(
-  createRoute({ method: 'get', path: '/admin/notifications', tags: ['notifications'], request: { query: NotificationsQuery }, responses: { 200: json(paginated(NotificationSchema), 'Sent notifications'), ...errors } }),
+  createRoute({
+    method: 'get',
+    path: '/admin/notifications',
+    tags: ['notifications'],
+    request: { query: NotificationsQuery },
+    responses: { 200: json(paginated(NotificationSchema), 'Sent notifications'), ...errors },
+  }),
   async (c) => {
     const q = c.req.valid('query');
     const db = c.get('deps').db;

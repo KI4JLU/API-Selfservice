@@ -35,7 +35,10 @@ export function devLoginPlugin(deps: Deps): BetterAuthPlugin {
             u = (await deps.db.query.user.findFirst({ where: eq(user.id, created.id) }))!;
           }
           if (b.admin !== undefined) {
-            await deps.db.update(user).set({ role: b.admin ? 'admin' : 'user', roleFromIdp: !!b.admin }).where(eq(user.id, u.id));
+            await deps.db
+              .update(user)
+              .set({ role: b.admin ? 'admin' : 'user', roleFromIdp: !!b.admin })
+              .where(eq(user.id, u.id));
           }
           if (b.affiliation) await deps.db.update(user).set({ affiliation: b.affiliation, affiliationValid: true }).where(eq(user.id, u.id));
           const session = await ctx.context.internalAdapter.createSession(u.id);

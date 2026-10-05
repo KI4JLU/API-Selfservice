@@ -137,7 +137,10 @@ describe('jobs', () => {
     it('deactivates users whose captured affiliation is invalid, once', async () => {
       const { u, k, litellmKeyId } = await userWithKey();
       const fine = await t.login();
-      await t.db.update(userTable).set({ affiliationValid: false, affiliation: ['alumni'] }).where(eq(userTable.id, u.userId));
+      await t.db
+        .update(userTable)
+        .set({ affiliationValid: false, affiliation: ['alumni'] })
+        .where(eq(userTable.id, u.userId));
       expectError(await u.get('/me'), 403, 'ACCOUNT_INVALID_AFFILIATION');
 
       // without Keycloak admin credentials the captured claims are used

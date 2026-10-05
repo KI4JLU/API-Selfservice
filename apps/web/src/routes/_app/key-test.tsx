@@ -80,7 +80,11 @@ function KeyTestPage() {
               </div>
             </Field>
           </form>
-          {models.isError ? <Banner variant="danger" testId="key-test-error">{errorMessage(models.error)}</Banner> : null}
+          {models.isError ? (
+            <Banner variant="danger" testId="key-test-error">
+              {errorMessage(models.error)}
+            </Banner>
+          ) : null}
           {available?.length === 0 ? (
             <Banner variant="warning" testId="key-test-no-models">
               {t('keyTest.noModels')}

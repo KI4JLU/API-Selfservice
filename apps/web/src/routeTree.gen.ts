@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppCostCenterDirectoryRouteImport } from './routes/_app/cost-center-directory'
 import { Route as AppCostCentersRouteImport } from './routes/_app/cost-centers'
 import { Route as AppKeyTestRouteImport } from './routes/_app/key-test'
 import { Route as AppKeysRouteImport } from './routes/_app/keys'
@@ -37,6 +38,11 @@ const LoginRoute = LoginRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCostCenterDirectoryRoute = AppCostCenterDirectoryRouteImport.update({
+  id: '/cost-center-directory',
+  path: '/cost-center-directory',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCostCentersRoute = AppCostCentersRouteImport.update({
@@ -103,6 +109,7 @@ const AppAdminUsersRoute = AppAdminUsersRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
+  '/cost-center-directory': typeof AppCostCenterDirectoryRoute
   '/cost-centers': typeof AppCostCentersRoute
   '/key-test': typeof AppKeyTestRoute
   '/keys': typeof AppKeysRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/cost-center-directory': typeof AppCostCenterDirectoryRoute
   '/cost-centers': typeof AppCostCentersRoute
   '/key-test': typeof AppKeyTestRoute
   '/keys': typeof AppKeysRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/cost-center-directory': typeof AppCostCenterDirectoryRoute
   '/_app/cost-centers': typeof AppCostCentersRoute
   '/_app/key-test': typeof AppKeyTestRoute
   '/_app/keys': typeof AppKeysRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/cost-center-directory'
     | '/cost-centers'
     | '/key-test'
     | '/keys'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/cost-center-directory'
     | '/cost-centers'
     | '/key-test'
     | '/keys'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/login'
+    | '/_app/cost-center-directory'
     | '/_app/cost-centers'
     | '/_app/key-test'
     | '/_app/keys'
@@ -228,6 +240,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/cost-center-directory': {
+      id: '/_app/cost-center-directory'
+      path: '/cost-center-directory'
+      fullPath: '/cost-center-directory'
+      preLoaderRoute: typeof AppCostCenterDirectoryRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/cost-centers': {
@@ -318,6 +337,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppCostCenterDirectoryRoute: typeof AppCostCenterDirectoryRoute
   AppCostCentersRoute: typeof AppCostCentersRoute
   AppKeyTestRoute: typeof AppKeyTestRoute
   AppKeysRoute: typeof AppKeysRoute
@@ -334,6 +354,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppCostCenterDirectoryRoute: AppCostCenterDirectoryRoute,
   AppCostCentersRoute: AppCostCentersRoute,
   AppKeyTestRoute: AppKeyTestRoute,
   AppKeysRoute: AppKeysRoute,

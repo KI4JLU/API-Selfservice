@@ -130,12 +130,7 @@ export async function createKey(
   return { ...(await keyView(deps, row!)), secret: created.secret };
 }
 
-export async function updateKey(
-  deps: Deps,
-  cu: CurrentUser,
-  id: string,
-  input: { budget?: number | null; budgetPeriod?: KeyBudgetPeriod | null; name?: string },
-) {
+export async function updateKey(deps: Deps, cu: CurrentUser, id: string, input: { budget?: number | null; budgetPeriod?: KeyBudgetPeriod | null; name?: string }) {
   const k = await getOwnKey(deps, cu, id);
   if (input.budget !== undefined) await assertKeyBudgets(deps, cu.id, input.budget, k.id);
   // F-KEY-11: removing the amount also removes the period.
@@ -273,7 +268,12 @@ export async function blockAllKeysOfUser(deps: Deps, userId: string, reason: str
 /** Unblocks keys of a user whose blockedReason is in `reasons`. */
 export async function unblockKeysOfUser(deps: Deps, userId: string, reasons: string[]) {
   const rows = await deps.db.query.apiKeys.findMany({ where: and(eq(apiKeys.userId, userId), eq(apiKeys.status, 'blocked')) });
-  await setBlocked(deps, rows.filter((r) => reasons.includes(r.blockedReason ?? '')), false, null);
+  await setBlocked(
+    deps,
+    rows.filter((r) => reasons.includes(r.blockedReason ?? '')),
+    false,
+    null,
+  );
 }
 
 export async function blockKeysOfCostCenter(deps: Deps, costCenterId: string, reason: string) {

@@ -2,16 +2,16 @@
 
 Self-service portal for an existing LiteLLM proxy: Keycloak SSO, roles (user, cost center admin, admin), cost centers as LiteLLM teams with members, an owner and released models, budgets, API key self-service (single models or whole providers, monthly or one-off key budgets, key test), request logger, reports, email notifications, event log. Requirements: [docs/PRD.md](docs/PRD.md).
 
-Cost centers in short: an admin creates a cost center and picks its owner (a LiteLLM user), who becomes its first cost center admin. Only the owner appoints or removes further cost center admins; all cost center admins add and remove members. Members create keys on the cost center; plain members see its name only, never its budget, spend or owner.
+Cost centers in short: an admin creates a cost center and picks its owner (a LiteLLM user), who becomes its first cost center admin. Only the owner appoints or removes further cost center admins; all cost center admins add and remove members, one by one or as a pasted list of up to 200 e-mail addresses. Users find approved cost centers by name under "Cost centers" and ask to join; the cost center admins approve or reject the request. Members create keys on the cost center; plain members see its name only, never its budget, spend or owner.
 
 ## Stack
 
-| Layer | Technology |
-|---|---|
+| Layer    | Technology                                                                                                                                                                |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Frontend | React 19, TanStack Router/Query/Table, shadcn/ui components styled with the [JLU Design System](https://github.com/KI4JLU/JLU-Design-System), Tailwind 4, i18next (de/en) |
-| Backend | Hono + `@hono/zod-openapi`, Better Auth (Keycloak via generic-oauth), Drizzle ORM, Nodemailer, croner |
-| Database | PostgreSQL, dedicated schema (`DB_SCHEMA`, default `api_selfservice`) on the LiteLLM DB host |
-| Tests | Vitest (unit/integration), Playwright (API + UI) |
+| Backend  | Hono + `@hono/zod-openapi`, Better Auth (Keycloak via generic-oauth), Drizzle ORM, Nodemailer, croner                                                                     |
+| Database | PostgreSQL, dedicated schema (`DB_SCHEMA`, default `api_selfservice`) on the LiteLLM DB host                                                                              |
+| Tests    | Vitest (unit/integration), Playwright (API + UI)                                                                                                                          |
 
 Structure: `apps/api`, `apps/web`, `packages/shared` (Zod schemas, i18n), `packages/db` (Drizzle schema, migrations), `e2e`.
 
@@ -30,11 +30,11 @@ For local development set `LITELLM_MODE=mock` and `DEV_LOGIN_ENABLED=true` in `.
 - Debugging as another user: with `IMPERSONATION_ENABLED=true`, admins can pick "Impersonate" in Users / roles and act as that user in their own session until they click Stop in the banner. Start, end and every action in between are audited (the admin as `impersonatedBy`).
 - Login with Keycloak (realm `api-selfservice-dev`, created by `pnpm keycloak:setup`): test users, password = `KC_TEST_USER_PASS` in `.env`.
 
-  | User | Group | eduPersonAffiliation | Result |
-  |---|---|---|---|
-  | `admin-test` | LiteLLMAdmin | staff | Admin |
-  | `user-test` | – | member | User |
-  | `ext-test` | – | affiliate | Login rejected |
+  | User         | Group        | eduPersonAffiliation | Result         |
+  | ------------ | ------------ | -------------------- | -------------- |
+  | `admin-test` | LiteLLMAdmin | staff                | Admin          |
+  | `user-test`  | –            | member               | User           |
+  | `ext-test`   | –            | affiliate            | Login rejected |
 
 On startup the API creates the schema, runs migrations, seeds the default cost center `1111 1111`, syncs the models from LiteLLM and mirrors cost center memberships written by migrations to the LiteLLM teams once.
 
@@ -42,18 +42,18 @@ On startup the API creates the schema, runs migrations, seeds the default cost c
 
 All settings are environment variables, see [.env.example](.env.example). Important ones:
 
-| Variable | Meaning |
-|---|---|
-| `DATABASE_URL`, `DB_SCHEMA` | Postgres of the LiteLLM host, dedicated schema |
-| `KEYCLOAK_ISSUER`, `KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET` | OIDC client (see [docs/keycloak.md](docs/keycloak.md), automated via `scripts/keycloak-setup.mts`, see [docs/SETUP.md](docs/SETUP.md)) |
-| `KEYCLOAK_ADMIN_GROUP` | Group whose members are automatically admin (`LiteLLMAdmin`) |
-| `KEYCLOAK_AFFILIATION_CLAIM`, `KEYCLOAK_AFFILIATION_VALID` | Account validity (`eduPersonAffiliation` = member,staff); empty = check disabled |
-| `LITELLM_BASE_URL`, `LITELLM_API_KEY`, `LITELLM_MODE` | LiteLLM proxy; `mock` only for dev/test |
-| `SMTP_*`, `MAIL_FROM`, `ADMIN_NOTIFY_EMAILS` | Notifications |
-| `KEY_LIFETIME_DAYS`, `DELETION_GRACE_DAYS`, `BUDGET_WARN_THRESHOLD` | Business rules |
-| `DEV_LOGIN_ENABLED`, `IMPERSONATION_ENABLED` | Dev login (refused in production) and admin impersonation for debugging; both off by default |
-| `API_DOCS_ADMIN_ONLY` | API docs only for signed-in admins; always on in production |
-| `LOG_INGEST_CRON`, `JOBS_ENABLED` | How often request logs are fetched from LiteLLM (default every 5 minutes); jobs on one instance only |
+| Variable                                                            | Meaning                                                                                                                                |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`, `DB_SCHEMA`                                         | Postgres of the LiteLLM host, dedicated schema                                                                                         |
+| `KEYCLOAK_ISSUER`, `KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET`   | OIDC client (see [docs/keycloak.md](docs/keycloak.md), automated via `scripts/keycloak-setup.mts`, see [docs/SETUP.md](docs/SETUP.md)) |
+| `KEYCLOAK_ADMIN_GROUP`                                              | Group whose members are automatically admin (`LiteLLMAdmin`)                                                                           |
+| `KEYCLOAK_AFFILIATION_CLAIM`, `KEYCLOAK_AFFILIATION_VALID`          | Account validity (`eduPersonAffiliation` = member,staff); empty = check disabled                                                       |
+| `LITELLM_BASE_URL`, `LITELLM_API_KEY`, `LITELLM_MODE`               | LiteLLM proxy; `mock` only for dev/test                                                                                                |
+| `SMTP_*`, `MAIL_FROM`, `ADMIN_NOTIFY_EMAILS`                        | Notifications                                                                                                                          |
+| `KEY_LIFETIME_DAYS`, `DELETION_GRACE_DAYS`, `BUDGET_WARN_THRESHOLD` | Business rules                                                                                                                         |
+| `DEV_LOGIN_ENABLED`, `IMPERSONATION_ENABLED`                        | Dev login (refused in production) and admin impersonation for debugging; both off by default                                           |
+| `API_DOCS_ADMIN_ONLY`                                               | API docs only for signed-in admins; always on in production                                                                            |
+| `LOG_INGEST_CRON`, `JOBS_ENABLED`                                   | How often request logs are fetched from LiteLLM (default every 5 minutes); jobs on one instance only                                   |
 
 ## Commands
 

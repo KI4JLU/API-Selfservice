@@ -51,9 +51,14 @@ function AdminProvidersPage() {
         accessorKey: 'modelName',
         cell: ({ row }) => (
           <div>
-            <div className="font-mono text-sm font-medium" data-testid="provider-model">
+            <button
+              type="button"
+              className="cursor-pointer text-left font-mono text-sm font-medium underline-offset-4 hover:underline"
+              onClick={() => setEditing(row.original)}
+              data-testid="provider-model"
+            >
               {row.original.modelName}
-            </div>
+            </button>
             {row.original.litellmModelId ? <div className="text-muted-foreground text-xs">{row.original.litellmModelId}</div> : null}
           </div>
         ),
@@ -83,7 +88,13 @@ function AdminProvidersPage() {
         accessorKey: 'tier',
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <Switch checked={row.original.tier === 'paid'} onCheckedChange={(v) => toggleTier(row.original, v)} disabled={update.isPending} aria-label={t('providers.tier')} data-testid="switch-tier" />
+            <Switch
+              checked={row.original.tier === 'paid'}
+              onCheckedChange={(v) => toggleTier(row.original, v)}
+              disabled={update.isPending}
+              aria-label={t('providers.tier')}
+              data-testid="switch-tier"
+            />
             <TierBadge tier={row.original.tier} />
           </div>
         ),
@@ -152,7 +163,21 @@ function AdminProvidersPage() {
           {t('providers.noProviderBanner', { count: withoutProvider })}
         </Banner>
       ) : null}
-      <DataTable columns={columns} data={providers.data ?? []} isLoading={providers.isLoading} testId="table-providers" rowClassName={(p) => (p.available ? undefined : 'opacity-50')} getRowId={(p) => p.id} />
+      <DataTable
+        columns={columns}
+        data={providers.data ?? []}
+        isLoading={providers.isLoading}
+        testId="table-providers"
+        rowClassName={(p) => (p.available ? undefined : 'opacity-50')}
+        getRowId={(p) => p.id}
+        groupBy={(p) => p.provider ?? ''}
+        groupLabel={(provider, rows) => (
+          <>
+            {provider || t('providers.noProvider')}
+            <span className="text-xs font-normal text-muted-foreground">{rows.length}</span>
+          </>
+        )}
+      />
       <ProviderEditDialog provider={editing} onClose={() => setEditing(null)} />
     </div>
   );

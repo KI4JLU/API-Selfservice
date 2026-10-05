@@ -48,10 +48,7 @@ describe('reports', () => {
     await t.addLog(k2, { spend: 4, startTime: t.ago(2) });
     await t.addLog(k3, { spend: 7, startTime: t.ago(1) });
     // older logs outside the current month, stored directly
-    await t.storeLogs([
-      await t.addLog(k1a, { spend: 100, startTime: '2026-08-10T10:00:00.000Z' }),
-      await t.addLog(k3, { spend: 50, startTime: '2026-08-20T10:00:00.000Z' }),
-    ]);
+    await t.storeLogs([await t.addLog(k1a, { spend: 100, startTime: '2026-08-10T10:00:00.000Z' }), await t.addLog(k3, { spend: 50, startTime: '2026-08-20T10:00:00.000Z' })]);
     await t.ingest();
   });
   afterAll(() => t.close());
@@ -132,7 +129,9 @@ describe('reports', () => {
     const number = randomCostCenter();
     const start = new Date(t.clock.now.getTime() - 2 * DAY).toISOString();
     const end = new Date(t.clock.now.getTime() + 10 * DAY).toISOString();
-    const cc = (await admin.post('/admin/cost-centers', { number, name: 'Project', ownerUserId: (await litellmOwner(t)).userId, maxBudget: 10, budgetPeriod: 'project', periodStart: start, periodEnd: end })).body;
+    const cc = (
+      await admin.post('/admin/cost-centers', { number, name: 'Project', ownerUserId: (await litellmOwner(t)).userId, maxBudget: 10, budgetPeriod: 'project', periodStart: start, periodEnd: end })
+    ).body;
     const u = await t.login();
     await addMember(admin, cc.id, u);
     const k = (await u.post('/api-keys', { name: 'p', models: ['gpt-4o'], costCenterId: cc.id })).body.id;

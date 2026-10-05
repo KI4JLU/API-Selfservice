@@ -6,12 +6,7 @@ export interface Period {
 }
 
 /** Returns the current budget period for a given period type at `now`. */
-export function currentPeriod(
-  period: BudgetPeriod,
-  now: Date,
-  projectStart?: Date | null,
-  projectEnd?: Date | null,
-): Period {
+export function currentPeriod(period: BudgetPeriod, now: Date, projectStart?: Date | null, projectEnd?: Date | null): Period {
   if (period === 'monthly') {
     const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));

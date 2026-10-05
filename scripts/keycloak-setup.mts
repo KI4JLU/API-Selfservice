@@ -186,8 +186,7 @@ async function ensureMapper(kc: Keycloak, realm: string, cid: string, rep: Json 
 }
 
 async function ensureGroup(kc: Keycloak, realm: string, name: string): Promise<string> {
-  const find = async () =>
-    ((await kc.get<Named[]>(`/realms/${realm}/groups?search=${encodeURIComponent(name)}`)) ?? []).find((g) => g.name === name);
+  const find = async () => ((await kc.get<Named[]>(`/realms/${realm}/groups?search=${encodeURIComponent(name)}`)) ?? []).find((g) => g.name === name);
   const existing = await find();
   if (existing) {
     log(`group ${name}: exists`);
@@ -208,10 +207,7 @@ async function ensureProfileAttribute(kc: Keycloak, realm: string, name: string)
     log(`attribute ${name}: exists`);
     return;
   }
-  profile.attributes = [
-    ...(profile.attributes ?? []),
-    { name, displayName: name, multivalued: true, permissions: { view: ['admin', 'user'], edit: ['admin'] } },
-  ];
+  profile.attributes = [...(profile.attributes ?? []), { name, displayName: name, multivalued: true, permissions: { view: ['admin', 'user'], edit: ['admin'] } }];
   await kc.put(`/realms/${realm}/users/profile`, profile);
   log(`attribute ${name}: created`);
 }

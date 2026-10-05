@@ -23,7 +23,13 @@ r.openapi(createRoute({ method: 'get', path: '/admin/providers', tags: ['provide
   c.json(await adminListProviders(c.get('deps')), 200),
 );
 r.openapi(
-  createRoute({ method: 'patch', path: '/admin/providers/{id}', tags: ['providers'], request: { params: IdParam, body: body(UpdateProviderSchema) }, responses: { 200: json(ProviderSchema, 'Updated'), ...errors } }),
+  createRoute({
+    method: 'patch',
+    path: '/admin/providers/{id}',
+    tags: ['providers'],
+    request: { params: IdParam, body: body(UpdateProviderSchema) },
+    responses: { 200: json(ProviderSchema, 'Updated'), ...errors },
+  }),
   async (c) => c.json(await updateProvider(c.get('deps'), c.get('user'), c.req.valid('param').id, c.req.valid('json')), 200),
 );
 r.openapi(createRoute({ method: 'post', path: '/admin/providers/sync', tags: ['providers'], responses: { 200: json(ProviderSyncResult, 'Synced from LiteLLM'), ...errors } }), async (c) =>

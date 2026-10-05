@@ -1,6 +1,6 @@
 # Willkommen bei LiteLite
 
-LiteLite ist das Self-Service-Portal für den LiteLLM-Proxy. Hier verwalten Sie Ihre API-Keys, sehen Ihr Budget und Ihre Requests und pflegen Ihre Kostenstelle.
+LiteLite ist das Self-Service-Portal für den LiteLLM-Proxy. Hier verwalten Sie Ihre API-Keys, sehen Budget und Nutzung und treten Kostenstellen bei.
 
 ## Anmeldung
 
@@ -12,9 +12,9 @@ LiteLite ist das Self-Service-Portal für den LiteLLM-Proxy. Hier verwalten Sie 
 
 | Rolle | Rechte |
 |---|---|
-| User | Eigene Keys, eigenes Budget, eigene Requests, eigenes Profil |
-| Kostenstellen-Admin | Zusätzlich: Mitglieder, Max-Budget und Report der zugeordneten Kostenstellen. Weitere Kostenstellen-Admins ernennt nur der Verantwortliche |
-| Admin | Alle Rechte: User, Rollen, Budgets, Kostenstellen (inkl. freigegebener Modelle), Modelle, Reports |
+| User | Eigene Keys, eigenes Budget, eigene Nutzung, eigenes Profil, Beitritt zu Kostenstellen anfragen |
+| Kostenstellen-Admin | Zusätzlich: Mitglieder, Beitrittsanfragen, Max-Budget und Report der zugeordneten Kostenstellen. Weitere Kostenstellen-Admins ernennt nur der Verantwortliche |
+| Admin | Alle Rechte: User, Rollen, Budgets, Kostenstellen (inkl. freigegebener Modelle und Beitrittsanfragen), Modelle, Reports |
 
 ## Kopfzeile
 

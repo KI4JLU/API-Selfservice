@@ -6,7 +6,7 @@ Hier prüfen Sie mit einem kurzen Prompt, ob ein API-Key funktioniert.
 2. Ein **Modell** wählen und den **Prompt** bei Bedarf anpassen.
 3. **Senden** klicken. Bei Erfolg sehen Sie die Antwort, das Modell, die Dauer und die verbrauchten Tokens.
 
-Der Key wird nur für den Test an LiteLLM weitergegeben und nicht gespeichert. Der Test-Request wird wie jeder andere Request über den Key abgerechnet und erscheint unter **Requests**.
+Der Key wird nur für den Test an LiteLLM weitergegeben und nicht gespeichert. Der Test-Request wird wie jeder andere Request über den Key abgerechnet und erscheint unter **Nutzung**.
 
 ## Fehler
 

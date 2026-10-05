@@ -63,7 +63,10 @@ export async function runDeletionReminder(deps: Deps) {
     const done = await deps.db.query.jobState.findFirst({ where: eq(jobState.key, key) });
     if (done) continue;
     await notifyAdmins(deps, 'deletion_due', { userEmail: u.email, userName: u.name, deletedAt: u.deletedAt!.toISOString().slice(0, 10) });
-    await deps.db.insert(jobState).values({ key, value: { at: deps.now().toISOString() } }).onConflictDoNothing();
+    await deps.db
+      .insert(jobState)
+      .values({ key, value: { at: deps.now().toISOString() } })
+      .onConflictDoNothing();
     sent++;
   }
   return { due: due.length, sent };
@@ -80,7 +83,10 @@ export async function runAffiliationCheck(deps: Deps, admin: KeycloakAdmin | nul
   let checked = 0;
   let deactivated = 0;
   if (admin) {
-    const subs = await keycloakSubjects(deps, active.map((u) => u.id));
+    const subs = await keycloakSubjects(
+      deps,
+      active.map((u) => u.id),
+    );
     for (const u of active) {
       const sub = subs.get(u.id);
       if (!sub) continue;
@@ -92,15 +98,19 @@ export async function runAffiliationCheck(deps: Deps, admin: KeycloakAdmin | nul
         return { checked, deactivated, aborted: true };
       }
       checked++;
-      const affiliationValid =
-        deps.env.KEYCLOAK_AFFILIATION_VALID.length === 0 || (info?.affiliation ?? []).some((a) => deps.env.KEYCLOAK_AFFILIATION_VALID.includes(a));
+      const affiliationValid = deps.env.KEYCLOAK_AFFILIATION_VALID.length === 0 || (info?.affiliation ?? []).some((a) => deps.env.KEYCLOAK_AFFILIATION_VALID.includes(a));
       const valid = info !== null && info.enabled && affiliationValid;
-      await syncIdpClaims(deps, u.id, {
-        sub,
-        affiliation: info?.affiliation ?? [],
-        isAdmin: (info?.groups ?? []).includes(deps.env.KEYCLOAK_ADMIN_GROUP),
-        affiliationValid: valid,
-      }, { touchLogin: false });
+      await syncIdpClaims(
+        deps,
+        u.id,
+        {
+          sub,
+          affiliation: info?.affiliation ?? [],
+          isAdmin: (info?.groups ?? []).includes(deps.env.KEYCLOAK_ADMIN_GROUP),
+          affiliationValid: valid,
+        },
+        { touchLogin: false },
+      );
       if (!valid) deactivated++;
     }
     return { checked, deactivated, aborted: false };
@@ -131,11 +141,26 @@ export function startJobs(deps: Deps) {
     await runJob(deps, name, fn);
   };
   const jobs = [
-    new Cron(deps.env.LOG_INGEST_CRON, guard('ingest', () => runIngestAndBudgets(deps))),
-    new Cron('15 * * * *', guard('key-expiry', () => runKeyExpiry(deps))),
-    new Cron('30 4 * * *', guard('deletion-reminder', () => runDeletionReminder(deps))),
-    new Cron(deps.env.AFFILIATION_CHECK_CRON, guard('affiliation', () => runAffiliationCheck(deps))),
-    new Cron('45 */6 * * *', guard('provider-sync', () => syncProviders(deps, null))),
+    new Cron(
+      deps.env.LOG_INGEST_CRON,
+      guard('ingest', () => runIngestAndBudgets(deps)),
+    ),
+    new Cron(
+      '15 * * * *',
+      guard('key-expiry', () => runKeyExpiry(deps)),
+    ),
+    new Cron(
+      '30 4 * * *',
+      guard('deletion-reminder', () => runDeletionReminder(deps)),
+    ),
+    new Cron(
+      deps.env.AFFILIATION_CHECK_CRON,
+      guard('affiliation', () => runAffiliationCheck(deps)),
+    ),
+    new Cron(
+      '45 */6 * * *',
+      guard('provider-sync', () => syncProviders(deps, null)),
+    ),
   ];
   deps.log.info({ count: jobs.length }, 'cron jobs started');
   return () => jobs.forEach((j) => j.stop());

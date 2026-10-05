@@ -12,7 +12,8 @@ const INGEST_KEY = 'ingest:last_time';
 export async function ingestSpendLogs(deps: Deps, opts: { since?: Date; until?: Date } = {}) {
   const now = deps.now();
   const state = await deps.db.query.jobState.findFirst({ where: eq(jobState.key, INGEST_KEY) });
-  const last = opts.since ?? (state?.value && typeof state.value === 'object' && 'time' in state.value ? new Date(String((state.value as { time: string }).time)) : new Date(now.getTime() - 7 * 86400000));
+  const last =
+    opts.since ?? (state?.value && typeof state.value === 'object' && 'time' in state.value ? new Date(String((state.value as { time: string }).time)) : new Date(now.getTime() - 7 * 86400000));
   // Overlap by 10 minutes to catch late writes; request_id dedupes.
   const since = new Date(last.getTime() - 10 * 60000);
   const until = opts.until ?? now;
@@ -73,10 +74,7 @@ export async function storeLogs(deps: Deps, logs: LiteLLMSpendLog[]) {
   return inserted;
 }
 
-async function rebuildSnapshot(
-  deps: Deps,
-  t: { date: string; userId: string | null; apiKeyId: string | null; costCenterId: string | null; model: string; provider: string | null },
-) {
+async function rebuildSnapshot(deps: Deps, t: { date: string; userId: string | null; apiKeyId: string | null; costCenterId: string | null; model: string; provider: string | null }) {
   const start = new Date(`${t.date}T00:00:00.000Z`);
   const end = new Date(start.getTime() + 86400000);
   const nullEq = <C extends { name: string }>(col: C, v: string | null) => (v === null ? sql`${col} IS NULL` : eq(col as never, v));
@@ -230,13 +228,7 @@ export async function monthlyHistory(deps: Deps, filter: { userId?: string; cost
   const rows = await deps.db
     .select({ month: sql<string>`to_char(${requestLogs.time} at time zone 'UTC', 'YYYY-MM')`, spend: sum(requestLogs.cost) })
     .from(requestLogs)
-    .where(
-      and(
-        filter.userId ? eq(requestLogs.userId, filter.userId) : undefined,
-        filter.costCenterId ? eq(requestLogs.costCenterId, filter.costCenterId) : undefined,
-        gte(requestLogs.time, start),
-      ),
-    )
+    .where(and(filter.userId ? eq(requestLogs.userId, filter.userId) : undefined, filter.costCenterId ? eq(requestLogs.costCenterId, filter.costCenterId) : undefined, gte(requestLogs.time, start)))
     .groupBy(sql`1`)
     .orderBy(sql`1`);
   const map = new Map(rows.map((r) => [r.month, Number(r.spend ?? 0)]));

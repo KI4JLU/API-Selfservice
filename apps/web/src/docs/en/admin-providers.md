@@ -1,6 +1,6 @@
 # Admin: Models
 
-The list shows all models configured in LiteLLM.
+The list shows all models configured in LiteLLM, grouped by provider and sorted by model name within each group. Click a group row to collapse or expand the provider; the number next to it is the model count. Models without a provider are listed last under **No provider**.
 
 ## Tier
 
@@ -15,7 +15,7 @@ The provider comes from LiteLLM (`custom_llm_provider` or the prefix of the mode
 
 ## Names
 
-Use **Edit** to set a display name and a description per model in German and English. They are shown to users when creating keys.
+Use **Edit** or click the model name to set a display name and a description per model in German and English. They are shown to users when creating keys.
 
 ## Synchronize
 

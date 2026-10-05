@@ -72,12 +72,7 @@ export async function spendSummary(deps: Deps, cu: CurrentUser, month?: string) 
   };
 }
 
-export async function setUserBudget(
-  deps: Deps,
-  actor: CurrentUser,
-  userId: string,
-  input: { amount: number; period: BudgetPeriod; periodStart?: string | null; periodEnd?: string | null },
-) {
+export async function setUserBudget(deps: Deps, actor: CurrentUser, userId: string, input: { amount: number; period: BudgetPeriod; periodStart?: string | null; periodEnd?: string | null }) {
   const u = await deps.db.query.user.findFirst({ where: eq(user.id, userId) });
   if (!u) throw notFound('User');
   const values = {

@@ -6,8 +6,8 @@ import { Archive, Pencil, Plus, Search, ThumbsDown, ThumbsUp, Users } from 'luci
 import type { ColumnDef } from '@tanstack/react-table';
 import { COST_CENTER_STATUS } from '@api-selfservice/shared';
 import { requireAdmin } from '@/lib/guards';
-import { useApproveRequest, useArchiveCostCenter, useCostCenterRequests, useCostCenters, useRejectRequest, type CostCenter, type CostCenterRequest } from '@/lib/queries';
-import { fmtCostCenter, fmtDate, fmtDateTime, fmtMoney } from '@/lib/format';
+import { useApproveRequest, useArchiveCostCenter, useCostCenterRequests, useCostCenters, useOpenJoinRequestCounts, useRejectRequest, type CostCenter, type CostCenterRequest } from '@/lib/queries';
+import { fmtCostCenter, fmtMoney } from '@/lib/format';
 import { PageHeader, Toolbar } from '@/components/ui/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DataTable, Pagination } from '@/components/ui/data-table';
@@ -75,6 +75,7 @@ function LookupTab() {
   const [editing, setEditing] = useState<CostCenter | null>(null);
   const [archiving, setArchiving] = useState<CostCenter | null>(null);
   const [members, setMembers] = useState<CostCenter | null>(null);
+  const openRequests = useOpenJoinRequestCounts();
 
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -99,9 +100,15 @@ function LookupTab() {
         accessorKey: 'name',
         cell: ({ row }) => (
           <span className="flex items-center gap-2">
-            <span className="font-medium" data-testid="cc-row-name">
-              {row.original.name}
-            </span>
+            {row.original.isDefault || row.original.status === 'archived' ? (
+              <span className="font-medium" data-testid="cc-row-name">
+                {row.original.name}
+              </span>
+            ) : (
+              <button type="button" className="cursor-pointer text-left font-medium underline-offset-4 hover:underline" onClick={() => setEditing(row.original)} data-testid="cc-row-name">
+                {row.original.name}
+              </button>
+            )}
             {row.original.isDefault ? <Badge variant="secondary">{t('costCenters.default')}</Badge> : null}
           </span>
         ),
@@ -146,7 +153,6 @@ function LookupTab() {
           </div>
         ),
       },
-      { header: t('common.createdAt'), accessorKey: 'createdAt', cell: ({ row }) => <span className="whitespace-nowrap">{fmtDate(row.original.createdAt)}</span> },
       {
         id: 'actions',
         header: t('common.actions'),
@@ -159,6 +165,11 @@ function LookupTab() {
                 <Button variant="outline" size="sm" disabled={locked || c.status !== 'approved'} onClick={() => setMembers(c)} data-testid="btn-cost-center-members">
                   <Users />
                   <span className="hidden sm:inline">{t('members.title')}</span>
+                  {openRequests.get(c.id) ? (
+                    <Badge className="h-5 min-w-5 px-1 tabular-nums" title={t('joinRequests.openCount', { count: openRequests.get(c.id) })} data-testid="badge-open-join-requests">
+                      {openRequests.get(c.id)}
+                    </Badge>
+                  ) : null}
                 </Button>
               </WithTooltip>
               <WithTooltip text={locked ? t('errors.COST_CENTER_DEFAULT_IMMUTABLE') : undefined}>
@@ -179,7 +190,7 @@ function LookupTab() {
         meta: { className: 'text-right' },
       },
     ],
-    [t],
+    [t, openRequests],
   );
 
   return (
@@ -271,7 +282,15 @@ function RequestsTab() {
           </div>
         ),
       },
-      { header: t('costCenters.number'), id: 'number', cell: ({ row }) => <span className="font-mono tabular-nums" data-testid="request-number">{fmtCostCenter(row.original.costCenter.number)}</span> },
+      {
+        header: t('costCenters.number'),
+        id: 'number',
+        cell: ({ row }) => (
+          <span className="font-mono tabular-nums" data-testid="request-number">
+            {fmtCostCenter(row.original.costCenter.number)}
+          </span>
+        ),
+      },
       { header: t('costCenters.name'), id: 'name', cell: ({ row }) => row.original.costCenter.name },
       {
         header: t('costCenters.owner'),
@@ -283,7 +302,6 @@ function RequestsTab() {
           </div>
         ),
       },
-      { header: t('common.createdAt'), accessorKey: 'createdAt', cell: ({ row }) => <span className="whitespace-nowrap">{fmtDateTime(row.original.createdAt)}</span> },
       {
         id: 'actions',
         header: t('common.actions'),

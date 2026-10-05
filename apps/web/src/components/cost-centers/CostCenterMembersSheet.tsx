@@ -1,21 +1,36 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Search, UserMinus, UserPlus } from 'lucide-react';
+import { Check, Search, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import { COST_CENTER_MEMBER_ROLES, type CostCenterMemberRole } from '@api-selfservice/shared';
-import { useAddMember, useCostCenterMembers, useMe, useMemberCandidates, useRemoveMember, useUpdateMember, type CostCenterMember, type MemberCandidate } from '@/lib/queries';
-import { fmtCostCenter } from '@/lib/format';
+import {
+  useAddMember,
+  useApproveJoinRequest,
+  useCostCenterMembers,
+  useMe,
+  useMemberCandidates,
+  usePendingJoinRequests,
+  useRejectJoinRequest,
+  useRemoveMember,
+  useUpdateMember,
+  type CostCenterJoinRequest,
+  type CostCenterMember,
+  type MemberCandidate,
+} from '@/lib/queries';
+import { fmtCostCenter, fmtDateTime } from '@/lib/format';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { SimpleSelect } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { WithTooltip } from '@/components/ui/tooltip';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { StatusBadge } from '@/components/StatusBadge';
+import { BulkAddMembersDialog } from './BulkAddMembersDialog';
 
 type CostCenterRef = { id: string; number: string; name: string; ownerUserId?: string | null };
 
@@ -35,6 +50,7 @@ export function CostCenterMembersSheet({ costCenter, onClose }: { costCenter: Co
         <div className="flex flex-col gap-6 overflow-y-auto px-4 pb-4">
           {costCenter ? (
             <>
+              <JoinRequests id={costCenter.id} />
               <AddMember id={costCenter.id} canManageAdmins={canManageAdmins} />
               <MemberList id={costCenter.id} ownerUserId={costCenter.ownerUserId ?? null} canManageAdmins={canManageAdmins} />
             </>
@@ -42,6 +58,91 @@ export function CostCenterMembersSheet({ costCenter, onClose }: { costCenter: Co
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+/** F-KST-16: open join requests; approving adds the requester as plain member. */
+function JoinRequests({ id }: { id: string }) {
+  const { t } = useTranslation();
+  const requests = usePendingJoinRequests(id);
+  const approve = useApproveJoinRequest();
+  const reject = useRejectJoinRequest();
+  const [rejecting, setRejecting] = useState<CostCenterJoinRequest | null>(null);
+  const [reason, setReason] = useState('');
+  const items = requests.data ?? [];
+
+  const onApprove = async (r: CostCenterJoinRequest) => {
+    const res = await approve.mutateAsync({ id, requestId: r.id }).catch(() => null);
+    if (res) toast.success(t('joinRequests.approved', { name: r.user.name }));
+  };
+
+  const onReject = async () => {
+    if (!rejecting || !reason.trim()) return;
+    const res = await reject.mutateAsync({ id, requestId: rejecting.id, reason: reason.trim() }).catch(() => null);
+    if (res) {
+      toast.success(t('joinRequests.rejected', { name: rejecting.user.name }));
+      setRejecting(null);
+      setReason('');
+    }
+  };
+
+  return (
+    <section className="flex flex-col gap-3" data-testid="section-join-requests">
+      <div className="text-sm font-medium">
+        {t('joinRequests.listTitle')} {requests.data ? <span className="text-muted-foreground">({items.length})</span> : null}
+      </div>
+      {requests.isLoading ? (
+        <Skeleton className="h-14 w-full" />
+      ) : items.length === 0 ? (
+        <div className="text-muted-foreground text-sm" data-testid="join-requests-empty">
+          {t('joinRequests.noneOpen')}
+        </div>
+      ) : (
+        <ul className="divide-y rounded-md border" data-testid="list-join-requests">
+          {items.map((r) => (
+            <li key={r.id} className="flex flex-wrap items-start justify-between gap-3 px-3 py-2" data-testid="item-join-request">
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-medium">{r.user.name}</div>
+                <div className="text-muted-foreground truncate text-xs">
+                  {r.user.email} · {fmtDateTime(r.createdAt)}
+                </div>
+                {r.message ? <p className="mt-1 text-sm whitespace-pre-line">{r.message}</p> : null}
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => onApprove(r)} loading={approve.isPending && approve.variables?.requestId === r.id} data-testid="btn-approve-join-request">
+                  <Check />
+                  {t('joinRequests.approve')}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setRejecting(r)} data-testid="btn-reject-join-request">
+                  <X />
+                  {t('joinRequests.reject')}
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <ConfirmDialog
+        open={!!rejecting}
+        onOpenChange={(o) => {
+          if (!o) {
+            setRejecting(null);
+            setReason('');
+          }
+        }}
+        title={t('joinRequests.rejectTitle')}
+        description={rejecting ? `${rejecting.user.name} · ${rejecting.user.email}` : ''}
+        confirmLabel={t('joinRequests.reject')}
+        destructive
+        loading={reject.isPending}
+        onConfirm={onReject}
+        testId="dialog-reject-join-request"
+      >
+        <Field label={t('joinRequests.reasonLabel')} htmlFor="join-reject-reason" required>
+          <Textarea id="join-reject-reason" required value={reason} onChange={(e) => setReason(e.target.value)} maxLength={1000} data-testid="input-join-reject-reason" />
+        </Field>
+      </ConfirmDialog>
+    </section>
   );
 }
 
@@ -56,6 +157,7 @@ function AddMember({ id, canManageAdmins }: { id: string; canManageAdmins: boole
   const [qInput, setQInput] = useState('');
   const [q, setQ] = useState('');
   const [role, setRole] = useState<CostCenterMemberRole>('user');
+  const [bulkOpen, setBulkOpen] = useState(false);
   const candidates = useMemberCandidates(id, q);
   const add = useAddMember();
 
@@ -71,10 +173,17 @@ function AddMember({ id, canManageAdmins }: { id: string; canManageAdmins: boole
 
   return (
     <section className="flex flex-col gap-3" data-testid="section-add-member">
-      <div>
-        <div className="text-sm font-medium">{t('members.addTitle')}</div>
-        <p className="text-muted-foreground text-sm">{t('members.addHint')}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-medium">{t('members.addTitle')}</div>
+          <p className="text-muted-foreground text-sm">{t('members.addHint')}</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setBulkOpen(true)} data-testid="btn-bulk-add-members">
+          <Users />
+          {t('members.bulkAdd')}
+        </Button>
       </div>
+      <BulkAddMembersDialog costCenterId={id} open={bulkOpen} onOpenChange={setBulkOpen} canManageAdmins={canManageAdmins} />
       <form onSubmit={onSearch} className="flex flex-wrap items-end gap-2">
         <Field label={t('common.search')} htmlFor="member-q" className="min-w-56 flex-1">
           <Input id="member-q" value={qInput} onChange={(e) => setQInput(e.target.value)} placeholder={t('members.searchPlaceholder')} required minLength={3} data-testid="input-member-search" />
@@ -195,7 +304,14 @@ function MemberList({ id, ownerUserId, canManageAdmins }: { id: string; ownerUse
                   </TableCell>
                   <TableCell>
                     <WithTooltip text={roleLock(m)}>
-                      <SimpleSelect value={m.role} onValueChange={(v) => onRole(m, v)} options={roleOptions} disabled={roleLock(m) !== undefined || update.isPending} className="w-44" testId="input-member-role" />
+                      <SimpleSelect
+                        value={m.role}
+                        onValueChange={(v) => onRole(m, v)}
+                        options={roleOptions}
+                        disabled={roleLock(m) !== undefined || update.isPending}
+                        className="w-44"
+                        testId="input-member-role"
+                      />
                     </WithTooltip>
                   </TableCell>
                   <TableCell className="text-right">

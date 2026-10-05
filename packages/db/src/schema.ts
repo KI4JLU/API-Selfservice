@@ -1,16 +1,5 @@
 import { sql } from 'drizzle-orm';
-import {
-  boolean,
-  index,
-  integer,
-  jsonb,
-  numeric,
-  pgSchema,
-  primaryKey,
-  text,
-  timestamp,
-  uniqueIndex,
-} from 'drizzle-orm/pg-core';
+import { boolean, index, integer, jsonb, numeric, pgSchema, primaryKey, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const SCHEMA_NAME = process.env.DB_SCHEMA ?? 'api_selfservice';
 export const apiSelfservice = pgSchema(SCHEMA_NAME);
@@ -19,7 +8,10 @@ const ts = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' 
 const money = (name: string) => numeric(name, { precision: 14, scale: 6 });
 /** per-token prices are tiny (e.g. 0.0000025), so they need more decimals than money */
 const perToken = (name: string) => numeric(name, { precision: 20, scale: 12 });
-const id = () => text('id').primaryKey().default(sql`gen_random_uuid()::text`);
+const id = () =>
+  text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()::text`);
 
 // ---------- Better Auth core tables (names/fields required by better-auth) ----------
 // `user.id` is shared with LiteLLM (`user_id`); the Keycloak subject lives in `account.account_id`.
@@ -35,9 +27,13 @@ export const user = apiSelfservice.table(
     createdAt: ts('created_at').notNull().defaultNow(),
     updatedAt: ts('updated_at').notNull().defaultNow(),
     // ---- API-Selfservice fields ----
-    role: text('role', { enum: ['user', 'admin'] }).notNull().default('user'),
+    role: text('role', { enum: ['user', 'admin'] })
+      .notNull()
+      .default('user'),
     roleFromIdp: boolean('role_from_idp').notNull().default(false),
-    locale: text('locale', { enum: ['de', 'en'] }).notNull().default('de'),
+    locale: text('locale', { enum: ['de', 'en'] })
+      .notNull()
+      .default('de'),
     affiliation: text('affiliation').array(),
     affiliationValid: boolean('affiliation_valid').notNull().default(true),
     costCenterId: text('cost_center_id'),
@@ -121,8 +117,13 @@ export const costCenters = apiSelfservice.table(
     periodStart: ts('period_start'),
     periodEnd: ts('period_end'),
     /** F-KST-15: models released for this cost center (mirrored as LiteLLM team `models`); empty = all models of its tier class */
-    models: text('models').array().notNull().default(sql`'{}'::text[]`),
-    status: text('status', { enum: ['pending', 'approved', 'rejected', 'archived'] }).notNull().default('pending'),
+    models: text('models')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    status: text('status', { enum: ['pending', 'approved', 'rejected', 'archived'] })
+      .notNull()
+      .default('pending'),
     isDefault: boolean('is_default').notNull().default(false),
     /** LiteLLM team backing this cost center (team_id = cost center id); null until created. */
     litellmTeamId: text('litellm_team_id'),
@@ -145,7 +146,9 @@ export const costCenterRequests = apiSelfservice.table(
     costCenterId: text('cost_center_id')
       .notNull()
       .references(() => costCenters.id),
-    status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
+    status: text('status', { enum: ['pending', 'approved', 'rejected'] })
+      .notNull()
+      .default('pending'),
     reason: text('reason'),
     decidedBy: text('decided_by'),
     decidedAt: ts('decided_at'),
@@ -168,11 +171,45 @@ export const costCenterMembers = apiSelfservice.table(
     userId: text('user_id').notNull(),
     /** e-mail from LiteLLM when added; shown until the person signs in */
     email: text('email'),
-    role: text('role', { enum: ['user', 'admin'] }).notNull().default('user'),
+    role: text('role', { enum: ['user', 'admin'] })
+      .notNull()
+      .default('user'),
     addedBy: text('added_by'),
     addedAt: ts('added_at').notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.costCenterId, t.userId] }), index('ccm_user_idx').on(t.userId)],
+);
+
+/**
+ * F-KST-16: a user asks to join an approved cost center; its cost center admins (or admins) decide.
+ * At most one pending request per user and cost center.
+ */
+export const costCenterJoinRequests = apiSelfservice.table(
+  'cost_center_join_requests',
+  {
+    id: id(),
+    costCenterId: text('cost_center_id')
+      .notNull()
+      .references(() => costCenters.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    message: text('message'),
+    status: text('status', { enum: ['pending', 'approved', 'rejected'] })
+      .notNull()
+      .default('pending'),
+    reason: text('reason'),
+    decidedBy: text('decided_by'),
+    decidedAt: ts('decided_at'),
+    createdAt: ts('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    index('ccjr_cost_center_status_idx').on(t.costCenterId, t.status),
+    index('ccjr_user_idx').on(t.userId),
+    uniqueIndex('ccjr_pending_idx')
+      .on(t.costCenterId, t.userId)
+      .where(sql`${t.status} = 'pending'`),
+  ],
 );
 
 export const apiKeys = apiSelfservice.table(
@@ -189,13 +226,21 @@ export const apiKeys = apiSelfservice.table(
     costCenterId: text('cost_center_id')
       .notNull()
       .references(() => costCenters.id),
-    models: text('models').array().notNull().default(sql`'{}'::text[]`),
+    models: text('models')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     /** F-KEY-10: providers whose current and future models the key gets automatically */
-    providers: text('providers').array().notNull().default(sql`'{}'::text[]`),
+    providers: text('providers')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     budget: money('budget'),
     /** F-KEY-11: `monthly` = LiteLLM resets the key spend every month; null = the budget applies once */
     budgetPeriod: text('budget_period', { enum: ['monthly'] }),
-    status: text('status', { enum: ['active', 'expired', 'blocked', 'deleted'] }).notNull().default('active'),
+    status: text('status', { enum: ['active', 'expired', 'blocked', 'deleted'] })
+      .notNull()
+      .default('active'),
     blockedReason: text('blocked_reason'),
     createdAt: ts('created_at').notNull().defaultNow(),
     expiresAt: ts('expires_at').notNull(),
@@ -204,11 +249,7 @@ export const apiKeys = apiSelfservice.table(
     notified1d: boolean('notified_1d').notNull().default(false),
     deletedAt: ts('deleted_at'),
   },
-  (t) => [
-    uniqueIndex('api_key_litellm_idx').on(t.litellmKeyId),
-    index('api_key_user_idx').on(t.userId),
-    index('api_key_cc_idx').on(t.costCenterId),
-  ],
+  (t) => [uniqueIndex('api_key_litellm_idx').on(t.litellmKeyId), index('api_key_user_idx').on(t.userId), index('api_key_cc_idx').on(t.costCenterId)],
 );
 
 export const providers = apiSelfservice.table(
@@ -218,7 +259,9 @@ export const providers = apiSelfservice.table(
     modelName: text('model_name').notNull(),
     litellmModelId: text('litellm_model_id'),
     provider: text('provider'),
-    tier: text('tier', { enum: ['free', 'paid'] }).notNull().default('paid'),
+    tier: text('tier', { enum: ['free', 'paid'] })
+      .notNull()
+      .default('paid'),
     displayNameDe: text('display_name_de'),
     displayNameEn: text('display_name_en'),
     descriptionDe: text('description_de'),
@@ -240,7 +283,9 @@ export const budgets = apiSelfservice.table('budgets', {
     .references(() => user.id, { onDelete: 'cascade' })
     .unique(),
   amount: money('amount').notNull(),
-  period: text('period', { enum: ['monthly', 'yearly', 'project'] }).notNull().default('monthly'),
+  period: text('period', { enum: ['monthly', 'yearly', 'project'] })
+    .notNull()
+    .default('monthly'),
   periodStart: ts('period_start'),
   periodEnd: ts('period_end'),
   blockedAt: ts('blocked_at'),
@@ -273,16 +318,14 @@ export const requestLogs = apiSelfservice.table(
     ttftMs: integer('ttft_ms'),
     tokensIn: integer('tokens_in').notNull().default(0),
     tokensOut: integer('tokens_out').notNull().default(0),
-    tags: text('tags').array().notNull().default(sql`'{}'::text[]`),
+    tags: text('tags')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     error: text('error'),
     ingestedAt: ts('ingested_at').notNull().defaultNow(),
   },
-  (t) => [
-    index('rl_user_time_idx').on(t.userId, t.time),
-    index('rl_cc_time_idx').on(t.costCenterId, t.time),
-    index('rl_key_idx').on(t.apiKeyId),
-    index('rl_time_idx').on(t.time),
-  ],
+  (t) => [index('rl_user_time_idx').on(t.userId, t.time), index('rl_cc_time_idx').on(t.costCenterId, t.time), index('rl_key_idx').on(t.apiKeyId), index('rl_time_idx').on(t.time)],
 );
 
 export const spendSnapshots = apiSelfservice.table(
@@ -342,18 +385,16 @@ export const auditLog = apiSelfservice.table(
   {
     id: id(),
     actorId: text('actor_id'),
-    severity: text('severity', { enum: ['info', 'warning', 'error'] }).notNull().default('info'),
+    severity: text('severity', { enum: ['info', 'warning', 'error'] })
+      .notNull()
+      .default('info'),
     action: text('action').notNull(),
     entity: text('entity').notNull(),
     entityId: text('entity_id'),
     payload: jsonb('payload'),
     createdAt: ts('created_at').notNull().defaultNow(),
   },
-  (t) => [
-    index('audit_entity_idx').on(t.entity, t.entityId),
-    index('audit_created_idx').on(t.createdAt),
-    index('audit_severity_created_idx').on(t.severity, t.createdAt),
-  ],
+  (t) => [index('audit_entity_idx').on(t.entity, t.entityId), index('audit_created_idx').on(t.createdAt), index('audit_severity_created_idx').on(t.severity, t.createdAt)],
 );
 
 /** Key/value state for jobs (e.g. last ingested log timestamp). */
@@ -371,6 +412,7 @@ export const schema = {
   costCenters,
   costCenterRequests,
   costCenterMembers,
+  costCenterJoinRequests,
   apiKeys,
   providers,
   budgets,

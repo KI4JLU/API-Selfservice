@@ -54,10 +54,7 @@ function AdminUsersPage() {
   const [deactivateUser, setDeactivateUser] = useState<AdminUser | null>(null);
   const [impersonateUser, setImpersonateUser] = useState<AdminUser | null>(null);
 
-  const ccOptions = useMemo(
-    () => [{ value: ALL, label: t('common.all') }, ...(ccs.data?.items ?? []).map((c) => ({ value: c.id, label: `${fmtCostCenter(c.number)} · ${c.name}` }))],
-    [ccs.data, t],
-  );
+  const ccOptions = useMemo(() => [{ value: ALL, label: t('common.all') }, ...(ccs.data?.items ?? []).map((c) => ({ value: c.id, label: `${fmtCostCenter(c.number)} · ${c.name}` }))], [ccs.data, t]);
 
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -274,7 +271,14 @@ function AdminUsersPage() {
           <Label htmlFor="u-deact">{t('users.includeDeactivated')}</Label>
         </div>
       </Toolbar>
-      <DataTable columns={columns} data={users.data?.items ?? []} isLoading={users.isLoading} testId="table-users" rowClassName={(u) => (u.status === 'deactivated' ? 'opacity-60' : undefined)} getRowId={(u) => u.id} />
+      <DataTable
+        columns={columns}
+        data={users.data?.items ?? []}
+        isLoading={users.isLoading}
+        testId="table-users"
+        rowClassName={(u) => (u.status === 'deactivated' ? 'opacity-60' : undefined)}
+        getRowId={(u) => u.id}
+      />
       <div className="mt-3">
         <Pagination page={page} pageSize={PAGE_SIZE} total={users.data?.total ?? 0} onPageChange={setPage} />
       </div>

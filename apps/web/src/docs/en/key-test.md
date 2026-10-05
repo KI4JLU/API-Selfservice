@@ -6,7 +6,7 @@ Send a short prompt here to check that an API key works.
 2. Pick a **model** and adjust the **prompt** if needed.
 3. Click **Send**. On success you see the answer, the model, the duration and the tokens used.
 
-The key is passed to LiteLLM for this test only and is not stored. The test request is billed to the key like any other request and shows up under **Requests**.
+The key is passed to LiteLLM for this test only and is not stored. The test request is billed to the key like any other request and shows up under **Usage**.
 
 ## Errors
 

@@ -25,7 +25,21 @@ function RequiredMark() {
 }
 
 /** Label + control + optional hint, following the shadcn form field layout (grid gap-2). */
-function Field({ label, hint, htmlFor, required, children, className }: { label: React.ReactNode; hint?: React.ReactNode; htmlFor?: string; required?: boolean; children: React.ReactNode; className?: string }) {
+function Field({
+  label,
+  hint,
+  htmlFor,
+  required,
+  children,
+  className,
+}: {
+  label: React.ReactNode;
+  hint?: React.ReactNode;
+  htmlFor?: string;
+  required?: boolean;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div className={cn('grid gap-2', className)}>
       <Label htmlFor={htmlFor}>

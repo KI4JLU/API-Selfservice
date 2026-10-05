@@ -1,4 +1,4 @@
-# Requests
+# Usage
 
 The request list shows your own requests to the LiteLLM proxy, taken 1:1 from the LiteLLM logs. Other users, including admins, cannot see your requests.
 

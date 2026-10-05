@@ -1,6 +1,6 @@
 # Welcome to LiteLite
 
-LiteLite is the self-service portal for the LiteLLM proxy. Manage your API keys, check your budget and requests, and maintain your cost center.
+LiteLite is the self-service portal for the LiteLLM proxy. Manage your API keys, check your budget and usage, and join cost centers.
 
 ## Sign-in
 
@@ -12,9 +12,9 @@ LiteLite is the self-service portal for the LiteLLM proxy. Manage your API keys,
 
 | Role | Permissions |
 |---|---|
-| User | Own keys, own budget, own requests, own profile |
-| Cost center admin | Additionally: members, max budget and report of assigned cost centers. Only the owner appoints further cost center admins |
-| Admin | Everything: users, roles, budgets, cost centers (incl. released models), models, reports |
+| User | Own keys, own budget, own usage, own profile, request to join cost centers |
+| Cost center admin | Additionally: members, join requests, max budget and report of assigned cost centers. Only the owner appoints further cost center admins |
+| Admin | Everything: users, roles, budgets, cost centers (incl. released models and join requests), models, reports |
 
 ## Header
 

@@ -93,9 +93,7 @@ export const uniqEmail = (prefix = 'u') => `${prefix}-${uniq()}@test.local`;
 
 /** Truncates every table of the test schema and re-seeds the default cost center. */
 export async function resetDb(db: Db) {
-  const res = await db.execute(
-    sql.raw(`SELECT table_name FROM information_schema.tables WHERE table_schema = '${TEST_SCHEMA}' AND table_type = 'BASE TABLE' AND table_name <> '__migrations'`),
-  );
+  const res = await db.execute(sql.raw(`SELECT table_name FROM information_schema.tables WHERE table_schema = '${TEST_SCHEMA}' AND table_type = 'BASE TABLE' AND table_name <> '__migrations'`));
   const tables = res.rows.map((r) => `"${TEST_SCHEMA}"."${(r as { table_name: string }).table_name}"`);
   if (tables.length) await db.execute(sql.raw(`TRUNCATE TABLE ${tables.join(', ')} CASCADE`));
   await seedBase(db);

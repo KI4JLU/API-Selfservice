@@ -62,8 +62,18 @@ function AdminLitellmUsersPage() {
         ),
       },
       { header: t('litellmUsers.teams'), accessorFn: (u) => u.teams.length, id: 'teams', meta: { className: 'text-right tabular-nums' } },
-      { header: t('common.spend'), accessorKey: 'spend', cell: ({ row }) => <span className="whitespace-nowrap tabular-nums">{fmtMoney(row.original.spend, { precise: true })}</span>, meta: { className: 'text-right' } },
-      { header: t('litellmUsers.maxBudget'), accessorKey: 'maxBudget', cell: ({ row }) => <span className="whitespace-nowrap tabular-nums">{row.original.maxBudget === null ? t('common.unlimited') : fmtMoney(row.original.maxBudget)}</span>, meta: { className: 'text-right' } },
+      {
+        header: t('common.spend'),
+        accessorKey: 'spend',
+        cell: ({ row }) => <span className="whitespace-nowrap tabular-nums">{fmtMoney(row.original.spend, { precise: true })}</span>,
+        meta: { className: 'text-right' },
+      },
+      {
+        header: t('litellmUsers.maxBudget'),
+        accessorKey: 'maxBudget',
+        cell: ({ row }) => <span className="whitespace-nowrap tabular-nums">{row.original.maxBudget === null ? t('common.unlimited') : fmtMoney(row.original.maxBudget)}</span>,
+        meta: { className: 'text-right' },
+      },
       {
         header: t('litellmUsers.inApiSelfservice'),
         accessorKey: 'apiSelfservice',

@@ -11,8 +11,10 @@ Pro Kostenstelle sehen Sie Nummer, Bezeichnung, Verantwortlichen, Max-Budget, Ve
 Jede Kostenstelle ist in LiteLLM ein Team. Nur Mitglieder können API-Keys auf die Kostenstelle anlegen. Mit **Mitglieder** öffnen Sie die Liste:
 
 - **Hinzufügen**: Suchen Sie nach E-Mail (mind. 3 Zeichen) oder User-ID. Es lassen sich nur Personen hinzufügen, die LiteLLM bereits kennt, auch wenn sie sich noch nie im Portal angemeldet haben. Die Person erhält eine E-Mail; die Mitgliedschaft gilt ab ihrem ersten Login.
+- **Mehrere hinzufügen**: Fügen Sie eine Liste von E-Mail-Adressen ein (getrennt durch Komma, Semikolon oder Zeilenumbruch, max. 200). **Adressen prüfen** zeigt, welche Personen gefunden wurden, welche Adressen keinem LiteLLM-User gehören (kopierbar) und welche ungültig sind. Gefundene Personen sind vorausgewählt; mit **N hinzufügen** werden alle auf einmal hinzugefügt. Die Rolle wählen nur der Verantwortliche und Admins, sonst werden alle Mitglied.
 - **Rolle**: **Mitglied** oder **Kostenstellen-Admin**. Eine Kostenstelle kann mehrere Admins haben. Kostenstellen-Admins ernennen, herabstufen oder entfernen kann nur der Verantwortliche (und Admins); weitere Kostenstellen-Admins fügen nur Mitglieder hinzu und entfernen sie. Der Verantwortliche ist immer Kostenstellen-Admin (markiert mit **Verantwortlich**) und kann erst entfernt oder herabgestuft werden, nachdem ein Admin einen anderen Verantwortlichen gesetzt hat.
 - **Entfernen**: Die Keys der Person auf dieser Kostenstelle werden gesperrt. Wird sie wieder hinzugefügt, werden diese Keys entsperrt.
+- **Beitrittsanfragen**: Personen können über **Kostenstellen** den Beitritt anfragen. Der Verantwortliche und die Kostenstellen-Admins erhalten dann eine E-Mail, und am Button **Mitglieder** zeigt eine Zahl die offenen Anfragen. Oben in der Mitgliederliste sehen Sie Name, E-Mail, Zeitpunkt und Nachricht. **Annehmen**: Die Person wird Mitglied und per E-Mail informiert. **Ablehnen**: mit Pflicht-Begründung, die die Person per E-Mail erhält.
 
 Alle Änderungen erscheinen im Ereignisprotokoll.
 

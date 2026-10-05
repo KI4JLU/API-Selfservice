@@ -5,10 +5,7 @@ import { renderMail } from '../mail/templates.js';
 
 type Vars = Record<string, string | number | null | undefined>;
 
-export async function notify(
-  deps: Deps,
-  input: { type: NotificationType; to: string; locale: Locale; userId?: string | null; vars?: Vars },
-) {
+export async function notify(deps: Deps, input: { type: NotificationType; to: string; locale: Locale; userId?: string | null; vars?: Vars }) {
   const { subject, text } = renderMail(input.type, input.locale, { appUrl: deps.env.APP_URL, ...input.vars });
   const res = await deps.mailer.send({ to: input.to, subject, text });
   await deps.db.insert(notifications).values({

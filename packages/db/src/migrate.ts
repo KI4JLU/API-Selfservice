@@ -29,17 +29,11 @@ export async function runMigrations(connectionString: string, schemaName = SCHEM
 export async function applyMigrations(db: Db, schemaName = SCHEMA_NAME) {
   const q = (s: string) => `"${s}"`;
   await db.execute(sql.raw(`CREATE SCHEMA IF NOT EXISTS ${q(schemaName)}`));
-  await db.execute(
-    sql.raw(
-      `CREATE TABLE IF NOT EXISTS ${q(schemaName)}.__migrations (tag text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`,
-    ),
-  );
+  await db.execute(sql.raw(`CREATE TABLE IF NOT EXISTS ${q(schemaName)}.__migrations (tag text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`));
   const journal = JSON.parse(await readFile(path.join(migrationsFolder, 'meta/_journal.json'), 'utf8')) as {
     entries: JournalEntry[];
   };
-  const applied = new Set(
-    (await db.execute(sql.raw(`SELECT tag FROM ${q(schemaName)}.__migrations`))).rows.map((r) => (r as { tag: string }).tag),
-  );
+  const applied = new Set((await db.execute(sql.raw(`SELECT tag FROM ${q(schemaName)}.__migrations`))).rows.map((r) => (r as { tag: string }).tag));
   for (const entry of journal.entries.sort((a, b) => a.idx - b.idx)) {
     if (applied.has(entry.tag)) continue;
     let content = await readFile(path.join(migrationsFolder, `${entry.tag}.sql`), 'utf8');

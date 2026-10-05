@@ -24,7 +24,14 @@ describe('providers', () => {
     const list = expectShape(z.array(ProviderSchema), (await admin.get('/admin/providers')).body);
     expect(list).toHaveLength(5);
     expect(list.every((p) => p.tier === 'paid' && p.available)).toBe(true);
-    expect(list.map((p) => p.modelName)).toEqual(['claude-opus-5', 'claude-sonnet-5', 'gemma-local', 'gpt-4o', 'gpt-4o-mini']);
+    // sorted by provider, then model
+    expect(list.map((p) => [p.provider, p.modelName])).toEqual([
+      ['anthropic', 'claude-opus-5'],
+      ['anthropic', 'claude-sonnet-5'],
+      ['hosted_vllm', 'gemma-local'],
+      ['openai', 'gpt-4o'],
+      ['openai', 'gpt-4o-mini'],
+    ]);
     expect(list.find((p) => p.modelName === 'gemma-local')).toMatchObject({ provider: 'hosted_vllm', litellmModelId: 'm-gemma', inputCostPerToken: null, outputCostPerToken: null });
     expect(list.find((p) => p.modelName === 'gpt-4o')).toMatchObject({ inputCostPerToken: 0.0000025, outputCostPerToken: 0.00001 });
     // second sync is idempotent

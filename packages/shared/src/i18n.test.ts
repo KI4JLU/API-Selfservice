@@ -3,9 +3,7 @@ import { de, en } from './i18n/index.js';
 import { ERROR_CODES } from './errors.js';
 
 function keys(obj: Record<string, unknown>, prefix = ''): string[] {
-  return Object.entries(obj).flatMap(([k, v]) =>
-    v && typeof v === 'object' ? keys(v as Record<string, unknown>, `${prefix}${k}.`) : [`${prefix}${k}`],
-  );
+  return Object.entries(obj).flatMap(([k, v]) => (v && typeof v === 'object' ? keys(v as Record<string, unknown>, `${prefix}${k}.`) : [`${prefix}${k}`]));
 }
 
 describe('i18n', () => {

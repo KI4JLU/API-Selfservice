@@ -120,6 +120,10 @@ test.describe('API keys', () => {
     // the provider's models show as included in the models tab
     await dialog.getByTestId('tab-models').click();
     await expect(dialog.getByTestId('list-models').getByRole('checkbox', { checked: true }).first()).toBeDisabled();
+    // the models tab is grouped by provider; the chosen provider's models sit in its group
+    const group = dialog.getByTestId(`model-group-${providerName}`);
+    await expect(group).toContainText(providerName);
+    await expect(group.getByRole('checkbox', { checked: true }).first()).toBeDisabled();
     await dialog.getByTestId('btn-submit-create-key').click();
 
     const secret = page.getByTestId('dialog-key-secret');

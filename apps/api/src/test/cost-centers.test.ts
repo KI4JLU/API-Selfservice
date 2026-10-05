@@ -208,7 +208,16 @@ describe('profile + cost centers', () => {
       });
       expect(r.status).toBe(200);
       const cc = expectShape(CostCenterSchema, r.body);
-      expect(cc).toMatchObject({ name: 'New', ownerName: 'New Owner', ownerEmail: newOwner.email, ownerUserId: newOwner.userId, maxBudget: 500, budgetPeriod: 'project', periodStart: '2026-01-01T00:00:00.000Z', periodEnd: '2026-12-31T00:00:00.000Z' });
+      expect(cc).toMatchObject({
+        name: 'New',
+        ownerName: 'New Owner',
+        ownerEmail: newOwner.email,
+        ownerUserId: newOwner.userId,
+        maxBudget: 500,
+        budgetPeriod: 'project',
+        periodStart: '2026-01-01T00:00:00.000Z',
+        periodEnd: '2026-12-31T00:00:00.000Z',
+      });
       // the new owner becomes admin, the previous owner stays admin until demoted (F-KST-14)
       const roles = Object.fromEntries(((await admin.get(`/cost-centers/${id}/members`)).body as { userId: string; role: string }[]).map((m) => [m.userId, m.role]));
       expect(roles).toEqual({ [owner.userId]: 'admin', [newOwner.userId]: 'admin' });
@@ -245,7 +254,10 @@ describe('profile + cost centers', () => {
       await syncProvidersWithFree(admin);
       const ccAdmin = await t.login();
       const member = await t.login();
-      const created = expectShape(CostCenterSchema, (await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'Models', ownerUserId: ccAdmin.userId, models: ['gpt-4o', 'gpt-4o'] })).body);
+      const created = expectShape(
+        CostCenterSchema,
+        (await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'Models', ownerUserId: ccAdmin.userId, models: ['gpt-4o', 'gpt-4o'] })).body,
+      );
       expect(created.models).toEqual(['gpt-4o']);
       expect(t.mock.teams.get(created.id)?.models).toEqual(['gpt-4o']);
       await addMember(ccAdmin, created.id, member);

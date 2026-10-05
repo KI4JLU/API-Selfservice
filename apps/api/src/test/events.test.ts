@@ -30,7 +30,13 @@ describe('admin event log', () => {
     expect(created).toMatchObject({ severity: 'info', entity: 'user', entityId: u.userId, entityLabel: u.email, actor: null, payload: { email: u.email, adoptedFromLitellm: false } });
 
     const [keyCreated] = await eventsOf('key.create', key.body.id);
-    expect(keyCreated).toMatchObject({ severity: 'info', entity: 'api_key', entityLabel: 'events-key', actor: { id: u.userId, email: u.email, name: 'Eve Example' }, payload: { name: 'events-key', costCenter: cc.number } });
+    expect(keyCreated).toMatchObject({
+      severity: 'info',
+      entity: 'api_key',
+      entityLabel: 'events-key',
+      actor: { id: u.userId, email: u.email, name: 'Eve Example' },
+      payload: { name: 'events-key', costCenter: cc.number },
+    });
 
     const [budgetSet] = await eventsOf('budget.set', u.userId);
     expect(budgetSet).toMatchObject({ severity: 'info', entity: 'user', entityLabel: u.email, actor: { id: admin.userId }, payload: { amount: 10, period: 'monthly' } });

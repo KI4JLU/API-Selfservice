@@ -6,8 +6,8 @@ Hier legen Sie Keys für den LiteLLM-Proxy an und verwalten sie.
 
 1. **Neuen Key anlegen** klicken.
 2. Einen **Namen** vergeben (z. B. „Notebook Projekt X“).
-3. Die **Kostenstelle** wählen. Vorbelegt ist Ihre aktuelle Kostenstelle. Wählbar sind die Default-Kostenstelle und die Kostenstellen, deren Mitglied Sie sind. Mitglied werden Sie über einen Kostenstellen-Admin.
-4. Ein oder mehrere **Modelle** wählen. Modelle der Klasse **kostenpflichtig** sind nur mit einer Kostenstelle ungleich `1111 1111` wählbar; **kostenfreie** Modelle sind immer verfügbar.
+3. Die **Kostenstelle** wählen. Vorbelegt ist Ihre aktuelle Kostenstelle. Wählbar sind die Default-Kostenstelle und die Kostenstellen, deren Mitglied Sie sind. Mitglied werden Sie über **Kostenstellen** (**Beitreten**) oder über einen Kostenstellen-Admin.
+4. Ein oder mehrere **Modelle** wählen; die Liste ist nach Provider gruppiert. Modelle der Klasse **kostenpflichtig** sind nur mit einer Kostenstelle ungleich `1111 1111` wählbar; **kostenfreie** Modelle sind immer verfügbar.
    Im Reiter **Provider** wählen Sie stattdessen ganze Provider: Der Key erhält alle aktuellen Modelle des Providers, neue Modelle kommen nach dem nächsten Provider-Abgleich automatisch hinzu. Auch hier gilt: Auf `1111 1111` kommen nur kostenfreie Modelle dazu.
 5. Optional ein **Key-Budget** setzen. Die Summe aller Key-Budgets darf Ihr User-Budget nicht überschreiten. Unter **Zeitfenster** wählen Sie **Monatlich** (das Budget gilt pro Kalendermonat und startet danach neu) oder **Ohne Zeitfenster** (das Budget gilt einmal für die ganze Laufzeit des Keys). Bei monatlichem Budget zeigt die Liste den Verbrauch des laufenden Monats.
 
@@ -28,4 +28,4 @@ Nach dem Anlegen wird der Key **genau einmal** im Klartext angezeigt. Kopieren S
 |---|---|
 | Aktiv | Key ist nutzbar |
 | Abgelaufen | Laufzeit vorbei, verlängern möglich |
-| Gesperrt | Budget erschöpft oder Account deaktiviert |
+| Gesperrt | Budget erschöpft, nicht mehr Mitglied der Kostenstelle oder Account deaktiviert |

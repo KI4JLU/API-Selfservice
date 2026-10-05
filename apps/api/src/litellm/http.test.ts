@@ -78,7 +78,18 @@ describe('http adapter', () => {
     const seconds = Number(m![1]);
     expect(seconds).toBeGreaterThan(3590);
     expect(seconds).toBeLessThanOrEqual(3600);
-    expect(k).toEqual({ keyId: 'hashed-token', secret: 'sk-plain', alias: 'alias-from-server', models: ['m1'], maxBudget: 5, budgetDuration: '30d', expires: '2027-01-01T00:00:00Z', blocked: false, spend: 0, teamId: 'cc-1' });
+    expect(k).toEqual({
+      keyId: 'hashed-token',
+      secret: 'sk-plain',
+      alias: 'alias-from-server',
+      models: ['m1'],
+      maxBudget: 5,
+      budgetDuration: '30d',
+      expires: '2027-01-01T00:00:00Z',
+      blocked: false,
+      spend: 0,
+      teamId: 'cc-1',
+    });
   });
 
   it('createKey uses at least 60s and falls back to token / key as id', async () => {
@@ -122,9 +133,17 @@ describe('http adapter', () => {
     const { a, calls } = adapter(() => ({
       body: {
         data: [
-          { model_name: 'gpt-4o', model_info: { id: 'id-1', input_cost_per_token: 0.0000025, output_cost_per_token: 0.00001 }, litellm_params: { model: 'openai/gpt-4o', custom_llm_provider: 'azure' } },
+          {
+            model_name: 'gpt-4o',
+            model_info: { id: 'id-1', input_cost_per_token: 0.0000025, output_cost_per_token: 0.00001 },
+            litellm_params: { model: 'openai/gpt-4o', custom_llm_provider: 'azure' },
+          },
           // a per-deployment price in litellm_params wins over the model cost map
-          { model_name: 'claude', model_info: { id: 'id-2', input_cost_per_token: 0.000003, output_cost_per_token: 0.000015 }, litellm_params: { model: 'anthropic/claude-3', input_cost_per_token: '0.000001' } },
+          {
+            model_name: 'claude',
+            model_info: { id: 'id-2', input_cost_per_token: 0.000003, output_cost_per_token: 0.000015 },
+            litellm_params: { model: 'anthropic/claude-3', input_cost_per_token: '0.000001' },
+          },
           { model_name: 'plain', litellm_params: { model: 'plain-model' } },
           { model_name: 'empty' },
         ],
@@ -169,38 +188,40 @@ describe('http adapter', () => {
     const since = new Date('2026-09-10T00:00:00Z');
     const until = new Date('2026-09-12T00:00:00.500Z');
     const { a, calls } = adapter(() => ({
-      body: { data: [
-        {
-          request_id: 'r1',
-          session_id: 's1',
-          startTime: '2026-09-11T10:00:00Z',
-          endTime: '2026-09-11T10:00:02Z',
-          completionStartTime: '2026-09-11T10:00:00.500Z',
-          call_type: 'acompletion',
-          model: 'gpt-4o',
-          custom_llm_provider: 'openai',
-          api_key: 'hash1',
-          user: 'u1',
-          spend: '0.25',
-          prompt_tokens: 10,
-          completion_tokens: 20,
-          request_tags: ['t1'],
-          metadata: { status: 'success' },
-        },
-        {
-          request_id: 'r2',
-          start_time: '2026-09-11T11:00:00Z',
-          model: 'x',
-          api_key: 'hash1',
-          spend: 0.5,
-          metadata: { status: 'failure', error_information: 'boom' },
-        },
-        { request_id: 'too-early', startTime: '2026-09-09T23:59:59Z', model: 'x', api_key: 'h', spend: 1 },
-        { request_id: 'at-until', startTime: '2026-09-12T00:00:00.500Z', model: 'x', api_key: 'h', spend: 1 },
-        { request_id: 'bad-date', startTime: 'not-a-date', model: 'x', api_key: 'h', spend: 1 },
-        // per-day aggregate rows (legacy /spend/logs) have no request_id and are never stored
-        { startTime: '2026-09-11', spend: 3, users: {}, models: {} },
-      ] },
+      body: {
+        data: [
+          {
+            request_id: 'r1',
+            session_id: 's1',
+            startTime: '2026-09-11T10:00:00Z',
+            endTime: '2026-09-11T10:00:02Z',
+            completionStartTime: '2026-09-11T10:00:00.500Z',
+            call_type: 'acompletion',
+            model: 'gpt-4o',
+            custom_llm_provider: 'openai',
+            api_key: 'hash1',
+            user: 'u1',
+            spend: '0.25',
+            prompt_tokens: 10,
+            completion_tokens: 20,
+            request_tags: ['t1'],
+            metadata: { status: 'success' },
+          },
+          {
+            request_id: 'r2',
+            start_time: '2026-09-11T11:00:00Z',
+            model: 'x',
+            api_key: 'hash1',
+            spend: 0.5,
+            metadata: { status: 'failure', error_information: 'boom' },
+          },
+          { request_id: 'too-early', startTime: '2026-09-09T23:59:59Z', model: 'x', api_key: 'h', spend: 1 },
+          { request_id: 'at-until', startTime: '2026-09-12T00:00:00.500Z', model: 'x', api_key: 'h', spend: 1 },
+          { request_id: 'bad-date', startTime: 'not-a-date', model: 'x', api_key: 'h', spend: 1 },
+          // per-day aggregate rows (legacy /spend/logs) have no request_id and are never stored
+          { startTime: '2026-09-11', spend: 3, users: {}, models: {} },
+        ],
+      },
     }));
     const logs = await a.getSpendLogs(since, until);
     expect(calls).toHaveLength(1);
@@ -234,7 +255,19 @@ describe('http adapter', () => {
       tags: ['t1'],
       error: null,
     });
-    expect(logs[1]).toMatchObject({ requestId: 'r2', status: 'failure', error: 'boom', callType: 'llm', provider: null, litellmUserId: null, durationMs: null, ttftMs: null, tags: [], sessionId: null, spend: 0.5 });
+    expect(logs[1]).toMatchObject({
+      requestId: 'r2',
+      status: 'failure',
+      error: 'boom',
+      callType: 'llm',
+      provider: null,
+      litellmUserId: null,
+      durationMs: null,
+      ttftMs: null,
+      tags: [],
+      sessionId: null,
+      spend: 0.5,
+    });
   });
 
   it('getSpendLogs pages until a short page and maps the v2 row shape', async () => {
@@ -288,7 +321,18 @@ describe('http adapter', () => {
     expect(calls.map((c) => new URL(c.url).searchParams.get('page'))).toEqual(['1', '2']);
     expect(logs).toHaveLength(1002);
     expect(logs[1000]).toMatchObject({ requestId: 'chatcmpl-1', status: 'success', model: 'Fast (gpt-5.6-luna)', provider: 'azure', litellmUserId: 'u1', durationMs: 1338, ttftMs: 1337, error: null });
-    expect(logs[1001]).toMatchObject({ requestId: 'f1', status: 'failure', model: '', callType: 'llm', provider: null, apiKey: '', litellmUserId: null, sessionId: null, durationMs: 0, error: 'No api key passed in.' });
+    expect(logs[1001]).toMatchObject({
+      requestId: 'f1',
+      status: 'failure',
+      model: '',
+      callType: 'llm',
+      provider: null,
+      apiKey: '',
+      litellmUserId: null,
+      sessionId: null,
+      durationMs: 0,
+      error: 'No api key passed in.',
+    });
   });
 
   it('createUser sends sso_user_id only when given; updateUser sends only the given fields', async () => {
@@ -316,7 +360,15 @@ describe('http adapter', () => {
 
   it('listUsers pages through /user/list and narrows by exact e-mail', async () => {
     const { a, calls } = adapter(() => ({
-      body: { users: [{ user_id: 'u1', user_email: 'A@b.c' }, { user_id: 'u2', user_email: 'other@b.c' }], total: 2, page: 1, page_size: 50 },
+      body: {
+        users: [
+          { user_id: 'u1', user_email: 'A@b.c' },
+          { user_id: 'u2', user_email: 'other@b.c' },
+        ],
+        total: 2,
+        page: 1,
+        page_size: 50,
+      },
     }));
     const all = await a.listUsers({ page: 2, pageSize: 50 });
     expect(calls[0]!.url).toBe('http://litellm.test/user/list?page=2&page_size=50');
@@ -332,10 +384,7 @@ describe('http adapter', () => {
     const similar = Array.from({ length: 100 }, (_, i) => ({ user_id: `x${i}`, user_email: `x${i}sven@b.c` }));
     const { a, calls } = adapter(({ url }) => ({ body: { users: url.includes('page=1&') ? similar : [{ user_id: 'sven', user_email: 'Sven@b.c' }] } }));
     expect(await a.listUsers({ page: 1, pageSize: 1, email: 'sven@b.c' })).toEqual({ items: [expect.objectContaining({ userId: 'sven' })], total: 1 });
-    expect(calls.map((c) => c.url)).toEqual([
-      'http://litellm.test/user/list?page=1&page_size=100&user_email=sven%40b.c',
-      'http://litellm.test/user/list?page=2&page_size=100&user_email=sven%40b.c',
-    ]);
+    expect(calls.map((c) => c.url)).toEqual(['http://litellm.test/user/list?page=1&page_size=100&user_email=sven%40b.c', 'http://litellm.test/user/list?page=2&page_size=100&user_email=sven%40b.c']);
   });
 
   it('teams: create, update, block/unblock, info', async () => {
@@ -368,7 +417,9 @@ describe('http adapter', () => {
   });
 
   it('team members: add falls back to role update for existing members; delete tolerates non-members', async () => {
-    const { a, calls } = adapter(({ url }) => (url.endsWith('/team/member_add') ? { status: 400, body: { error: 'User already in team' } } : url.endsWith('/team/member_delete') ? { status: 404, body: {} } : {}));
+    const { a, calls } = adapter(({ url }) =>
+      url.endsWith('/team/member_add') ? { status: 400, body: { error: 'User already in team' } } : url.endsWith('/team/member_delete') ? { status: 404, body: {} } : {},
+    );
     await a.setTeamMember('cc-1', 'u1', 'admin');
     expect(calls[0]).toMatchObject({ url: 'http://litellm.test/team/member_add', body: { team_id: 'cc-1', member: [{ user_id: 'u1', role: 'admin' }] } });
     expect(calls[1]).toMatchObject({ url: 'http://litellm.test/team/member_update', body: { team_id: 'cc-1', user_id: 'u1', role: 'admin' } });
@@ -394,7 +445,13 @@ describe('http adapter', () => {
     const { a, calls } = adapter(() => ({ status: 200, body: 'ready' }));
     expect(await a.health()).toEqual({ ok: true, detail: 'ready' });
     expect(calls[0]!.url).toBe('http://litellm.test/health/readiness');
-    const bad = createHttpAdapter({ baseUrl: 'http://x', apiKey: '', fetchImpl: (async () => { throw new Error('ECONNREFUSED'); }) as unknown as typeof fetch });
+    const bad = createHttpAdapter({
+      baseUrl: 'http://x',
+      apiKey: '',
+      fetchImpl: (async () => {
+        throw new Error('ECONNREFUSED');
+      }) as unknown as typeof fetch,
+    });
     expect(await bad.health()).toEqual({ ok: false, detail: 'ECONNREFUSED' });
   });
 });

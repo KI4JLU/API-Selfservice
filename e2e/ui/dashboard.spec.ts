@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { devLogin, uniqueEmail } from './helpers';
+import { apiLogin, devLogin, uniqueCostCenter, uniqueEmail } from './helpers';
 
 test.describe('login and dashboard', () => {
   test('user logs in via dev login and sees the budget dashboard', async ({ page }) => {
@@ -13,6 +13,40 @@ test.describe('login and dashboard', () => {
     // user nav is visible, admin nav is not
     await expect(page.getByTestId('nav-keys')).toBeVisible();
     await expect(page.getByTestId('nav-admin-users')).toHaveCount(0);
+  });
+
+  test('dashboard shows key hints and cost centers; the directory lists the default as member', async ({ page }) => {
+    await devLogin(page, { email: uniqueEmail(), name: 'Overview User' });
+    await expect(page.getByTestId('hint-no-key')).toBeVisible();
+    await expect(page.getByTestId('btn-dashboard-create-key')).toBeVisible();
+    await expect(page.getByTestId('my-cost-center')).toHaveCount(1);
+    await page.getByTestId('link-join-cost-center').click();
+    await expect(page.getByTestId('page-cost-center-directory')).toBeVisible();
+    await expect(page.getByTestId('cc-membership').first()).toHaveAttribute('data-status', 'member');
+  });
+
+  /** F-KST-16: a user asks to join from the directory; the request shows as pending there and on the dashboard. */
+  test('user asks to join a cost center from the directory', async ({ page }) => {
+    const root = await apiLogin({ email: uniqueEmail('test-join-root'), name: 'Test Root Admin', admin: true });
+    const name = `Test Join ${Date.now()}`;
+    const created = await root.api.post('/api/v1/admin/cost-centers', { data: { number: uniqueCostCenter(), name, ownerUserId: root.id } });
+    expect(created.status(), await created.text()).toBe(201);
+
+    await devLogin(page, { email: uniqueEmail('test-joiner'), name: 'Test Joiner' });
+    await page.getByTestId('nav-cost-center-directory').click();
+    await page.getByTestId('input-cost-center-search').fill(name);
+    const row = page.getByTestId('table-cost-center-directory').locator('tr', { hasText: name });
+    await row.getByTestId('btn-join-cost-center').click();
+    const dialog = page.getByTestId('dialog-join-cost-center');
+    await dialog.getByTestId('input-join-message').fill('Projekt KI');
+    await dialog.getByTestId('btn-send-join-request').click();
+    await expect(page.getByTestId('toast-join-requested')).toBeVisible();
+    await expect(row.getByTestId('cc-membership')).toHaveAttribute('data-status', 'pending');
+    await expect(row.getByTestId('btn-join-cost-center')).toHaveCount(0);
+
+    await page.getByTestId('nav-dashboard').click();
+    await expect(page.getByTestId('my-join-request').filter({ hasText: name })).toBeVisible();
+    await root.api.dispose();
   });
 
   test('unauthenticated visit redirects to login', async ({ page }) => {

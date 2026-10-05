@@ -125,10 +125,7 @@ export interface LiteLLMAdapter {
     expiresAt: Date;
     metadata?: Record<string, unknown>;
   }): Promise<LiteLLMKey & { secret: string }>;
-  updateKey(
-    keyId: string,
-    patch: { models?: string[]; maxBudget?: number | null; budgetDuration?: string | null; expiresAt?: Date; blocked?: boolean; alias?: string },
-  ): Promise<void>;
+  updateKey(keyId: string, patch: { models?: string[]; maxBudget?: number | null; budgetDuration?: string | null; expiresAt?: Date; blocked?: boolean; alias?: string }): Promise<void>;
   deleteKey(keyId: string): Promise<void>;
   listModels(): Promise<LiteLLMModel[]>;
 
@@ -136,10 +133,7 @@ export interface LiteLLMAdapter {
   /** Model names the key may call (`/v1/models`). */
   listKeyModels(secret: string): Promise<string[]>;
   /** One short chat completion with the key (`/v1/chat/completions`). */
-  chatWithKey(
-    secret: string,
-    input: { model: string; prompt: string; maxTokens: number },
-  ): Promise<{ model: string; answer: string; promptTokens: number | null; completionTokens: number | null }>;
+  chatWithKey(secret: string, input: { model: string; prompt: string; maxTokens: number }): Promise<{ model: string; answer: string; promptTokens: number | null; completionTokens: number | null }>;
   /** Spend logs in [since, until). Implementations page internally. */
   getSpendLogs(since: Date, until: Date): Promise<LiteLLMSpendLog[]>;
 }

@@ -1,10 +1,12 @@
 {
   "name": "api-selfservice",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.8.0",
   "description": "Self-service portal for an existing LiteLLM proxy: Keycloak SSO, roles, cost centers with approval workflow, budgets, API key self-service, request logs, reports and email notifications.",
   "packageManager": "pnpm@10.33.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "setup:dev": "node scripts/setup.mts",
     "dev": "pnpm -r --parallel --filter \"./apps/*\" dev",
@@ -13,6 +15,8 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "pnpm -r test",
     "test:e2e": "playwright test -c e2e/playwright.config.ts",
     "db:generate": "pnpm --filter @api-selfservice/db generate",
@@ -22,6 +26,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "prettier": "^3.9.9",
     "typescript": "^5.9.0"
   }
 }

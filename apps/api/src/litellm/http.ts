@@ -39,8 +39,7 @@ function mapTeam(r: Raw): LiteLLMTeam {
   };
 }
 
-const isNotFound = (e: unknown) =>
-  e instanceof LiteLLMHttpError && (e.status === 404 || (e.status === 400 && /not found|does not exist/i.test(e.body)));
+const isNotFound = (e: unknown) => e instanceof LiteLLMHttpError && (e.status === 404 || (e.status === 400 && /not found|does not exist/i.test(e.body)));
 
 /**
  * REST adapter for the LiteLLM proxy. Uses the documented admin endpoints:
@@ -288,8 +287,7 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
       const fmt = (d: Date) => d.toISOString().slice(0, 19).replace('T', ' ');
       const pageSize = 1000;
       const str = (v: unknown) => (typeof v === 'string' && v ? v : null);
-      const errorText = (v: unknown) =>
-        v && typeof v === 'object' ? str((v as Raw).error_message) ?? str((v as Raw).error_class) : v ? String(v) : null;
+      const errorText = (v: unknown) => (v && typeof v === 'object' ? (str((v as Raw).error_message) ?? str((v as Raw).error_class)) : v ? String(v) : null);
       const out: LiteLLMSpendLog[] = [];
       for (let page = 1; ; page++) {
         const qs = new URLSearchParams({
@@ -311,8 +309,7 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
           const meta = (r.metadata as Raw | undefined) ?? {};
           const status = String(r.status ?? meta.status ?? 'success') === 'failure' ? 'failure' : 'success';
           const tags = Array.isArray(r.request_tags) ? (r.request_tags as string[]) : [];
-          const duration =
-            typeof r.request_duration_ms === 'number' ? r.request_duration_ms : endTime ? new Date(endTime).getTime() - t.getTime() : null;
+          const duration = typeof r.request_duration_ms === 'number' ? r.request_duration_ms : endTime ? new Date(endTime).getTime() - t.getTime() : null;
           const ttft = typeof r.completionStartTime === 'string' ? new Date(r.completionStartTime).getTime() - t.getTime() : null;
           out.push({
             requestId: String(r.request_id),

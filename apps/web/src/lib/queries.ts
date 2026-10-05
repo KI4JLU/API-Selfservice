@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import {
@@ -6,9 +7,13 @@ import {
   AuditEventSchema,
   CostCenterReportDetailSchema,
   CostCenterMemberSchema,
+  CostCenterJoinRequestSchema,
+  BulkAddCostCenterMembersResultSchema,
+  ResolvedMemberEmailsSchema,
   CostCenterReportRowSchema,
   CostCenterRequestSchema,
   CostCenterSchema,
+  CostCenterLookupSchema,
   CreatedApiKeySchema,
   KeyTestModelsSchema,
   KeyTestResultSchema,
@@ -40,7 +45,9 @@ export type Provider = z.infer<typeof ProviderSchema>;
 export type CostCenter = z.infer<typeof CostCenterSchema>;
 export type CostCenterRequest = z.infer<typeof CostCenterRequestSchema>;
 export type CostCenterMember = z.infer<typeof CostCenterMemberSchema>;
+export type CostCenterJoinRequest = z.infer<typeof CostCenterJoinRequestSchema>;
 export type MemberCandidate = z.infer<typeof MemberCandidateSchema>;
+export type ResolvedMemberEmails = z.infer<typeof ResolvedMemberEmailsSchema>;
 export type SpendSummary = z.infer<typeof SpendSummarySchema>;
 export type RequestLog = z.infer<typeof RequestLogSchema>;
 export type AdminUser = z.infer<typeof AdminUserSchema>;
@@ -53,6 +60,7 @@ export type Paginated<T> = { items: T[]; total: number; page: number; pageSize: 
 
 const PagedKeys = paginated(ApiKeySchema);
 const PagedCostCenters = paginated(CostCenterSchema);
+const PagedCostCenterLookup = paginated(CostCenterLookupSchema);
 const PagedRequests = paginated(CostCenterRequestSchema);
 const PagedLogs = paginated(RequestLogSchema);
 const PagedUsers = paginated(AdminUserSchema);
@@ -71,6 +79,9 @@ export const qk = {
   managedCostCenters: ['cost-centers', 'managed'] as const,
   costCenterMembers: (id: string) => ['cost-centers', id, 'members'] as const,
   memberCandidates: (id: string, q: string) => ['cost-centers', id, 'member-candidates', q] as const,
+  myJoinRequests: ['me', 'join-requests'] as const,
+  joinRequests: (id: string) => ['cost-centers', id, 'join-requests'] as const,
+  openJoinRequests: ['cost-center-join-requests'] as const,
   costCenterRequests: (params: Record<string, unknown>) => ['cost-center-requests', params] as const,
   adminUsers: (params: Record<string, unknown>) => ['admin', 'users', params] as const,
   litellmUsers: (params: Record<string, unknown>) => ['admin', 'litellm-users', params] as const,
@@ -134,6 +145,16 @@ export function useCostCenters(params: CostCentersParams, enabled = true) {
   });
 }
 
+/** F-KST-16: approved cost centers as every user sees them (lookup view: no budget, spend or owner). */
+export function useCostCenterLookup(q?: string) {
+  const params = { status: 'approved', q, pageSize: 200 };
+  return useQuery({
+    queryKey: ['cost-centers', 'lookup', params] as const,
+    queryFn: () => api.get('/cost-centers', PagedCostCenterLookup, params),
+    placeholderData: (prev) => prev,
+  });
+}
+
 export function useManagedCostCenters() {
   return useQuery({ queryKey: qk.managedCostCenters, queryFn: () => api.get('/cost-centers/managed', PagedCostCenters, { pageSize: 200 }) });
 }
@@ -150,6 +171,34 @@ export function useMemberCandidates(id: string | null, q: string) {
     enabled: !!id && q.length >= 3,
     retry: false,
   });
+}
+
+/** F-KST-16: own join requests, newest first. */
+export function useMyJoinRequests() {
+  return useQuery({ queryKey: qk.myJoinRequests, queryFn: () => api.get('/me/join-requests', z.array(CostCenterJoinRequestSchema)) });
+}
+
+export function usePendingJoinRequests(id: string | null) {
+  return useQuery({
+    queryKey: qk.joinRequests(id ?? ''),
+    queryFn: () => api.get(`/cost-centers/${id}/join-requests`, z.array(CostCenterJoinRequestSchema), { status: 'pending' }),
+    enabled: !!id,
+  });
+}
+
+/** Open join requests of every cost center the user decides on; feeds the badges on the cost center lists. */
+export function useOpenJoinRequests(enabled = true) {
+  return useQuery({ queryKey: qk.openJoinRequests, queryFn: () => api.get('/cost-center-join-requests', z.array(CostCenterJoinRequestSchema)), enabled });
+}
+
+/** Open join requests per cost center id. */
+export function useOpenJoinRequestCounts(enabled = true) {
+  const { data } = useOpenJoinRequests(enabled);
+  return useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of data ?? []) counts.set(r.costCenter.id, (counts.get(r.costCenter.id) ?? 0) + 1);
+    return counts;
+  }, [data]);
 }
 
 export function useCostCenterRequests(params: { status?: string; page?: number; pageSize?: number }) {
@@ -276,6 +325,22 @@ export function useAddMember() {
   });
 }
 
+/** Bulk add, step 1: resolves pasted e-mail addresses to LiteLLM users. */
+export function useResolveMemberEmails() {
+  return useMutation({
+    mutationFn: ({ id, emails }: { id: string; emails: string[] }) => api.post(`/cost-centers/${id}/member-candidates/resolve`, { emails }, ResolvedMemberEmailsSchema),
+  });
+}
+
+export function useBulkAddMembers() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: ({ id, userIds, role }: { id: string; userIds: string[]; role: CostCenterMemberRole }) =>
+      api.post(`/cost-centers/${id}/members/bulk`, { userIds, role }, BulkAddCostCenterMembersResultSchema),
+    onSuccess: (_d, v) => inv(['cost-centers', v.id], qk.me, ['reports']),
+  });
+}
+
 export function useUpdateMember() {
   const inv = useInvalidate();
   return useMutation({
@@ -290,6 +355,31 @@ export function useRemoveMember() {
   return useMutation({
     mutationFn: ({ id, userId }: { id: string; userId: string }) => api.delete(`/cost-centers/${id}/members/${encodeURIComponent(userId)}`, OkResponse),
     onSuccess: (_d, v) => inv(['cost-centers', v.id], qk.me, qk.managedCostCenters, ['reports']),
+  });
+}
+
+export function useCreateJoinRequest() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: (body: { costCenterId: string; message?: string }) => api.post('/me/join-requests', body, CostCenterJoinRequestSchema),
+    onSuccess: () => inv(qk.myJoinRequests),
+  });
+}
+
+export function useApproveJoinRequest() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: ({ id, requestId }: { id: string; requestId: string }) => api.post(`/cost-centers/${id}/join-requests/${requestId}/approve`, {}, CostCenterJoinRequestSchema),
+    onSuccess: (_d, v) => inv(['cost-centers', v.id], qk.openJoinRequests, ['reports']),
+  });
+}
+
+export function useRejectJoinRequest() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: ({ id, requestId, reason }: { id: string; requestId: string; reason: string }) =>
+      api.post(`/cost-centers/${id}/join-requests/${requestId}/reject`, { reason }, CostCenterJoinRequestSchema),
+    onSuccess: (_d, v) => inv(qk.joinRequests(v.id), qk.openJoinRequests),
   });
 }
 

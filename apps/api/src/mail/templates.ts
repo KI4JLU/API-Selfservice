@@ -53,21 +53,56 @@ const T: Record<NotificationType, Record<Locale, Template>> = {
       body: '{{actorName}} removed you from cost center {{number}} “{{name}}”. Your API keys on this cost center were blocked.\n\n{{appUrl}}/keys',
     },
   },
+  cost_center_join_request_created: {
+    de: {
+      subject: 'Kostenstelle {{number}}: Beitrittsanfrage von {{requesterName}}',
+      body: '{{requesterName}} ({{requesterEmail}}) möchte der Kostenstelle {{number}} „{{name}}“ beitreten.\n{{message}}\n\nPrüfen: {{appUrl}}/cost-centers',
+    },
+    en: {
+      subject: 'Cost center {{number}}: join request from {{requesterName}}',
+      body: '{{requesterName}} ({{requesterEmail}}) asks to join cost center {{number}} “{{name}}”.\n{{message}}\n\nReview: {{appUrl}}/cost-centers',
+    },
+  },
+  cost_center_join_request_rejected: {
+    de: {
+      subject: 'Kostenstelle {{number}}: Beitritt abgelehnt',
+      body: '{{actorName}} hat Ihre Anfrage, der Kostenstelle {{number}} „{{name}}“ beizutreten, abgelehnt.\nBegründung: {{reason}}\n\n{{appUrl}}/cost-center-directory',
+    },
+    en: {
+      subject: 'Cost center {{number}}: join request rejected',
+      body: '{{actorName}} rejected your request to join cost center {{number}} “{{name}}”.\nReason: {{reason}}\n\n{{appUrl}}/cost-center-directory',
+    },
+  },
   user_budget_80: {
     de: { subject: 'Budget zu {{percent}} % verbraucht', body: 'Sie haben {{spend}} EUR von {{budget}} EUR Ihres Budgets verbraucht ({{percent}} %).\n\n{{appUrl}}/' },
     en: { subject: 'Budget {{percent}} % used', body: 'You have used {{spend}} EUR of your {{budget}} EUR budget ({{percent}} %).\n\n{{appUrl}}/' },
   },
   user_budget_100: {
-    de: { subject: 'Budget erschöpft', body: 'Ihr Budget von {{budget}} EUR ist erschöpft. Ihre API-Keys wurden gesperrt, bis ein neuer Budgetzeitraum beginnt oder ein Admin das Budget erhöht.\n\n{{appUrl}}/' },
+    de: {
+      subject: 'Budget erschöpft',
+      body: 'Ihr Budget von {{budget}} EUR ist erschöpft. Ihre API-Keys wurden gesperrt, bis ein neuer Budgetzeitraum beginnt oder ein Admin das Budget erhöht.\n\n{{appUrl}}/',
+    },
     en: { subject: 'Budget exhausted', body: 'Your budget of {{budget}} EUR is exhausted. Your API keys were blocked until a new budget period starts or an admin raises the budget.\n\n{{appUrl}}/' },
   },
   cost_center_budget_80: {
-    de: { subject: 'Kostenstelle {{number}}: Budget zu {{percent}} % verbraucht', body: 'Die Kostenstelle {{number}} „{{name}}“ hat {{spend}} EUR von {{budget}} EUR verbraucht ({{percent}} %).\n\n{{appUrl}}/cost-centers' },
-    en: { subject: 'Cost center {{number}}: budget {{percent}} % used', body: 'Cost center {{number}} “{{name}}” has used {{spend}} EUR of {{budget}} EUR ({{percent}} %).\n\n{{appUrl}}/cost-centers' },
+    de: {
+      subject: 'Kostenstelle {{number}}: Budget zu {{percent}} % verbraucht',
+      body: 'Die Kostenstelle {{number}} „{{name}}“ hat {{spend}} EUR von {{budget}} EUR verbraucht ({{percent}} %).\n\n{{appUrl}}/cost-centers',
+    },
+    en: {
+      subject: 'Cost center {{number}}: budget {{percent}} % used',
+      body: 'Cost center {{number}} “{{name}}” has used {{spend}} EUR of {{budget}} EUR ({{percent}} %).\n\n{{appUrl}}/cost-centers',
+    },
   },
   cost_center_budget_100: {
-    de: { subject: 'Kostenstelle {{number}}: Budget erschöpft', body: 'Das Budget der Kostenstelle {{number}} „{{name}}“ ({{budget}} EUR) ist erschöpft. Alle Keys dieser Kostenstelle wurden gesperrt.\n\n{{appUrl}}/cost-centers' },
-    en: { subject: 'Cost center {{number}}: budget exhausted', body: 'The budget of cost center {{number}} “{{name}}” ({{budget}} EUR) is exhausted. All keys of this cost center were blocked.\n\n{{appUrl}}/cost-centers' },
+    de: {
+      subject: 'Kostenstelle {{number}}: Budget erschöpft',
+      body: 'Das Budget der Kostenstelle {{number}} „{{name}}“ ({{budget}} EUR) ist erschöpft. Alle Keys dieser Kostenstelle wurden gesperrt.\n\n{{appUrl}}/cost-centers',
+    },
+    en: {
+      subject: 'Cost center {{number}}: budget exhausted',
+      body: 'The budget of cost center {{number}} “{{name}}” ({{budget}} EUR) is exhausted. All keys of this cost center were blocked.\n\n{{appUrl}}/cost-centers',
+    },
   },
   key_expires_14d: {
     de: { subject: 'API-Key „{{keyName}}“ läuft in 14 Tagen ab', body: 'Ihr API-Key „{{keyName}}“ läuft am {{expiresAt}} ab. Sie können ihn im Portal verlängern.\n\n{{appUrl}}/keys' },
@@ -94,8 +129,14 @@ const T: Record<NotificationType, Record<Locale, Template>> = {
     en: { subject: 'Account deactivated', body: 'Account {{userEmail}} was deactivated by an administrator. Login and all API keys are blocked.' },
   },
   deletion_due: {
-    de: { subject: 'Löschfrist erreicht: {{userEmail}}', body: 'Der Account {{userEmail}} ist seit {{deletedAt}} deaktiviert. Die Löschfrist ist erreicht. Bitte prüfen Sie die endgültige Löschung.\n\n{{appUrl}}/admin/users' },
-    en: { subject: 'Deletion due: {{userEmail}}', body: 'Account {{userEmail}} has been deactivated since {{deletedAt}}. The retention period is over. Please review final deletion.\n\n{{appUrl}}/admin/users' },
+    de: {
+      subject: 'Löschfrist erreicht: {{userEmail}}',
+      body: 'Der Account {{userEmail}} ist seit {{deletedAt}} deaktiviert. Die Löschfrist ist erreicht. Bitte prüfen Sie die endgültige Löschung.\n\n{{appUrl}}/admin/users',
+    },
+    en: {
+      subject: 'Deletion due: {{userEmail}}',
+      body: 'Account {{userEmail}} has been deactivated since {{deletedAt}}. The retention period is over. Please review final deletion.\n\n{{appUrl}}/admin/users',
+    },
   },
   role_changed: {
     de: { subject: 'Ihre Rolle wurde geändert', body: 'Ihre Rolle im API-Selfservice-Portal ist jetzt: {{role}}.{{detail}}\n\n{{appUrl}}/' },

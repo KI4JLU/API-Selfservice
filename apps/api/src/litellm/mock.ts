@@ -79,7 +79,7 @@ export function createMockAdapter(opts: { seedLogs?: boolean; now?: () => Date }
       endTime: partial.endTime ?? new Date(t.getTime() + (partial.durationMs ?? 1200)).toISOString(),
       callType: partial.callType ?? 'acompletion',
       status: partial.status ?? 'success',
-      model: partial.model ?? (k?.models[0] ?? 'gpt-4o-mini'),
+      model: partial.model ?? k?.models[0] ?? 'gpt-4o-mini',
       provider: partial.provider ?? models.find((m) => m.modelName === (partial.model ?? k?.models[0]))?.provider ?? 'openai',
       apiKey: partial.apiKey,
       litellmUserId: partial.litellmUserId ?? k?.userId ?? null,

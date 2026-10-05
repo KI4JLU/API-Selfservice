@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef, type Row } from '@tanstack/react-table';
 import { useTranslation } from 'react-i18next';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
 import { Skeleton } from './skeleton';
 import { Button } from './button';
@@ -17,69 +18,117 @@ export interface DataTableProps<T> {
   getRowId?: (row: T, index: number) => string;
   renderExpanded?: (row: Row<T>) => React.ReactNode;
   expandedId?: string | null;
+  /** Groups rows under a collapsible header row; groups keep the order of the data. */
+  groupBy?: (row: T) => string;
+  groupLabel?: (key: string, rows: T[]) => React.ReactNode;
 }
 
-export function DataTable<T>({ columns, data, isLoading, testId, onRowClick, rowClassName, emptyText, getRowId, renderExpanded, expandedId }: DataTableProps<T>) {
+export function DataTable<T>({ columns, data, isLoading, testId, onRowClick, rowClassName, emptyText, getRowId, renderExpanded, expandedId, groupBy, groupLabel }: DataTableProps<T>) {
   const { t } = useTranslation();
   const table = useReactTable({ data, columns, getCoreRowModel: getCoreRowModel(), getRowId });
   const colCount = columns.length;
-  return (
-    <div className="rounded-md border" data-testid={testId}>
-      <Table>
-      <TableHeader className="bg-muted/50">
-        {table.getHeaderGroups().map((hg) => (
-          <TableRow key={hg.id} className="hover:bg-transparent">
-            {hg.headers.map((h) => (
-              <TableHead key={h.id} style={{ width: h.getSize() !== 150 ? h.getSize() : undefined }} className={(h.column.columnDef.meta as { className?: string } | undefined)?.className}>
-                {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
-              </TableHead>
-            ))}
-          </TableRow>
+  const [collapsed, setCollapsed] = React.useState<Set<string>>(new Set());
+  const toggleGroup = (key: string) =>
+    setCollapsed((c) => {
+      const n = new Set(c);
+      if (n.has(key)) n.delete(key);
+      else n.add(key);
+      return n;
+    });
+  const rows = table.getRowModel().rows;
+  const groups = new Map<string, Row<T>[]>();
+  for (const row of rows) {
+    const key = groupBy ? groupBy(row.original) : '';
+    groups.set(key, [...(groups.get(key) ?? []), row]);
+  }
+  const renderRow = (row: Row<T>) => (
+    <React.Fragment key={row.id}>
+      <TableRow
+        data-testid="table-row"
+        data-row-id={row.id}
+        className={cn(onRowClick && 'cursor-pointer', rowClassName?.(row.original))}
+        onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+      >
+        {row.getVisibleCells().map((cell) => (
+          <TableCell key={cell.id} className={(cell.column.columnDef.meta as { className?: string } | undefined)?.className}>
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+          </TableCell>
         ))}
-      </TableHeader>
-      <TableBody>
-        {isLoading && data.length === 0 ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <TableRow key={`s${i}`}>
-              {Array.from({ length: colCount }).map((__, j) => (
-                <TableCell key={j}>
-                  <Skeleton className="h-4 w-full" />
-                </TableCell>
+      </TableRow>
+      {renderExpanded && expandedId === row.id ? (
+        <TableRow className="hover:bg-transparent bg-muted/30">
+          <TableCell colSpan={colCount} className="p-4">
+            {renderExpanded(row)}
+          </TableCell>
+        </TableRow>
+      ) : null}
+    </React.Fragment>
+  );
+  return (
+    // Wide tables grow the page instead of scrolling themselves: the content area in AppShell is the one scroll
+    // area, so its horizontal scrollbar stays in view. The header sticks to the top of that area.
+    <div className="w-fit min-w-full rounded-md border" data-testid={testId}>
+      <Table containerClassName="overflow-visible">
+        <TableHeader className="bg-muted sticky top-0 z-10">
+          {table.getHeaderGroups().map((hg) => (
+            <TableRow key={hg.id} className="hover:bg-transparent">
+              {hg.headers.map((h) => (
+                <TableHead key={h.id} style={{ width: h.getSize() !== 150 ? h.getSize() : undefined }} className={(h.column.columnDef.meta as { className?: string } | undefined)?.className}>
+                  {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
+                </TableHead>
               ))}
             </TableRow>
-          ))
-        ) : data.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={colCount} className="h-24 text-center">
-              {emptyText ?? t('common.empty')}
-            </TableCell>
-          </TableRow>
-        ) : (
-          table.getRowModel().rows.map((row) => (
-            <React.Fragment key={row.id}>
-              <TableRow
-                data-testid="table-row"
-                data-row-id={row.id}
-                className={cn(onRowClick && 'cursor-pointer', rowClassName?.(row.original))}
-                onClick={onRowClick ? () => onRowClick(row.original) : undefined}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className={(cell.column.columnDef.meta as { className?: string } | undefined)?.className}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+          ))}
+        </TableHeader>
+        <TableBody>
+          {isLoading && data.length === 0 ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <TableRow key={`s${i}`}>
+                {Array.from({ length: colCount }).map((__, j) => (
+                  <TableCell key={j}>
+                    <Skeleton className="h-4 w-full" />
                   </TableCell>
                 ))}
               </TableRow>
-              {renderExpanded && expandedId === row.id ? (
-                <TableRow className="hover:bg-transparent bg-muted/30">
-                  <TableCell colSpan={colCount} className="p-4">
-                    {renderExpanded(row)}
-                  </TableCell>
-                </TableRow>
-              ) : null}
-            </React.Fragment>
-          ))
-        )}
-      </TableBody>
+            ))
+          ) : data.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={colCount} className="h-24 text-center">
+                {emptyText ?? t('common.empty')}
+              </TableCell>
+            </TableRow>
+          ) : groupBy ? (
+            [...groups.entries()].map(([key, groupRows]) => {
+              const open = !collapsed.has(key);
+              return (
+                <React.Fragment key={`g:${key}`}>
+                  <TableRow className="bg-muted/50 hover:bg-muted" data-testid="table-group">
+                    <TableCell colSpan={colCount} className="py-1.5">
+                      <button
+                        type="button"
+                        className="flex w-full cursor-pointer items-center gap-2 text-left text-sm font-medium"
+                        onClick={() => toggleGroup(key)}
+                        aria-expanded={open}
+                        data-testid="btn-table-group-toggle"
+                      >
+                        {open ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                        {groupLabel
+                          ? groupLabel(
+                              key,
+                              groupRows.map((r) => r.original),
+                            )
+                          : key}
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                  {open ? groupRows.map(renderRow) : null}
+                </React.Fragment>
+              );
+            })
+          ) : (
+            rows.map(renderRow)
+          )}
+        </TableBody>
       </Table>
     </div>
   );

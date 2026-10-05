@@ -46,7 +46,15 @@ function KeysPage() {
 
   const columns = useMemo<ColumnDef<ApiKey>[]>(
     () => [
-      { header: t('keys.name'), accessorKey: 'name', cell: ({ row }) => <span className="font-medium" data-testid="key-name">{row.original.name}</span> },
+      {
+        header: t('keys.name'),
+        accessorKey: 'name',
+        cell: ({ row }) => (
+          <span className="font-medium" data-testid="key-name">
+            {row.original.name}
+          </span>
+        ),
+      },
       { header: t('keys.key'), accessorKey: 'maskedKey', cell: ({ row }) => <code className="font-mono text-xs">{row.original.maskedKey}</code> },
       {
         header: t('common.costCenter'),
@@ -102,7 +110,14 @@ function KeysPage() {
                 <span className="hidden sm:inline">{t('keys.extend')}</span>
               </Button>
             </WithTooltip>
-            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setToDelete(row.original)} disabled={row.original.status === 'deleted'} data-testid="btn-delete-key">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={() => setToDelete(row.original)}
+              disabled={row.original.status === 'deleted'}
+              data-testid="btn-delete-key"
+            >
               <Trash2 />
               <span className="hidden sm:inline">{t('keys.delete')}</span>
             </Button>

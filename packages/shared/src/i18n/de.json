@@ -4,12 +4,13 @@
     "tagline": "Self-Service-Portal für LiteLLM"
   },
   "nav": {
-    "dashboard": "Budget",
+    "dashboard": "Dashboard",
     "keys": "API-Keys",
     "keyTest": "Key testen",
-    "requests": "Requests",
+    "requests": "Nutzung",
     "profile": "Profil",
     "myCostCenters": "Meine Kostenstellen",
+    "costCenterDirectory": "Kostenstellen",
     "admin": "Administration",
     "adminUsers": "User / Rollen",
     "adminLitellmUsers": "LiteLLM-User",
@@ -109,7 +110,7 @@
     "loginFailed": "Anmeldung fehlgeschlagen. Bitte erneut versuchen."
   },
   "dashboard": {
-    "title": "Budget und Verbrauch",
+    "title": "Dashboard",
     "budgetAssigned": "Zugewiesenes Budget (EUR)",
     "spendCurrent": "Verbrauch im Zeitraum",
     "remaining": "Restbudget",
@@ -130,7 +131,17 @@
     "historyDescription": "Monatlicher Verbrauch",
     "topKeysDescription": "Verbrauch pro Key im Zeitraum",
     "topModelsDescription": "Verbrauch pro Modell im Zeitraum",
-    "byProviderDescription": "Requests, Tokens und Verbrauch pro Provider"
+    "byProviderDescription": "Requests, Tokens und Verbrauch pro Provider",
+    "budgetTitle": "Budget und Verbrauch",
+    "keysActive": "{{count}} von {{total}} Keys aktiv",
+    "noKeyHint": "Sie haben noch keinen API-Key. Legen Sie jetzt Ihren ersten Key an.",
+    "keysBlocked": "Gesperrt ({{count}}): {{names}}. Das Budget ist erschöpft oder Sie sind nicht mehr Mitglied der Kostenstelle.",
+    "keysExpired": "Abgelaufen ({{count}}): {{names}}. Verlängern Sie die Keys unter API-Keys.",
+    "keyExpiring": "Key „{{name}}“ läuft am {{date}} ab.",
+    "keysOk": "Alle Keys sind aktiv.",
+    "toKeys": "Zu den API-Keys",
+    "costCentersDescription": "Kostenstellen, auf denen Sie Keys anlegen können",
+    "joinCostCenter": "Kostenstelle beitreten"
   },
   "keys": {
     "title": "API-Keys",
@@ -189,7 +200,7 @@
     "emptyAnswer": "(Das Modell hat eine leere Antwort geliefert.)"
   },
   "requests": {
-    "title": "Requests",
+    "title": "Nutzung",
     "time": "Zeit",
     "type": "Typ",
     "model": "Modell",
@@ -248,7 +259,7 @@
     "editBudget": "Budget",
     "maxBudgetHint": "Betrag in EUR. Leer lassen für unbegrenzt.",
     "models": "Freigegebene Modelle",
-    "modelsHint": "Ohne Auswahl sind alle Modelle freigegeben. Kostenpflichtige Modelle gibt es nur auf eigenen Kostenstellen, nicht auf der Default-Kostenstelle.",
+    "modelsHint": "Ohne Auswahl sind alle Modelle freigegeben, auch künftige. Mit Auswahl nur die gewählten; ein Provider-Haken wählt alle aktuellen Modelle des Providers. Kostenpflichtige Modelle gibt es nur auf eigenen Kostenstellen, nicht auf der Default-Kostenstelle.",
     "modelsAll": "Alle Modelle",
     "noRequests": "Keine offenen Anträge",
     "searchPlaceholder": "Nummer oder Bezeichnung",
@@ -256,7 +267,10 @@
     "ownerNone": "Noch kein Verantwortlicher gewählt",
     "ownerPick": "Auswählen",
     "ownerRequired": "Bitte einen Verantwortlichen aus LiteLLM wählen.",
-    "ownerMissing": "Verantwortlicher fehlt"
+    "ownerMissing": "Verantwortlicher fehlt",
+    "modelsSelectAll": "Alle auswählen",
+    "modelsSelectNone": "Auswahl aufheben",
+    "modelsFilter": "Modelle filtern"
   },
   "providers": {
     "title": "Modelle",
@@ -396,7 +410,10 @@
       "unblock": "Kostenstellen-Sperre aufgehoben",
       "member_add": "Mitglied hinzugefügt",
       "member_role": "Rolle eines Mitglieds geändert",
-      "member_remove": "Mitglied entfernt"
+      "member_remove": "Mitglied entfernt",
+      "join_request": "Beitritt angefragt",
+      "join_approve": "Beitritt freigegeben",
+      "join_reject": "Beitritt abgelehnt"
     },
     "provider": {
       "update": "Modell geändert",
@@ -453,6 +470,7 @@
     "COST_CENTER_REQUEST_PENDING": "Es gibt bereits einen offenen Antrag.",
     "COST_CENTER_NOT_MEMBER": "Sie sind nicht Mitglied dieser Kostenstelle. Bitte wenden Sie sich an einen Kostenstellen-Admin.",
     "COST_CENTER_MEMBER_EXISTS": "Die Person ist bereits Mitglied dieser Kostenstelle.",
+    "COST_CENTER_JOIN_REQUEST_PENDING": "Sie haben für diese Kostenstelle bereits eine offene Beitrittsanfrage.",
     "COST_CENTER_OWNER_ONLY": "Nur der Verantwortliche der Kostenstelle kann Kostenstellen-Admins ernennen, herabstufen oder entfernen.",
     "USER_DEACTIVATED": "Der User ist deaktiviert.",
     "COST_CENTER_OWNER_MUST_BE_ADMIN": "Der Verantwortliche bleibt Kostenstellen-Admin. Setzen Sie zuerst einen anderen Verantwortlichen.",
@@ -492,7 +510,9 @@
     "role_changed": "Rolle geändert",
     "rebooking_created": "Umbuchung erzeugt",
     "cost_center_member_added": "Zur Kostenstelle hinzugefügt",
-    "cost_center_member_removed": "Aus Kostenstelle entfernt"
+    "cost_center_member_removed": "Aus Kostenstelle entfernt",
+    "cost_center_join_request_created": "Beitrittsanfrage eingegangen",
+    "cost_center_join_request_rejected": "Beitrittsanfrage abgelehnt"
   },
   "impersonation": {
     "banner": "Sie handeln als {{name}} ({{email}}).",
@@ -520,7 +540,21 @@
     "roles": {
       "user": "Mitglied",
       "admin": "Kostenstellen-Admin"
-    }
+    },
+    "bulkAdd": "Mehrere hinzufügen",
+    "bulkTitle": "Mehrere Mitglieder hinzufügen",
+    "bulkHint": "Fügen Sie E-Mail-Adressen ein, getrennt durch Komma, Semikolon oder Zeilenumbruch. Auch Einträge wie „Name <mail@uni-giessen.de>“ werden erkannt.",
+    "bulkInputLabel": "E-Mail-Adressen",
+    "bulkResolve": "Adressen prüfen",
+    "bulkTooMany": "Höchstens {{max}} Adressen auf einmal ({{count}} eingefügt).",
+    "bulkFound": "Gefunden ({{count}})",
+    "bulkNotFound": "Kein LiteLLM-User gefunden ({{count}})",
+    "bulkNotFoundHint": "Diese Personen müssen sich zuerst einmal anmelden oder in LiteLLM angelegt werden.",
+    "bulkInvalid": "Keine gültige E-Mail-Adresse ({{count}})",
+    "bulkBack": "Zurück",
+    "bulkSubmit": "{{count}} hinzufügen",
+    "bulkAdded": "{{count}} Mitglieder hinzugefügt",
+    "bulkFailed": "Nicht hinzugefügt ({{count}})"
   },
   "litellmUsers": {
     "title": "LiteLLM-User",
@@ -535,5 +569,33 @@
     "notInApiSelfservice": "noch nie angemeldet",
     "hint": "LiteLLM ist die führende User-Liste: Ein dort vorhandenes Konto wird beim ersten API-Selfservice-Login mit derselben ID übernommen.",
     "error": "LiteLLM hat die User-Liste nicht geliefert. Der konfigurierte LITELLM_API_KEY braucht Proxy-Admin-Rechte."
+  },
+  "joinRequests": {
+    "title": "Kostenstellen",
+    "subtitle": "Ihre Kostenstellen stehen oben. Treten Sie weiteren freigegebenen Kostenstellen bei, um API-Keys darauf anzulegen.",
+    "searchPlaceholder": "Bezeichnung",
+    "empty": "Keine Kostenstellen gefunden.",
+    "join": "Beitreten",
+    "joinTitle": "Beitritt anfragen",
+    "joinHint": "Die Kostenstellen-Admins von „{{name}}“ erhalten Ihre Anfrage per E-Mail und entscheiden darüber.",
+    "messageLabel": "Nachricht (optional)",
+    "messagePlaceholder": "z. B. Projekt oder Grund",
+    "send": "Anfrage senden",
+    "sent": "Beitrittsanfrage an „{{name}}“ gesendet",
+    "status": {
+      "member": "Mitglied",
+      "pending": "Angefragt",
+      "rejected": "Abgelehnt"
+    },
+    "rejectedReason": "Abgelehnt: {{reason}}",
+    "listTitle": "Beitrittsanfragen",
+    "noneOpen": "Keine offenen Anfragen",
+    "approve": "Annehmen",
+    "reject": "Ablehnen",
+    "rejectTitle": "Beitrittsanfrage ablehnen",
+    "reasonLabel": "Begründung",
+    "approved": "{{name}} ist jetzt Mitglied",
+    "rejected": "Anfrage von {{name}} abgelehnt",
+    "openCount": "{{count}} offene Anfragen"
   }
 }

@@ -12,6 +12,8 @@ import profileDe from './de/profile.md?raw';
 import profileEn from './en/profile.md?raw';
 import costCentersDe from './de/cost-centers.md?raw';
 import costCentersEn from './en/cost-centers.md?raw';
+import costCenterDirectoryDe from './de/cost-center-directory.md?raw';
+import costCenterDirectoryEn from './en/cost-center-directory.md?raw';
 import adminUsersDe from './de/admin-users.md?raw';
 import adminUsersEn from './en/admin-users.md?raw';
 import adminLitellmUsersDe from './de/admin-litellm-users.md?raw';
@@ -40,6 +42,7 @@ export const helpSections: HelpSection[] = [
   { id: 'keys', titleKey: 'nav.keys', md: { de: keysDe, en: keysEn } },
   { id: 'key-test', titleKey: 'nav.keyTest', md: { de: keyTestDe, en: keyTestEn } },
   { id: 'requests', titleKey: 'nav.requests', md: { de: requestsDe, en: requestsEn } },
+  { id: 'cost-center-directory', titleKey: 'nav.costCenterDirectory', md: { de: costCenterDirectoryDe, en: costCenterDirectoryEn } },
   { id: 'profile', titleKey: 'nav.profile', md: { de: profileDe, en: profileEn } },
   { id: 'cost-centers', titleKey: 'nav.myCostCenters', md: { de: costCentersDe, en: costCentersEn } },
   { id: 'admin-users', titleKey: 'help.sections.adminUsers', adminOnly: true, md: { de: adminUsersDe, en: adminUsersEn } },

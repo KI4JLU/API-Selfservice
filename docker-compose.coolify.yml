@@ -10,7 +10,7 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgres://api_selfservice:${SERVICE_PASSWORD_POSTGRES}@apiselfservice-db:5432/api_selfservice
-      PORT: "3030"
+      PORT: '3030'
     depends_on:
       apiselfservice-db:
         condition: service_healthy
@@ -25,7 +25,7 @@ services:
     volumes:
       - pgdata-coolify:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U api_selfservice -d api_selfservice"]
+      test: ['CMD-SHELL', 'pg_isready -U api_selfservice -d api_selfservice']
       interval: 5s
       timeout: 3s
       retries: 20

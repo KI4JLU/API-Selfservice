@@ -55,9 +55,7 @@ export const AdminUserSchema = z.object({
   locale: LocaleSchema,
   costCenter: CostCenterRef,
   managedCostCenters: z.array(CostCenterRef),
-  budget: z
-    .object({ amount: Money, period: z.enum(['monthly', 'yearly', 'project']), periodStart: IsoDate.nullable(), periodEnd: IsoDate.nullable() })
-    .nullable(),
+  budget: z.object({ amount: Money, period: z.enum(['monthly', 'yearly', 'project']), periodStart: IsoDate.nullable(), periodEnd: IsoDate.nullable() }).nullable(),
   spendCurrentPeriod: Money,
   keyCount: z.number().int(),
   status: z.enum(['active', 'deactivated']),
