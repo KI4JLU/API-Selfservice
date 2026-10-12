@@ -150,7 +150,6 @@ describe('jobs', () => {
       expect((await t.keyRow(k.id)).status).toBe('blocked');
       expect((await t.keyRow(k.id)).blockedReason).toBe('affiliation_invalid');
       expect(t.mock.keys.get(litellmKeyId)!.blocked).toBe(true);
-      expect(t.mock.users.get(u.userId)!.blocked).toBe(true);
       expect(await t.notificationsOf('account_invalid_deactivated', u.email)).toHaveLength(1);
       expect(await t.notificationsOf('account_invalid_deactivated', admin.email)).toHaveLength(1);
       expect((await fine.get('/me')).status).toBe(200);

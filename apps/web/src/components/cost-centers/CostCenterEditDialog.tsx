@@ -26,6 +26,7 @@ export function BudgetFields({
   amountLabel,
   required,
   idPrefix = 'b',
+  minAmount = 0,
 }: {
   amount: string;
   setAmount: (v: string) => void;
@@ -38,6 +39,7 @@ export function BudgetFields({
   amountLabel: string;
   required?: boolean;
   idPrefix?: string;
+  minAmount?: number;
 }) {
   const { t } = useTranslation();
   return (
@@ -47,7 +49,7 @@ export function BudgetFields({
           <Input
             id={`${idPrefix}-amount`}
             type="number"
-            min={0}
+            min={minAmount}
             step="0.01"
             required={required}
             value={amount}
@@ -108,7 +110,7 @@ function ModelRelease({ value, onChange }: { value: string[]; onChange: (v: stri
     });
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+    <div className="flex flex-1 flex-col gap-1.5">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-medium">
         <span>
           {t('costCenters.models')}{' '}
@@ -233,6 +235,7 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
           ) : null}
           <BudgetFields
             amount={amount}
+            minAmount={0.01}
             setAmount={setAmount}
             period={period}
             setPeriod={setPeriod}

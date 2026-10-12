@@ -265,15 +265,16 @@ describe('cost center members (F-KST-10 to F-KST-13)', () => {
     expect(await syncMigratedMembershipsOnce(t.deps, 'test-sync')).toEqual({ synced: 0 });
   });
 
-  it('removing a member blocks their keys on the cost center; adding them again unblocks', async () => {
+  it('removing a member deletes their keys on the cost center; adding them again does not bring them back', async () => {
     const m = await t.login();
     await addMember(ccAdmin, cc.id, m);
     const k = (await m.post('/api-keys', { name: 'paid', models: ['gpt-4o'], costCenterId: cc.id })).body;
     const free = (await m.post('/api-keys', { name: 'free', models: ['gemma-local'], costCenterId: defaultId })).body;
 
     expect((await ccAdmin.delete(`/cost-centers/${cc.id}/members/${m.userId}`)).status).toBe(200);
-    expect(await t.keyRow(k.id)).toMatchObject({ status: 'blocked', blockedReason: 'cost_center_member_removed' });
-    expect(t.mock.keys.get(await t.litellmKeyIdOf(k.id))?.blocked).toBe(true);
+    const litellmKeyId = await t.litellmKeyIdOf(k.id);
+    expect(await t.keyRow(k.id)).toMatchObject({ status: 'deleted', deletedAt: expect.any(Date) });
+    expect(t.mock.keys.has(litellmKeyId)).toBe(false);
     expect((await t.keyRow(free.id)).status).toBe('active');
     expect(t.mock.teams.get(cc.id)?.members.has(m.userId)).toBe(false);
     const me = expectShape(MeSchema, (await m.get('/me')).body);
@@ -283,7 +284,7 @@ describe('cost center members (F-KST-10 to F-KST-13)', () => {
     expectError(await ccAdmin.delete(`/cost-centers/${cc.id}/members/${m.userId}`), 404, 'NOT_FOUND');
 
     await addMember(ccAdmin, cc.id, m);
-    expect(await t.keyRow(k.id)).toMatchObject({ status: 'active', blockedReason: null });
-    expect(t.mock.keys.get(await t.litellmKeyIdOf(k.id))?.blocked).toBe(false);
+    expect((await t.keyRow(k.id)).status).toBe('deleted');
+    expect((await m.post('/api-keys', { name: 'paid again', models: ['gpt-4o'], costCenterId: cc.id })).status).toBe(201);
   });
 });

@@ -13,6 +13,7 @@ import {
   CostCenterReportRowSchema,
   CostCenterRequestSchema,
   CostCenterSchema,
+  CostCenterResyncResultSchema,
   CostCenterLookupSchema,
   CreatedApiKeySchema,
   KeyTestModelsSchema,
@@ -304,6 +305,14 @@ export function useCreateCostCenter() {
   const inv = useInvalidate();
   return useMutation({
     mutationFn: (body: z.infer<typeof AdminCreateCostCenterSchema>) => api.post('/admin/cost-centers', body, CostCenterSchema),
+    onSuccess: () => inv(['cost-centers']),
+  });
+}
+
+export function useResyncCostCenters() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: () => api.post('/admin/cost-centers/resync', {}, CostCenterResyncResultSchema),
     onSuccess: () => inv(['cost-centers']),
   });
 }

@@ -94,7 +94,7 @@ describe('user administration', () => {
     expect((await admin.get('/me')).status).toBe(200);
   });
 
-  it('deactivate blocks keys, LiteLLM user and login; mails user and admins; reactivate keeps keys blocked (F-USR-3)', async () => {
+  it('deactivate blocks keys and login; mails user and admins; reactivate keeps keys blocked (F-USR-3)', async () => {
     const u = await t.login({ name: 'Victim' });
     const cc = await approvedCostCenterFor(t, admin, u);
     const k = (await u.post('/api-keys', { name: 'k', models: ['gpt-4o'], costCenterId: cc.id })).body;
@@ -111,7 +111,6 @@ describe('user administration', () => {
     expect(row.status).toBe('blocked');
     expect(row.blockedReason).toBe('user_deactivated');
     expect(t.mock.keys.get(litellmKeyId)!.blocked).toBe(true);
-    expect(t.mock.users.get(u.userId)!.blocked).toBe(true);
     expect(await t.notificationsOf('user_deactivated', u.email)).toHaveLength(1);
     expect(await t.notificationsOf('user_deactivated', admin.email)).toHaveLength(adminMailsBefore + 1);
     expect(await t.notificationsOf('user_deactivated', admin2.email)).toHaveLength(1);
@@ -126,7 +125,6 @@ describe('user administration', () => {
     expect(re.status).toBe(200);
     expect(expectShape(AdminUserSchema, re.body)).toMatchObject({ status: 'active', deletedAt: null, deletedReason: null });
     expect((await u.get('/me')).status).toBe(200);
-    expect(t.mock.users.get(u.userId)!.blocked).toBe(false);
     // keys stay blocked and must be recreated
     expect((await u.get('/api-keys')).body.items[0].status).toBe('blocked');
     expect(t.mock.keys.get(litellmKeyId)!.blocked).toBe(true);

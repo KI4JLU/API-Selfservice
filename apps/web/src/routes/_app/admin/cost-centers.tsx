@@ -2,11 +2,21 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Archive, Pencil, Plus, Search, ThumbsDown, ThumbsUp, Users } from 'lucide-react';
+import { Archive, Pencil, Plus, RefreshCw, Search, ThumbsDown, ThumbsUp, Users } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { COST_CENTER_STATUS } from '@api-selfservice/shared';
 import { requireAdmin } from '@/lib/guards';
-import { useApproveRequest, useArchiveCostCenter, useCostCenterRequests, useCostCenters, useOpenJoinRequestCounts, useRejectRequest, type CostCenter, type CostCenterRequest } from '@/lib/queries';
+import {
+  useApproveRequest,
+  useArchiveCostCenter,
+  useCostCenterRequests,
+  useCostCenters,
+  useOpenJoinRequestCounts,
+  useRejectRequest,
+  useResyncCostCenters,
+  type CostCenter,
+  type CostCenterRequest,
+} from '@/lib/queries';
 import { fmtCostCenter, fmtMoney } from '@/lib/format';
 import { PageHeader, Toolbar } from '@/components/ui/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -71,6 +81,7 @@ function LookupTab() {
   const [page, setPage] = useState(1);
   const list = useCostCenters({ status: status === ALL ? undefined : status, q: q || undefined, page, pageSize: PAGE_SIZE });
   const archive = useArchiveCostCenter();
+  const resync = useResyncCostCenters();
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<CostCenter | null>(null);
   const [archiving, setArchiving] = useState<CostCenter | null>(null);
@@ -81,6 +92,14 @@ function LookupTab() {
     e.preventDefault();
     setQ(qInput.trim());
     setPage(1);
+  };
+
+  // E-8: pushes all cost centers to their LiteLLM teams again, e.g. after changes made directly in LiteLLM.
+  const onResync = async () => {
+    const res = await resync.mutateAsync().catch(() => null);
+    if (!res) return;
+    if (res.failed) toast.error(t('costCenters.resyncFailed', res), { testId: 'toast-cost-centers-resync-failed' });
+    else toast.success(t('costCenters.resynced', res), { testId: 'toast-cost-centers-resynced' });
   };
 
   const onArchive = async () => {
@@ -219,10 +238,16 @@ function LookupTab() {
             />
           </Field>
         </div>
-        <Button onClick={() => setCreateOpen(true)} data-testid="btn-create-cost-center">
-          <Plus />
-          {t('costCenters.create')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={onResync} loading={resync.isPending} title={t('costCenters.resyncHint')} data-testid="btn-resync-cost-centers">
+            <RefreshCw />
+            {t('costCenters.resync')}
+          </Button>
+          <Button onClick={() => setCreateOpen(true)} data-testid="btn-create-cost-center">
+            <Plus />
+            {t('costCenters.create')}
+          </Button>
+        </div>
       </Toolbar>
       <DataTable columns={columns} data={list.data?.items ?? []} isLoading={list.isLoading} testId="table-cost-centers" getRowId={(c) => c.id} />
       <div className="mt-3">

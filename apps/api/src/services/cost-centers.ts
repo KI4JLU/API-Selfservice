@@ -1,4 +1,4 @@
-import { and, apiKeys, costCenterMembers, costCenterRequests, costCenters, count, desc, eq, ilike, inArray, ne, or, providers, user } from '@api-selfservice/db';
+import { and, apiKeys, costCenterMembers, costCenterRequests, costCenters, count, desc, eq, ilike, inArray, isNull, ne, or, providers, user } from '@api-selfservice/db';
 import { DEFAULT_COST_CENTER, currentPeriod, normalizeCostCenter, type BudgetPeriod, type CostCenterStatus } from '@api-selfservice/shared';
 import type { CurrentUser, Deps } from '../context.js';
 import { ApiError, forbidden, notFound } from '../errors.js';
@@ -79,6 +79,21 @@ export async function ensureTeam(deps: Deps, cc: CC): Promise<string | null> {
  * Mirrors a user's membership in a cost center into its LiteLLM team (F-KST-10): the member role,
  * `user` for everyone on the default cost center, otherwise removed.
  */
+/** Without LiteLLM Enterprise a cost center admin is only a team member in LiteLLM; the event log says so. */
+async function setTeamMember(deps: Deps, costCenterId: string, teamId: string, userId: string, role: 'admin' | 'user') {
+  const stored = await deps.litellm.setTeamMember(teamId, userId, role);
+  if (stored !== role) {
+    await audit(deps, {
+      actorId: null,
+      severity: 'warning',
+      action: 'litellm.team_admin_downgraded',
+      entity: 'cost_center',
+      entityId: costCenterId,
+      payload: { userId, role, litellmRole: stored },
+    });
+  }
+}
+
 export async function syncTeamMembership(deps: Deps, userId: string, costCenterId: string) {
   const cc = await deps.db.query.costCenters.findFirst({ where: eq(costCenters.id, costCenterId) });
   if (!cc) return;
@@ -93,7 +108,7 @@ export async function syncTeamMembership(deps: Deps, userId: string, costCenterI
     role = u && !u.deletedAt ? 'user' : null;
   }
   try {
-    if (role) await deps.litellm.setTeamMember(teamId, userId, role);
+    if (role) await setTeamMember(deps, costCenterId, teamId, userId, role);
     else await deps.litellm.removeTeamMember(teamId, userId);
   } catch (e) {
     await auditError(deps, { action: 'litellm.sync_team_member', entity: 'cost_center', entityId: costCenterId, err: e, payload: { userId, role } });
@@ -359,6 +374,54 @@ export async function archiveCostCenter(deps: Deps, actor: CurrentUser, id: stri
   await setTeamBlocked(deps, cc, true);
   await audit(deps, { actorId: actor.id, action: 'cost_center.archive', entity: 'cost_center', entityId: id });
   return costCenterView(deps, await getCostCenter(deps, id));
+}
+
+/**
+ * Pushes the state of every cost center LiteLite knows to its LiteLLM team (E-8): creates missing teams,
+ * mirrors alias, budget, released models and block state, and re-adds all members. Pending and rejected
+ * cost centers have no team. Teams in LiteLLM without a cost center are left alone.
+ */
+export async function resyncCostCenters(deps: Deps, actor: CurrentUser) {
+  const all = await deps.db.query.costCenters.findMany();
+  const result = { synced: 0, skipped: 0, failed: 0 };
+  for (const cc of all) {
+    if (cc.status === 'pending' || cc.status === 'rejected' || (cc.status === 'archived' && !cc.litellmTeamId)) {
+      result.skipped++;
+      continue;
+    }
+    try {
+      await resyncTeam(deps, cc);
+      result.synced++;
+    } catch (e) {
+      result.failed++;
+      await auditError(deps, { action: 'litellm.resync_team', entity: 'cost_center', entityId: cc.id, err: e, actorId: actor.id });
+    }
+  }
+  await audit(deps, { actorId: actor.id, action: 'cost_center.resync', entity: 'cost_center', payload: result, severity: result.failed ? 'warning' : 'info' });
+  return result;
+}
+
+async function resyncTeam(deps: Deps, cc: CC) {
+  const teamId = cc.litellmTeamId ?? cc.id;
+  const team = { alias: teamAlias(cc), maxBudget: cc.maxBudget === null ? null : Number(cc.maxBudget), budgetDuration: budgetDurationFor(cc.budgetPeriod), models: cc.models };
+  if (await deps.litellm.getTeam(teamId)) await deps.litellm.updateTeam(teamId, team);
+  else await deps.litellm.createTeam({ teamId, ...team, metadata: { cost_center: cc.number, api_selfservice: true } });
+  if (!cc.litellmTeamId) await deps.db.update(costCenters).set({ litellmTeamId: teamId }).where(eq(costCenters.id, cc.id));
+  await deps.litellm.setTeamBlocked(teamId, cc.status === 'archived' || cc.blockedAt !== null);
+  const members: { userId: string; role: 'admin' | 'user' }[] = await deps.db.query.costCenterMembers.findMany({ where: eq(costCenterMembers.costCenterId, cc.id) });
+  if (cc.isDefault) {
+    // Everyone active is on the default team (F-KST-9).
+    const users = await deps.db.query.user.findMany({ where: isNull(user.deletedAt), columns: { id: true } });
+    for (const u of users) if (!members.some((m) => m.userId === u.id)) members.push({ userId: u.id, role: 'user' });
+  }
+  // A failed member does not fail the team (e.g. team admins need LiteLLM Enterprise); like syncTeamMembership, it is logged.
+  for (const m of members) {
+    try {
+      await setTeamMember(deps, cc.id, teamId, m.userId, m.role);
+    } catch (e) {
+      await auditError(deps, { action: 'litellm.sync_team_member', entity: 'cost_center', entityId: cc.id, err: e, payload: { userId: m.userId, role: m.role } });
+    }
+  }
 }
 
 // ---------- Requests ----------

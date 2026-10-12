@@ -94,6 +94,7 @@ export function CostCenterCreateDialog({ open, onOpenChange }: { open: boolean; 
           <OwnerPicker value={owner} onChange={setOwner} idPrefix="ncc" />
           <BudgetFields
             amount={amount}
+            minAmount={0.01}
             setAmount={setAmount}
             period={period}
             setPeriod={setPeriod}

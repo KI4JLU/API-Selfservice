@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { costCenters, eq } from '@api-selfservice/db';
 import { CostCenterLookupSchema, CostCenterOrLookupSchema, CostCenterRequestSchema, CostCenterSchema, MeSchema, paginated } from '@api-selfservice/shared';
 import { addMember, createTestApp, expectError, expectShape, litellmOwner, randomCostCenter, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
@@ -192,6 +192,10 @@ describe('profile + cost centers', () => {
       const u = await t.login();
       expectError(await u.post('/cost-centers', { number: randomCostCenter(), name: 'n', ownerEmail: 'nobody@x.de' }), 409, 'OWNER_NOT_LITELLM_USER');
       expectError(await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'x', ownerUserId: owner.userId, maxBudget: -1 }), 400, 'VALIDATION_ERROR');
+      // A budget of 0 would block the team and its keys right away; no budget means unlimited.
+      expectError(await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'x', ownerUserId: owner.userId, maxBudget: 0 }), 400, 'VALIDATION_ERROR');
+      const { id } = (await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'x', ownerUserId: owner.userId, maxBudget: 10 })).body;
+      expectError(await admin.patch(`/cost-centers/${id}`, { maxBudget: 0 }), 400, 'VALIDATION_ERROR');
     });
 
     it('PATCH updates name, owner and budget period; project period is stored', async () => {
@@ -297,6 +301,23 @@ describe('profile + cost centers', () => {
       expect(cc.number).toBe('11111111');
     });
 
+    it('without LiteLLM Enterprise a cost center admin joins the team as user and the event log warns', async () => {
+      const setTeamMember = t.deps.litellm.setTeamMember.bind(t.deps.litellm);
+      // emulate the http adapter's fallback when LiteLLM refuses team admins (premium feature)
+      const spy = vi.spyOn(t.deps.litellm, 'setTeamMember').mockImplementation((teamId, userId) => setTeamMember(teamId, userId, 'user'));
+      try {
+        const { id } = (await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'No license', ownerUserId: owner.userId })).body;
+        const deputy = await t.login();
+        await addMember(admin, id, deputy, 'admin');
+        expect((await admin.get(`/cost-centers/${id}/members`)).body).toContainEqual(expect.objectContaining({ userId: deputy.userId, role: 'admin' }));
+        expect(t.mock.teams.get(id)?.members.get(deputy.userId)).toBe('user');
+        const events = (await admin.get(`/admin/events?action=litellm.team_admin_downgraded&entityId=${id}`)).body.items;
+        expect(events).toContainEqual(expect.objectContaining({ severity: 'warning', payload: expect.objectContaining({ userId: deputy.userId, role: 'admin', litellmRole: 'user' }) }));
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
     it('archive moves users back to the default cost center and blocks its keys', async () => {
       await syncProvidersWithFree(admin);
       const u = await t.login();
@@ -336,6 +357,27 @@ describe('profile + cost centers', () => {
       expect((await u.get('/cost-centers')).body.items.find((c: { id: string }) => c.id === id)).toBeUndefined();
       expect((await admin.get(`/cost-centers/${id}`)).status).toBe(200);
       expectError(await u.get(`/cost-centers/${id}`), 403, 'FORBIDDEN');
+    });
+
+    it('resync mirrors every cost center to its LiteLLM team', async () => {
+      const u = await t.login();
+      const { id } = (await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'Drifted', ownerUserId: owner.userId, maxBudget: 50 })).body;
+      await addMember(admin, id, u);
+      const archived = (await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'Gone', ownerUserId: owner.userId })).body;
+      await admin.post(`/admin/cost-centers/${archived.id}/archive`);
+      // LiteLLM lost one team and unblocked the other
+      t.mock.teams.delete(id);
+      t.mock.teams.get(archived.id)!.blocked = false;
+      expectError(await u.post('/admin/cost-centers/resync'), 403, 'FORBIDDEN');
+
+      const r = await admin.post('/admin/cost-centers/resync');
+      expect(r.status).toBe(200);
+      expect(r.body.failed).toBe(0);
+      expect(r.body.synced).toBeGreaterThanOrEqual(3);
+      expect(t.mock.teams.get(id)).toMatchObject({ maxBudget: 50, blocked: false });
+      expect(t.mock.teams.get(id)?.members.get(u.userId)).toBe('user');
+      expect(t.mock.teams.get(archived.id)?.blocked).toBe(true);
+      expect(t.mock.teams.get(defaultId)?.members.get(u.userId)).toBe('user');
     });
 
     it('lookup search by number (with spaces) and by name', async () => {

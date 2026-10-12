@@ -50,12 +50,10 @@ describe('http adapter', () => {
     expect(await a.createUser({ userId: 'u9', email: 'x@y.z' })).toEqual({ litellmUserId: 'u9' });
   });
 
-  it('updateUserBudget / blockUser post to /user/update', async () => {
+  it('updateUserBudget posts to /user/update', async () => {
     const { a, calls } = adapter();
     await a.updateUserBudget('u1', { maxBudget: 25, budgetDuration: '30d' });
-    await a.blockUser('u1', true);
     expect(calls[0]).toMatchObject({ url: 'http://litellm.test/user/update', method: 'POST', body: { user_id: 'u1', max_budget: 25, budget_duration: '30d' } });
-    expect(calls[1]).toMatchObject({ body: { user_id: 'u1', blocked: true } });
   });
 
   it('createKey sends duration in seconds, models, alias, budget, budget duration and metadata and maps the response', async () => {
@@ -127,6 +125,9 @@ describe('http adapter', () => {
     const { a, calls } = adapter();
     await a.deleteKey('k1');
     expect(calls[0]).toMatchObject({ url: 'http://litellm.test/key/delete', method: 'POST', body: { keys: ['k1'] } });
+    // a key LiteLLM already deleted (e.g. on /team/member_delete) is not an error
+    const { a: gone } = adapter(() => ({ status: 404, body: { error: { message: 'Key not found in database' } } }));
+    await expect(gone.deleteKey('k1')).resolves.toBeUndefined();
   });
 
   it('listModels maps provider from custom_llm_provider or the model prefix', async () => {
@@ -428,6 +429,17 @@ describe('http adapter', () => {
     const { a: strict } = adapter(() => ({ status: 500, body: 'boom' }));
     await expect(strict.setTeamMember('cc-1', 'u1', 'user')).rejects.toBeInstanceOf(LiteLLMHttpError);
     await expect(strict.removeTeamMember('cc-1', 'u1')).rejects.toBeInstanceOf(LiteLLMHttpError);
+  });
+
+  it('team members: without an Enterprise license a cost center admin joins the team as user', async () => {
+    const premium = { status: 400, body: { detail: 'Assigning team admins is a premium feature. You must be a LiteLLM Enterprise user to use this feature.' } };
+    const { a, calls } = adapter(({ url, body }) => (((body as { role?: string; member?: { role: string }[] }).member?.[0]?.role ?? (body as { role?: string }).role) === 'admin' ? premium : {}));
+    expect(await a.setTeamMember('cc-1', 'u1', 'admin')).toBe('user');
+    expect(calls.map((c) => c.url.replace('http://litellm.test', ''))).toEqual(['/team/member_add', '/team/member_update', '/team/member_add']);
+    expect(calls[2]).toMatchObject({ body: { team_id: 'cc-1', member: [{ user_id: 'u1', role: 'user' }] } });
+    // other 400s are not swallowed
+    const { a: strict } = adapter(() => ({ status: 400, body: { error: 'Team not found' } }));
+    await expect(strict.setTeamMember('cc-1', 'u1', 'admin')).rejects.toBeInstanceOf(LiteLLMHttpError);
   });
 
   it('wraps non-2xx responses in LiteLLMHttpError', async () => {

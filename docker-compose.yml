@@ -1,4 +1,5 @@
-# Local development stack. LiteLLM and Keycloak are external (see .env).
+# Local development stack. Keycloak is external (see .env). LiteLLM is external by default;
+# `docker compose --profile litellm up -d` starts a local proxy on :4000 (docker/litellm/config.yaml).
 services:
   postgres:
     image: postgres:16-alpine
@@ -25,6 +26,66 @@ services:
       MP_SMTP_AUTH_ACCEPT_ANY: '1'
       MP_SMTP_AUTH_ALLOW_INSECURE: '1'
 
+  # Local LiteLLM proxy for the live suite (profile `litellm`). Same version as production; own database.
+  litellm-db:
+    image: postgres:16-alpine
+    profiles: ['litellm']
+    environment:
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: litellm
+      POSTGRES_DB: litellm
+    volumes:
+      - litellm-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U litellm -d litellm']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # cache and router state for configs that use Redis (like the production one)
+  litellm-redis:
+    image: redis:7-alpine
+    profiles: ['litellm']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.99.1
+    profiles: ['litellm']
+    command: ['--config', '/app/config.yaml', '--port', '4000']
+    environment:
+      DATABASE_URL: postgresql://litellm:litellm@litellm-db:5432/litellm
+      LITELLM_MASTER_KEY: sk-local-master
+      LITELLM_SALT_KEY: sk-local-salt
+      STORE_MODEL_IN_DB: 'True'
+      REDIS_HOST: litellm-redis
+      REDIS_PORT: '6379'
+      REDIS_PASSWORD: ''
+      # provider key for config.local.yaml, taken from the repo .env (empty with the mock config)
+      AZURE_API_KEY: ${AZURE_API_KEY:-}
+    # own config (e.g. the one from Coolify): LITELLM_CONFIG=./docker/litellm/config.local.yaml, provider keys in docker/litellm/.env.local (both gitignored)
+    env_file:
+      - path: ./docker/litellm/.env.local
+        required: false
+    volumes:
+      - ${LITELLM_CONFIG:-./docker/litellm/config.yaml}:/app/config.yaml:ro
+    ports:
+      - '4000:4000' # api + admin ui (/ui, login admin / sk-local-master)
+    depends_on:
+      litellm-db:
+        condition: service_healthy
+      litellm-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:4000/health/readiness'')"']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
   api:
     build:
       context: .
@@ -44,3 +105,4 @@ services:
 
 volumes:
   pgdata:
+  litellm-pgdata:

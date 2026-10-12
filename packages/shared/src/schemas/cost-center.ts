@@ -49,12 +49,15 @@ export const CreateCostCenterRequestSchema = z.object({
   ownerEmail: z.string().email(),
 });
 
+/** A cost center budget of 0 would block the team and all its keys right away; no budget = unlimited. */
+const CostCenterBudget = z.number().positive();
+
 export const AdminCreateCostCenterSchema = z.object({
   number: z.string().min(8).max(9),
   name: z.string().min(1).max(200),
   /** LiteLLM user id (GET /admin/litellm-users); becomes cost center admin (F-KST-14). */
   ownerUserId: z.string().min(1),
-  maxBudget: Money.nullable().optional(),
+  maxBudget: CostCenterBudget.nullable().optional(),
   budgetPeriod: z.enum(BUDGET_PERIODS).nullable().optional(),
   periodStart: IsoDate.nullable().optional(),
   periodEnd: IsoDate.nullable().optional(),
@@ -65,7 +68,7 @@ export const UpdateCostCenterSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   /** Admins only: new owner (LiteLLM user id); becomes cost center admin, the previous owner stays admin. */
   ownerUserId: z.string().min(1).optional(),
-  maxBudget: Money.nullable().optional(),
+  maxBudget: CostCenterBudget.nullable().optional(),
   budgetPeriod: z.enum(BUDGET_PERIODS).nullable().optional(),
   periodStart: IsoDate.nullable().optional(),
   periodEnd: IsoDate.nullable().optional(),
@@ -172,4 +175,11 @@ export const BulkAddCostCenterMembersResultSchema = z.object({
   added: z.array(CostCenterMemberSchema),
   /** Users that could not be added, with the error code (e.g. COST_CENTER_MEMBER_EXISTS, USER_DEACTIVATED) */
   failed: z.array(z.object({ userId: z.string(), code: z.string() })),
+});
+
+/** Result of POST /admin/cost-centers/resync: cost centers mirrored to LiteLLM, without a team, or failed. */
+export const CostCenterResyncResultSchema = z.object({
+  synced: z.number().int(),
+  skipped: z.number().int(),
+  failed: z.number().int(),
 });

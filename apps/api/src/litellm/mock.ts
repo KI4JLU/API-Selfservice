@@ -137,9 +137,6 @@ export function createMockAdapter(opts: { seedLogs?: boolean; now?: () => Date }
     async updateUserBudget(id, { maxBudget }) {
       ensureUser(id).maxBudget = maxBudget;
     },
-    async blockUser(id, blocked) {
-      ensureUser(id).blocked = blocked;
-    },
 
     // ---------- teams ----------
     async getTeam(teamId) {
@@ -171,6 +168,7 @@ export function createMockAdapter(opts: { seedLogs?: boolean; now?: () => Date }
       if (!t) throw new Error(`mock: team ${teamId} not found`);
       t.members.set(userId, role);
       ensureUser(userId).teams.add(teamId);
+      return role;
     },
     async removeTeamMember(teamId, userId) {
       teams.get(teamId)?.members.delete(userId);

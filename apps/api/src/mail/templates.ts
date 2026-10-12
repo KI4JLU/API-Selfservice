@@ -46,11 +46,11 @@ const T: Record<NotificationType, Record<Locale, Template>> = {
   cost_center_member_removed: {
     de: {
       subject: 'Kostenstelle {{number}}: Mitgliedschaft beendet',
-      body: '{{actorName}} hat Sie aus der Kostenstelle {{number}} „{{name}}“ entfernt. Ihre API-Keys auf dieser Kostenstelle wurden gesperrt.\n\n{{appUrl}}/keys',
+      body: '{{actorName}} hat Sie aus der Kostenstelle {{number}} „{{name}}“ entfernt. Ihre API-Keys auf dieser Kostenstelle wurden gelöscht.\n\n{{appUrl}}/keys',
     },
     en: {
       subject: 'Cost center {{number}}: membership ended',
-      body: '{{actorName}} removed you from cost center {{number}} “{{name}}”. Your API keys on this cost center were blocked.\n\n{{appUrl}}/keys',
+      body: '{{actorName}} removed you from cost center {{number}} “{{name}}”. Your API keys on this cost center were deleted.\n\n{{appUrl}}/keys',
     },
   },
   cost_center_join_request_created: {

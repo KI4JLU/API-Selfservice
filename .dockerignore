@@ -39,6 +39,8 @@ AGENTS.md
 agents.md
 *.local.md
 scripts
+docker
+.claude
 docker-compose.yml
 docker-compose.coolify.yml
 Dockerfile

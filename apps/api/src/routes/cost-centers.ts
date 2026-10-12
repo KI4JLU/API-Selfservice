@@ -20,6 +20,7 @@ import {
   ResolvedMemberEmailsSchema,
   BulkAddCostCenterMembersSchema,
   BulkAddCostCenterMembersResultSchema,
+  CostCenterResyncResultSchema,
   paginated,
 } from '@api-selfservice/shared';
 import { createRouter, body, json, errors, IdParam, okBody } from './_util.js';
@@ -34,6 +35,7 @@ import {
   listRequests,
   rejectRequest,
   requestCostCenter,
+  resyncCostCenters,
   updateCostCenter,
 } from '../services/cost-centers.js';
 import { addMember, addMembers, listMembers, removeMember, resolveMemberEmails, searchMemberCandidates, updateMember } from '../services/cost-center-members.js';
@@ -284,6 +286,16 @@ r.openapi(
 r.openapi(
   createRoute({ method: 'post', path: '/admin/cost-centers/{id}/archive', tags: ['cost-centers'], request: { params: IdParam }, responses: { 200: json(CostCenterSchema, 'Archived'), ...errors } }),
   async (c) => c.json(await archiveCostCenter(c.get('deps'), c.get('user'), c.req.valid('param').id), 200),
+);
+r.openapi(
+  createRoute({
+    method: 'post',
+    path: '/admin/cost-centers/resync',
+    tags: ['cost-centers'],
+    description: 'Mirrors every cost center to its LiteLLM team: team, alias, budget, released models, block state and members.',
+    responses: { 200: json(CostCenterResyncResultSchema, 'Resynced'), ...errors },
+  }),
+  async (c) => c.json(await resyncCostCenters(c.get('deps'), c.get('user')), 200),
 );
 r.openapi(
   createRoute({

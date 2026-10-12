@@ -46,6 +46,9 @@ test.describe('walkthrough: admin', () => {
       await expect(page.getByTestId('page-admin-cost-centers')).toBeVisible();
       await tableLoaded(page.getByTestId('table-cost-centers'));
       await shot('cost-centers');
+      // resync all cost centers to LiteLLM
+      await page.getByTestId('btn-resync-cost-centers').click();
+      await expect(page.getByTestId('toast-cost-centers-resynced')).toBeVisible();
       await page.getByTestId('btn-create-cost-center').click();
       const create = page.getByTestId('dialog-create-cost-center');
       await expect(create).toBeVisible();

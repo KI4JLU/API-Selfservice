@@ -5,16 +5,13 @@ import { ApiError, notFound } from '../errors.js';
 import { audit } from './audit.js';
 import { notify, notifyUser } from './notifications.js';
 import { getCostCenter, getDefaultCostCenter, syncTeamMembership } from './cost-centers.js';
-import { blockKeysOfMember, unblockKeysOfMember } from './keys.js';
+import { deleteKeysOfMember } from './keys.js';
 
 // ---------- Cost center members = LiteLLM team members (F-KST-10 to F-KST-13) ----------
 
 type CC = typeof costCenters.$inferSelect;
 type Member = typeof costCenterMembers.$inferSelect;
 type UserRow = typeof user.$inferSelect;
-
-/** Keys of a removed member still hang on the team, so they stay blocked until the person is added again. */
-const REMOVED_REASON = 'cost_center_member_removed';
 
 export async function getMembership(deps: Pick<Deps, 'db'>, userId: string, costCenterId: string): Promise<Member | null> {
   const m = await deps.db.query.costCenterMembers.findFirst({
@@ -203,7 +200,6 @@ export async function addMember(deps: Deps, actor: CurrentUser, costCenterId: st
       await deps.db.update(user).set({ costCenterId: cc.id, updatedAt: deps.now() }).where(eq(user.id, local.id));
     }
   }
-  await unblockKeysOfMember(deps, input.userId, cc.id, REMOVED_REASON);
   await syncTeamMembership(deps, input.userId, cc.id);
   await audit(deps, { actorId: actor.id, action: 'cost_center.member_add', entity: 'cost_center', entityId: cc.id, payload: { userId: input.userId, role: input.role } });
   const vars = { number: cc.number, name: cc.name, actorName: actor.name };
@@ -266,7 +262,7 @@ export async function removeMember(deps: Deps, actor: CurrentUser, costCenterId:
     const def = await getDefaultCostCenter(deps);
     await deps.db.update(user).set({ costCenterId: def.id, updatedAt: deps.now() }).where(eq(user.id, userId));
   }
-  await blockKeysOfMember(deps, userId, cc.id, REMOVED_REASON);
+  await deleteKeysOfMember(deps, actor, userId, cc.id);
   await syncTeamMembership(deps, userId, cc.id);
   await audit(deps, { actorId: actor.id, action: 'cost_center.member_remove', entity: 'cost_center', entityId: cc.id, payload: { userId, role: m.role } });
   const vars = { number: cc.number, name: cc.name, actorName: actor.name };

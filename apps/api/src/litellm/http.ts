@@ -1,4 +1,4 @@
-import type { LiteLLMAdapter, LiteLLMKey, LiteLLMModel, LiteLLMSpendLog, LiteLLMTeam, LiteLLMUser } from './types.js';
+import type { LiteLLMAdapter, LiteLLMKey, LiteLLMModel, LiteLLMSpendLog, LiteLLMTeam, LiteLLMUser, TeamRole } from './types.js';
 import { LiteLLMHttpError } from './types.js';
 
 interface Opts {
@@ -39,6 +39,7 @@ function mapTeam(r: Raw): LiteLLMTeam {
   };
 }
 
+const isPremiumOnly = (e: unknown) => e instanceof LiteLLMHttpError && e.status === 400 && /premium feature/i.test(e.body);
 const isNotFound = (e: unknown) => e instanceof LiteLLMHttpError && (e.status === 404 || (e.status === 400 && /not found|does not exist/i.test(e.body)));
 
 /**
@@ -138,9 +139,6 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
         budget_duration: toDuration(budgetDuration),
       });
     },
-    async blockUser(userId, blocked) {
-      await call('POST', '/user/update', { user_id: userId, blocked });
-    },
 
     // ---------- teams ----------
     async getTeam(teamId) {
@@ -175,12 +173,24 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
       await call('POST', blocked ? '/team/block' : '/team/unblock', { team_id: teamId });
     },
     async setTeamMember(teamId, userId, role) {
+      const assign = async (r: TeamRole) => {
+        try {
+          await call('POST', '/team/member_add', { team_id: teamId, member: [{ user_id: userId, role: r }] });
+        } catch (e) {
+          // already a member -> only the role may differ
+          if (!(e instanceof LiteLLMHttpError && e.status === 400)) throw e;
+          await call('POST', '/team/member_update', { team_id: teamId, user_id: userId, role: r });
+        }
+      };
       try {
-        await call('POST', '/team/member_add', { team_id: teamId, member: [{ user_id: userId, role }] });
+        await assign(role);
+        return role;
       } catch (e) {
-        // already a member -> only the role may differ
-        if (!(e instanceof LiteLLMHttpError && e.status === 400)) throw e;
-        await call('POST', '/team/member_update', { team_id: teamId, user_id: userId, role });
+        // Team admins are a LiteLLM Enterprise feature; without LITELLM_LICENSE the person joins as a plain
+        // member and the cost center admin right lives only in API-Selfservice.
+        if (!(role === 'admin' && isPremiumOnly(e))) throw e;
+        await assign('user');
+        return 'user';
       }
     },
     async removeTeamMember(teamId, userId) {
@@ -238,7 +248,12 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
       await call('POST', '/key/update', body);
     },
     async deleteKey(keyId) {
-      await call('POST', '/key/delete', { keys: [keyId] });
+      try {
+        await call('POST', '/key/delete', { keys: [keyId] });
+      } catch (e) {
+        // already gone, e.g. LiteLLM deletes a member's team keys on /team/member_delete
+        if (!isNotFound(e)) throw e;
+      }
     },
     async listModels() {
       type Cost = { input_cost_per_token?: number | string | null; output_cost_per_token?: number | string | null };

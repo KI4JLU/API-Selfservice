@@ -93,7 +93,6 @@ export interface LiteLLMAdapter {
   createUser(input: { userId: string; email: string; alias?: string; ssoUserId?: string | null }): Promise<{ litellmUserId: string }>;
   updateUser(userId: string, patch: { email?: string; alias?: string; ssoUserId?: string | null }): Promise<void>;
   updateUserBudget(userId: string, input: { maxBudget: number | null; budgetDuration: string | null }): Promise<void>;
-  blockUser(userId: string, blocked: boolean): Promise<void>;
 
   // ---- Teams = cost centers. Budgets and blocks are mirrored here so LiteLLM enforces them natively.
   getTeam(teamId: string): Promise<LiteLLMTeam | null>;
@@ -108,8 +107,8 @@ export interface LiteLLMAdapter {
   }): Promise<{ teamId: string }>;
   updateTeam(teamId: string, patch: { alias?: string; maxBudget?: number | null; budgetDuration?: string | null; models?: string[] }): Promise<void>;
   setTeamBlocked(teamId: string, blocked: boolean): Promise<void>;
-  /** Adds the user to the team or changes their role; idempotent. */
-  setTeamMember(teamId: string, userId: string, role: TeamRole): Promise<void>;
+  /** Adds the user to the team or changes their role; idempotent. Returns the role LiteLLM stored (see http adapter). */
+  setTeamMember(teamId: string, userId: string, role: TeamRole): Promise<TeamRole>;
   /** Removes the user from the team; a no-op when they are not a member. */
   removeTeamMember(teamId: string, userId: string): Promise<void>;
 

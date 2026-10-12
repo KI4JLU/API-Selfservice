@@ -288,17 +288,21 @@ export async function unblockKeysOfCostCenter(deps: Deps, costCenterId: string) 
   await setBlocked(deps, rows, false, null);
 }
 
-/** Keys one user holds on one cost center (F-KST-12: blocked while the user is not a member). */
-export async function blockKeysOfMember(deps: Deps, userId: string, costCenterId: string, reason: string) {
+/**
+ * F-KST-12: removing a member deletes their keys on that cost center. LiteLLM deletes a member's
+ * team keys on /team/member_delete anyway, so they could not be unblocked later.
+ */
+export async function deleteKeysOfMember(deps: Deps, actor: CurrentUser, userId: string, costCenterId: string) {
   const rows = await deps.db.query.apiKeys.findMany({
-    where: and(eq(apiKeys.userId, userId), eq(apiKeys.costCenterId, costCenterId), inArray(apiKeys.status, ['active', 'expired'])),
+    where: and(eq(apiKeys.userId, userId), eq(apiKeys.costCenterId, costCenterId), ne(apiKeys.status, 'deleted')),
   });
-  await setBlocked(deps, rows, true, reason);
-}
-
-export async function unblockKeysOfMember(deps: Deps, userId: string, costCenterId: string, reason: string) {
-  const rows = await deps.db.query.apiKeys.findMany({
-    where: and(eq(apiKeys.userId, userId), eq(apiKeys.costCenterId, costCenterId), eq(apiKeys.status, 'blocked'), eq(apiKeys.blockedReason, reason)),
-  });
-  await setBlocked(deps, rows, false, null);
+  for (const k of rows) {
+    try {
+      await deps.litellm.deleteKey(k.litellmKeyId);
+    } catch (e) {
+      await auditError(deps, { action: 'litellm.delete_key', entity: 'api_key', entityId: k.id, err: e, payload: { reason: 'cost_center_member_removed' } });
+    }
+    await deps.db.update(apiKeys).set({ status: 'deleted', deletedAt: deps.now() }).where(eq(apiKeys.id, k.id));
+    await audit(deps, { actorId: actor.id, action: 'key.delete', entity: 'api_key', entityId: k.id, payload: { reason: 'cost_center_member_removed', userId } });
+  }
 }

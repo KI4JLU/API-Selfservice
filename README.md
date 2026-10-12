@@ -6,12 +6,12 @@ Cost centers in short: an admin creates a cost center and picks its owner (a Lit
 
 ## Stack
 
-| Layer    | Technology                                                                                                                                                                |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Layer    | Technology                                                                                                                                                                               |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Frontend | React 19, TanStack Router/Query/Table, shadcn/ui components styled with tokens copied from the [JLU Design System](https://github.com/KI4JLU/Design-System), Tailwind 4, i18next (de/en) |
-| Backend  | Hono + `@hono/zod-openapi`, Better Auth (Keycloak via generic-oauth), Drizzle ORM, Nodemailer, croner                                                                     |
-| Database | PostgreSQL, dedicated schema (`DB_SCHEMA`, default `api_selfservice`) on the LiteLLM DB host                                                                              |
-| Tests    | Vitest (unit/integration), Playwright (API + UI)                                                                                                                          |
+| Backend  | Hono + `@hono/zod-openapi`, Better Auth (Keycloak via generic-oauth), Drizzle ORM, Nodemailer, croner                                                                                    |
+| Database | PostgreSQL, dedicated schema (`DB_SCHEMA`, default `api_selfservice`) on the LiteLLM DB host                                                                                             |
+| Tests    | Vitest (unit/integration), Playwright (API + UI)                                                                                                                                         |
 
 Structure: `apps/api`, `apps/web`, `packages/shared` (Zod schemas, i18n), `packages/db` (Drizzle schema, migrations), `e2e`.
 
@@ -38,6 +38,15 @@ For local development set `LITELLM_MODE=mock` and `DEV_LOGIN_ENABLED=true` in `.
 
 On startup the API creates the schema, runs migrations, seeds the default cost center `1111 1111`, syncs the models from LiteLLM and mirrors cost center memberships written by migrations to the LiteLLM teams once.
 
+### Local LiteLLM
+
+`pnpm litellm:up` starts LiteLLM (same version as production) with its own Postgres. Proxy and admin UI: http://localhost:4000 (`/ui`, user `admin`, password `sk-local-master`).
+
+- Default config [docker/litellm/config.yaml](docker/litellm/config.yaml): models `local-gpt-4o-mini`, `local-gpt-4o` (priced) and `local-free`. They answer with a mock response, so no provider keys are needed, but LiteLLM still prices the tokens, writes spend logs and enforces budgets.
+- Own config, e.g. the one from Coolify: save it as `docker/litellm/config.local.yaml` (gitignored) and start with `LITELLM_CONFIG=./docker/litellm/config.local.yaml pnpm litellm:up`. `AZURE_API_KEY` comes from the repo `.env`, other provider keys go into `docker/litellm/.env.local` (gitignored); Redis runs as `litellm-redis`. Real providers cost real money.
+- App against the local proxy: `LITELLM_MODE=http`, `LITELLM_BASE_URL=http://localhost:4000`, `LITELLM_API_KEY=sk-local-master` in `.env`.
+- Team admins are a LiteLLM Enterprise feature; without `LITELLM_LICENSE` cost center admins join their team as `user` (warning in the event log).
+
 ## Configuration
 
 All settings are environment variables, see [.env.example](.env.example). Important ones:
@@ -60,7 +69,9 @@ All settings are environment variables, see [.env.example](.env.example). Import
 ```bash
 pnpm typecheck                 # all packages
 pnpm test                      # Vitest (needs Postgres on :5433)
-pnpm test:e2e                  # Playwright (API + UI); written for LITELLM_MODE=mock, see docs/SETUP.md 2.4
+pnpm test:e2e                  # Playwright (API + UI) with LITELLM_MODE=mock and .env.test; stop pnpm dev first
+pnpm litellm:up                # local LiteLLM proxy on :4000 (Docker, profile litellm), see below
+pnpm test:e2e:local            # live suite against the local proxy with .env.test (pnpm test:e2e:live uses .env)
 pnpm db:generate               # new migration from the Drizzle schema
 pnpm --filter @api-selfservice/web build
 docker build -t api-selfservice .     # production image (API + static web)

@@ -342,12 +342,8 @@ export async function deactivateUser(deps: Deps, targetId: string, reason: 'admi
   if (actorId && actorId === targetId) throw new ApiError('SELF_DEACTIVATION');
   if (u.deletedAt) return getUserAdmin(deps, targetId);
   await deps.db.update(user).set({ deletedAt: deps.now(), deletedReason: reason, updatedAt: deps.now() }).where(eq(user.id, targetId));
+  // LiteLLM cannot block a user (its user table has no `blocked` field), so blocking all keys locks the user out.
   await blockAllKeysOfUser(deps, targetId, reason === 'admin' ? 'user_deactivated' : 'affiliation_invalid');
-  try {
-    await deps.litellm.blockUser(targetId, true);
-  } catch (e) {
-    await auditError(deps, { action: 'litellm.block_user', entity: 'user', entityId: targetId, err: e, actorId });
-  }
   // Automatic deactivation (account no longer entitled) is an alert; an admin's decision is a plain change.
   await audit(deps, { actorId, action: 'user.deactivate', entity: 'user', entityId: targetId, payload: { reason }, severity: reason === 'affiliation' ? 'warning' : 'info' });
   const type = reason === 'admin' ? 'user_deactivated' : 'account_invalid_deactivated';
@@ -361,11 +357,6 @@ export async function reactivateUser(deps: Deps, targetId: string, actorId: stri
   if (!u) throw notFound('User');
   if (!u.deletedAt) return getUserAdmin(deps, targetId);
   await deps.db.update(user).set({ deletedAt: null, deletedReason: null, affiliationValid: true, updatedAt: deps.now() }).where(eq(user.id, targetId));
-  try {
-    await deps.litellm.blockUser(targetId, false);
-  } catch (e) {
-    await auditError(deps, { action: 'litellm.unblock_user', entity: 'user', entityId: targetId, err: e, actorId });
-  }
   // Keys stay blocked (F-USR-3); only budget-related blocks are lifted elsewhere.
   await unblockKeysOfUser(deps, targetId, ['none']);
   await audit(deps, { actorId, action: 'user.reactivate', entity: 'user', entityId: targetId });

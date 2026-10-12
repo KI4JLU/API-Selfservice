@@ -69,12 +69,14 @@ web_modules/
 
 # Playwright output
 e2e/test-results/
+e2e/test-results-live/
 e2e/screenshots/
 
 # dotenv environment variable files
 .env
 .env.*
 !.env.example
+!.env.test
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -160,3 +162,7 @@ vite.config.ts.timestamp-*
 /docs/
 .vscode/
 tmp/
+
+# Local LiteLLM: own config and provider keys (docker/litellm/config.yaml is the shared mock config)
+docker/litellm/*.local.yaml
+docker/litellm/.env.local
