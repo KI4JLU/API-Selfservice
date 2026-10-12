@@ -153,7 +153,7 @@ function DashboardPage() {
         </Card>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-3 *:min-w-0">
         <Card>
           <CardHeader>
             <CardTitle>{t('dashboard.topKeys')}</CardTitle>

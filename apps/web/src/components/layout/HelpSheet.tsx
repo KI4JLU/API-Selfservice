@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouterState } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { Me } from '@/lib/queries';
 import { helpSectionForPath } from '@/lib/nav';
 import { helpSections } from '@/docs';
@@ -48,7 +49,7 @@ export function HelpSheet({ me }: { me: Me }) {
             ))}
           </nav>
           <article className="markdown min-w-0 flex-1" data-testid="help-content" data-section={active.id}>
-            <ReactMarkdown>{active.md[lang]}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{active.md[lang]}</ReactMarkdown>
           </article>
         </div>
       </SheetContent>

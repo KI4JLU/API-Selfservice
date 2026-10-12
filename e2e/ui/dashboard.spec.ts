@@ -99,6 +99,9 @@ test.describe('login and dashboard', () => {
     await page.getByTestId('btn-help').click();
     await expect(page.getByTestId('sheet-help')).toBeVisible();
     await expect(page.getByTestId('help-content')).toHaveAttribute('data-section', 'keys');
+    // Markdown tables are rendered as tables, not as raw pipe text
+    await expect(page.getByTestId('help-content').locator('table').first()).toBeVisible();
+    await expect(page.getByTestId('help-content')).not.toContainText('|---|');
     await page.getByTestId('help-section-profile').click();
     await expect(page.getByTestId('help-content')).toHaveAttribute('data-section', 'profile');
     await page.keyboard.press('Escape');
