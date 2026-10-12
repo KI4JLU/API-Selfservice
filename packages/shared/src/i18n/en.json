@@ -162,6 +162,7 @@
     "budgetPeriodHint": "Monthly: the budget applies per month and starts again afterwards. No time window: the budget applies once for the key's whole lifetime.",
     "perMonth": "{{amount}} / month",
     "paidRequiresCostCenter": "Paid models require an approved cost center.",
+    "noModelsAvailable": "No model is available for this cost center. Please contact an admin or choose another cost center.",
     "extended": "Key extended until {{date}}",
     "created": "Key created",
     "deleted": "Key deleted",

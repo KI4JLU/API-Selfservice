@@ -162,6 +162,7 @@
     "budgetPeriodHint": "Monatlich: Das Budget gilt pro Monat und startet danach neu. Ohne Zeitfenster: Das Budget gilt einmal für die ganze Laufzeit.",
     "perMonth": "{{amount}} / Monat",
     "paidRequiresCostCenter": "Kostenpflichtige Modelle sind nur mit einer freigegebenen Kostenstelle wählbar.",
+    "noModelsAvailable": "Für diese Kostenstelle ist kein Modell freigegeben. Bitte wenden Sie sich an einen Admin oder wählen Sie eine andere Kostenstelle.",
     "extended": "Key verlängert bis {{date}}",
     "created": "Key angelegt",
     "deleted": "Key gelöscht",

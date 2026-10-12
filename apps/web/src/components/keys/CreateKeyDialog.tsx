@@ -71,6 +71,8 @@ export function CreateKeyDialog({ open, onOpenChange, me, onCreated }: { open: b
   const selectedCc = ccOptions.find((o) => o.value === costCenterId);
   const isDefaultCc = (selectedCc?.number ?? me.costCenter.number) === DEFAULT_COST_CENTER;
   const lang = (i18n.resolvedLanguage ?? 'de').slice(0, 2);
+  // Without any offered model no key can be created (e.g. no free model for the default cost center).
+  const noModels = providers.isSuccess && providers.data.length === 0;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -121,6 +123,11 @@ export function CreateKeyDialog({ open, onOpenChange, me, onCreated }: { open: b
             {isDefaultCc ? (
               <Banner variant="info" testId="hint-paid-models">
                 {t('keys.paidRequiresCostCenter')}
+              </Banner>
+            ) : null}
+            {noModels ? (
+              <Banner variant="warning" testId="hint-no-models">
+                {t('keys.noModelsAvailable')}
               </Banner>
             ) : null}
             <TabsContent value="models" className="rounded-md border" data-testid="list-models">
@@ -216,7 +223,7 @@ export function CreateKeyDialog({ open, onOpenChange, me, onCreated }: { open: b
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t('common.cancel')}
             </Button>
-            <Button type="submit" loading={create.isPending} data-testid="btn-submit-create-key">
+            <Button type="submit" loading={create.isPending} disabled={noModels} data-testid="btn-submit-create-key">
               {t('common.create')}
             </Button>
           </DialogFooter>
