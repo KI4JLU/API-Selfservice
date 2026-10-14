@@ -16,6 +16,8 @@ import {
   CostCenterResyncResultSchema,
   CostCenterLookupSchema,
   CreatedApiKeySchema,
+  RenewApiKeySchema,
+  UpdateApiKeySchema,
   KeyTestModelsSchema,
   KeyTestResultSchema,
   LitellmUserSchema,
@@ -268,11 +270,20 @@ export function useCreateKey() {
   });
 }
 
-export function useExtendKey() {
+export function useUpdateKey() {
   const inv = useInvalidate();
   return useMutation({
-    mutationFn: (id: string) => api.post(`/api-keys/${id}/extend`, {}, ApiKeySchema),
+    mutationFn: ({ id, body }: { id: string; body: z.infer<typeof UpdateApiKeySchema> }) => api.patch(`/api-keys/${id}`, body, ApiKeySchema),
     onSuccess: () => inv(qk.keys),
+  });
+}
+
+/** #11: a new key with the same settings; the old one stays until it expires unless revokeOld. */
+export function useRenewKey() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: z.input<typeof RenewApiKeySchema> }) => api.post(`/api-keys/${id}/renew`, body, CreatedApiKeySchema),
+    onSuccess: () => inv(qk.keys, qk.me),
   });
 }
 

@@ -38,6 +38,11 @@ model_list:
       input_cost_per_token: 0
       output_cost_per_token: 0
 
+litellm_settings:
+  # #11: no key may run longer than the portal's key lifetime (KEY_LIFETIME_DAYS = 182); also set in production
+  upperbound_key_generate_params:
+    duration: '182d'
+
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
   database_url: os.environ/DATABASE_URL

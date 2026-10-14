@@ -55,7 +55,7 @@ test.describe('API keys menu item', () => {
 });
 
 test.describe('API keys', () => {
-  test('create key shows the secret once, then extend and delete', async ({ page }) => {
+  test('create key shows the secret once, then change its expiry, renew and delete (#11)', async ({ page }) => {
     await devLogin(page, { email: uniqueEmail('keys'), name: 'Key User' });
     await page.getByTestId('nav-keys').click();
     await expect(page.getByTestId('page-keys')).toBeVisible();
@@ -96,8 +96,26 @@ test.describe('API keys', () => {
     await expect(row.getByTestId('key-cost-center')).not.toContainText('1111');
     await expect(row).toContainText(/\/ (Monat|month)/);
 
-    await row.getByTestId('btn-extend-key').click();
-    await expect(page.getByTestId('toast-key-extended')).toBeVisible();
+    // shorten the expiry (#11)
+    await row.getByTestId('btn-key-expiry').click();
+    const expiry = page.getByTestId('dialog-key-expiry');
+    const tomorrow = new Date(Date.now() + 86_400_000);
+    const date = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+    await expiry.getByTestId('input-key-expiry').fill(date);
+    await expiry.getByTestId('btn-save-key-expiry').click();
+    await expect(page.getByTestId('toast-key-expiry-changed')).toBeVisible();
+
+    // renew: a second key with a new secret and the same name; delete the old one right away
+    await row.getByTestId('btn-renew-key').click();
+    const renew = page.getByTestId('dialog-renew-key');
+    await renew.getByTestId('checkbox-revoke-old').click();
+    await renew.getByTestId('btn-submit-renew-key').click();
+    await expect(page.getByTestId('toast-key-renewed')).toBeVisible();
+    const renewedSecret = page.getByTestId('dialog-key-secret');
+    await expect(renewedSecret).toBeVisible();
+    expect(((await renewedSecret.getByTestId('key-secret').textContent()) ?? '').trim()).not.toBe(secretText);
+    await renewedSecret.getByTestId('btn-close-secret').click();
+    await expect(page.getByTestId('table-keys').locator('tr', { hasText: 'Playwright key' })).toHaveCount(1);
 
     await row.getByTestId('btn-delete-key').click();
     await expect(page.getByTestId('dialog-delete-key')).toBeVisible();

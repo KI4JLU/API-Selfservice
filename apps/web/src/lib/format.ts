@@ -77,3 +77,15 @@ export function dateToIso(date: string, endOfDay = false): string {
   if (endOfDay) d.setUTCDate(d.getUTCDate() + 1);
   return d.toISOString();
 }
+
+/** Local calendar date (YYYY-MM-DD) for `<input type="date">`, `days` after `from`. */
+export function localDateInput(from: Date | string, days = 0): string {
+  const d = new Date(from);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** End of a local calendar day as ISO timestamp: a key "valid until" a date runs through that whole day. */
+export function endOfLocalDay(date: string): string {
+  return new Date(`${date}T23:59:59.999`).toISOString();
+}

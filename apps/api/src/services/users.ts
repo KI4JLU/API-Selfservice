@@ -187,6 +187,7 @@ export async function getMe(deps: Deps, cu: CurrentUser) {
     managedCostCenters: await managedRefs(deps, u.id),
     memberCostCenters: await memberCostCenters(deps, u.id),
     pendingRequest: p ? { id: p.id, number: p.number, name: p.name, status: p.status, reason: p.reason, createdAt: p.createdAt.toISOString() } : null,
+    keyLifetimeDays: deps.env.KEY_LIFETIME_DAYS,
   };
 }
 

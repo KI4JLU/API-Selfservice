@@ -14,6 +14,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TierBadge } from '@/components/StatusBadge';
 import { ModelPrice } from '@/components/ModelPrice';
 import { Banner } from '@/components/ui/page';
+import { endOfLocalDay, localDateInput } from '@/lib/format';
+import { KeyExpiryField } from './KeyExpiry';
 
 export function CreateKeyDialog({ open, onOpenChange, me, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; me: Me; onCreated: (k: CreatedApiKey) => void }) {
   const { t, i18n } = useTranslation();
@@ -25,6 +27,9 @@ export function CreateKeyDialog({ open, onOpenChange, me, onCreated }: { open: b
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const [budget, setBudget] = useState('');
   const [budgetPeriod, setBudgetPeriod] = useState<KeyBudgetPeriod | 'once'>('monthly');
+  // #11: valid until, by default the longest allowed validity
+  const maxExpiry = localDateInput(new Date(), me.keyLifetimeDays);
+  const [expiry, setExpiry] = useState(maxExpiry);
   const providers = useProviders(costCenterId);
   const create = useCreateKey();
 
@@ -38,8 +43,9 @@ export function CreateKeyDialog({ open, onOpenChange, me, onCreated }: { open: b
       setOpenGroups(new Set());
       setBudget('');
       setBudgetPeriod('monthly');
+      setExpiry(localDateInput(new Date(), me.keyLifetimeDays));
     }
-  }, [open, me.costCenter.id]);
+  }, [open, me.costCenter.id, me.keyLifetimeDays]);
 
   useEffect(() => {
     // Drop models and providers that are no longer offered for the selected cost center.
@@ -90,7 +96,7 @@ export function CreateKeyDialog({ open, onOpenChange, me, onCreated }: { open: b
     }
     const b = budget.trim() === '' ? null : Number(budget);
     const period = b === null || budgetPeriod === 'once' ? null : budgetPeriod;
-    const created = await create.mutateAsync({ name: name.trim(), costCenterId, models, providers: selectedProviders, budget: b, budgetPeriod: period }).catch(() => null);
+    const created = await create.mutateAsync({ name: name.trim(), costCenterId, models, providers: selectedProviders, budget: b, budgetPeriod: period, expiresAt: endOfLocalDay(expiry) }).catch(() => null);
     if (created) {
       toast.success(t('keys.created'));
       onOpenChange(false);
@@ -204,6 +210,7 @@ export function CreateKeyDialog({ open, onOpenChange, me, onCreated }: { open: b
               )}
             </div>
           </div>
+          <KeyExpiryField id="key-expires" value={expiry} onChange={setExpiry} max={maxExpiry} testId="input-key-expires" />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t('keys.budget')} htmlFor="key-budget" hint={t('keys.budgetHint')}>
               <Input id="key-budget" type="number" min={0} step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder={t('common.unlimited')} data-testid="input-key-budget" />

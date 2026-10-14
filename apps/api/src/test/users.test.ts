@@ -128,7 +128,7 @@ describe('user administration', () => {
     // keys stay blocked and must be recreated
     expect((await u.get('/api-keys')).body.items[0].status).toBe('blocked');
     expect(t.mock.keys.get(litellmKeyId)!.blocked).toBe(true);
-    expectError(await u.post(`/api-keys/${k.id}/extend`), 409, 'KEY_NOT_ACTIVE');
+    expectError(await u.post(`/api-keys/${k.id}/renew`, {}), 409, 'KEY_NOT_ACTIVE');
     expect((await u.post('/api-keys', { name: 'k2', models: ['gpt-4o'], costCenterId: cc.id })).status).toBe(201);
     expect((await admin.post(`/admin/users/${u.userId}/reactivate`)).status).toBe(200);
     expectError(await admin.post('/admin/users/nope/reactivate'), 404, 'NOT_FOUND');

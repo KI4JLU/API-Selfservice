@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { CalendarClock, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useDeleteKey, useExtendKey, useKeys, type ApiKey, type CreatedApiKey } from '@/lib/queries';
+import { useDeleteKey, useKeys, type ApiKey, type CreatedApiKey } from '@/lib/queries';
 import { fmtDate, fmtMoney } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page';
@@ -15,8 +15,11 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { CreateKeyDialog } from '@/components/keys/CreateKeyDialog';
 import { KeySecretDialog } from '@/components/keys/KeySecretDialog';
 import { KeyModels } from '@/components/keys/KeyModels';
+import { KeyExpiryDialog, RenewKeyDialog } from '@/components/keys/KeyExpiry';
 
 export const Route = createFileRoute('/_app/keys')({
+  // #11: the expiry mails link to /keys?renew=<key id>
+  validateSearch: (search: Record<string, unknown>): { renew?: string } => (typeof search.renew === 'string' ? { renew: search.renew } : {}),
   component: KeysPage,
 });
 
@@ -24,15 +27,22 @@ function KeysPage() {
   const { t } = useTranslation();
   const { me } = Route.useRouteContext();
   const keys = useKeys();
-  const extend = useExtendKey();
   const del = useDeleteKey();
+  const { renew: renewId } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const [toRenew, setToRenew] = useState<ApiKey | null>(null);
+  const [toChangeExpiry, setToChangeExpiry] = useState<ApiKey | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [created, setCreated] = useState<CreatedApiKey | null>(null);
   const [toDelete, setToDelete] = useState<ApiKey | null>(null);
 
-  const onExtend = async (k: ApiKey) => {
-    const res = await extend.mutateAsync(k.id).catch(() => null);
-    if (res) toast.success(t('keys.extended', { date: fmtDate(res.expiresAt) }), { testId: 'toast-key-extended' });
+  useEffect(() => {
+    const k = renewId ? keys.data?.items.find((x) => x.id === renewId) : undefined;
+    if (k) setToRenew(k);
+  }, [renewId, keys.data]);
+  const closeRenew = () => {
+    setToRenew(null);
+    if (renewId) void navigate({ search: {}, replace: true });
   };
 
   const onDelete = async () => {
@@ -86,10 +96,22 @@ function KeysPage() {
         header: t('common.actions'),
         cell: ({ row }) => (
           <div className="flex justify-end gap-1">
-            <WithTooltip text={t('keys.extendHint')}>
-              <Button variant="outline" size="sm" onClick={() => onExtend(row.original)} disabled={extend.isPending || row.original.status === 'deleted'} data-testid="btn-extend-key">
+            <WithTooltip text={t('keys.changeExpiry')}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setToChangeExpiry(row.original)}
+                disabled={row.original.status === 'deleted' || row.original.status === 'blocked'}
+                aria-label={t('keys.changeExpiry')}
+                data-testid="btn-key-expiry"
+              >
+                <CalendarClock />
+              </Button>
+            </WithTooltip>
+            <WithTooltip text={t('keys.renewTooltip')}>
+              <Button variant="outline" size="sm" onClick={() => setToRenew(row.original)} disabled={row.original.status === 'deleted' || row.original.status === 'blocked'} data-testid="btn-renew-key">
                 <RefreshCw />
-                <span className="hidden sm:inline">{t('keys.extend')}</span>
+                <span className="hidden sm:inline">{t('keys.renew')}</span>
               </Button>
             </WithTooltip>
             <Button
@@ -109,7 +131,7 @@ function KeysPage() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, extend.isPending],
+    [t],
   );
 
   return (
@@ -128,6 +150,8 @@ function KeysPage() {
 
       <CreateKeyDialog open={createOpen} onOpenChange={setCreateOpen} me={me} onCreated={setCreated} />
       <KeySecretDialog created={created} onClose={() => setCreated(null)} />
+      <RenewKeyDialog apiKey={toRenew} lifetimeDays={me.keyLifetimeDays} onClose={closeRenew} onRenewed={setCreated} />
+      <KeyExpiryDialog apiKey={toChangeExpiry} onClose={() => setToChangeExpiry(null)} />
       <ConfirmDialog
         open={!!toDelete}
         onOpenChange={(o) => !o && setToDelete(null)}

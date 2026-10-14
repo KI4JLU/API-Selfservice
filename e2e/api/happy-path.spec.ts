@@ -168,10 +168,11 @@ test.describe('API happy path', () => {
     expect(detail.summary.keyCount).toBeGreaterThanOrEqual(1);
   });
 
-  test('user extends and deletes the key', async () => {
-    const ext = await user.post(`/api/v1/api-keys/${keyId}/extend`);
-    expect(ext.status(), await ext.text()).toBe(200);
-    expect((await ext.json()).lastExtendedAt).toMatch(ISO);
+  test('user renews and deletes the key (#11)', async () => {
+    const renewed = await user.post(`/api/v1/api-keys/${keyId}/renew`, { data: {} });
+    expect(renewed.status(), await renewed.text()).toBe(201);
+    expect((await renewed.json()).expiresAt).toMatch(ISO);
+    expect((await user.delete(`/api/v1/api-keys/${(await renewed.json()).id}`)).status()).toBe(200);
     const del = await user.delete(`/api/v1/api-keys/${keyId}`);
     expect(del.status()).toBe(200);
     expect(await del.json()).toEqual({ ok: true });

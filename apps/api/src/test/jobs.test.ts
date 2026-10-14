@@ -28,24 +28,29 @@ describe('jobs', () => {
   }
 
   describe('runKeyExpiry', () => {
-    it('warns once at 14d and 1d, expires and blocks at the expiry date; extend reactivates', async () => {
+    it('warns once at 7d and 1d with a renew link, marks the key expired without blocking it in LiteLLM (#11)', async () => {
       const { u, k, litellmKeyId } = await userWithKey('expiring');
       expect(new Date(k.expiresAt).getTime()).toBe(at(182).getTime());
 
       // far away: nothing
       t.clock.now = at(100);
       expect(await runKeyExpiry(t.deps)).toEqual({ warned: 0, expired: 0 });
-      expect(await t.notificationsOf('key_expires_14d', u.email)).toHaveLength(0);
+      expect(await t.notificationsOf('key_expires_7d', u.email)).toHaveLength(0);
 
-      // 13 days before expiry: 14d warning, once
+      // 13 days before expiry: still nothing since #11
       t.clock.now = at(169);
+      expect(await runKeyExpiry(t.deps)).toEqual({ warned: 0, expired: 0 });
+
+      // 6 days before expiry: 7d warning, once, with a link that opens the renewal
+      t.clock.now = at(176);
       expect(await runKeyExpiry(t.deps)).toEqual({ warned: 1, expired: 0 });
-      expect(await t.notificationsOf('key_expires_14d', u.email)).toHaveLength(1);
-      const mail = t.mailer.sent.find((m) => m.to === u.email && m.subject.includes('14 Tagen'));
+      expect(await t.notificationsOf('key_expires_7d', u.email)).toHaveLength(1);
+      const mail = t.mailer.sent.find((m) => m.to === u.email && m.subject.includes('7 Tagen'));
       expect(mail?.text).toContain('expiring');
       expect(mail?.text).toContain(k.expiresAt.slice(0, 10));
+      expect(mail?.text).toContain(`/keys?renew=${k.id}`);
       expect(await runKeyExpiry(t.deps)).toEqual({ warned: 0, expired: 0 });
-      expect(await t.notificationsOf('key_expires_14d', u.email)).toHaveLength(1);
+      expect(await t.notificationsOf('key_expires_7d', u.email)).toHaveLength(1);
       expect((await t.keyRow(k.id)).notified14d).toBe(true);
       expect((await t.keyRow(k.id)).status).toBe('active');
 
@@ -55,9 +60,8 @@ describe('jobs', () => {
       expect(await t.notificationsOf('key_expires_1d', u.email)).toHaveLength(1);
       expect(await runKeyExpiry(t.deps)).toEqual({ warned: 0, expired: 0 });
       expect(await t.notificationsOf('key_expires_1d', u.email)).toHaveLength(1);
-      expect(t.mock.keys.get(litellmKeyId)!.blocked).toBe(false);
 
-      // expiry: blocked in LiteLLM, status expired, mail
+      // expiry: status expired and a mail; LiteLLM enforces `expires` itself, no block
       t.clock.now = at(183);
       const r = await admin.post('/admin/jobs/key-expiry');
       expect(r.status).toBe(200);
@@ -65,28 +69,20 @@ describe('jobs', () => {
       const row = await t.keyRow(k.id);
       expect(row.status).toBe('expired');
       expect(row.blockedReason).toBe('expired');
-      expect(t.mock.keys.get(litellmKeyId)!.blocked).toBe(true);
+      expect(t.mock.keys.get(litellmKeyId)!.blocked).toBe(false);
+      expect(t.mock.keys.get(litellmKeyId)!.expires).toBe(k.expiresAt);
       expect(await t.notificationsOf('key_expired', u.email)).toHaveLength(1);
       expect((await u.get('/api-keys')).body.items[0].status).toBe('expired');
       // a second run does nothing more
       expect(await runKeyExpiry(t.deps)).toEqual({ warned: 0, expired: 0 });
       expect(await t.notificationsOf('key_expired', u.email)).toHaveLength(1);
 
-      // extend after expiry reactivates for another lifetime from now (F-KEY-5a)
-      const ext = await u.post(`/api-keys/${k.id}/extend`);
-      expect(ext.status).toBe(200);
-      expect(ext.body.status).toBe('active');
-      expect(new Date(ext.body.expiresAt).getTime()).toBe(at(183 + 182).getTime());
-      expect(ext.body.lastExtendedAt).toBe(at(183).toISOString());
-      expect(t.mock.keys.get(litellmKeyId)!.blocked).toBe(false);
-      const ext2 = await t.keyRow(k.id);
-      expect(ext2.notified14d).toBe(false);
-      expect(ext2.notified1d).toBe(false);
-      expect(ext2.blockedReason).toBeNull();
-      // and the cycle starts again
-      t.clock.now = at(183 + 170);
-      expect(await runKeyExpiry(t.deps)).toEqual({ warned: 1, expired: 0 });
-      expect(await t.notificationsOf('key_expires_14d', u.email)).toHaveLength(2);
+      // the same secret cannot run past creation + 182 days; a renewal gives a new key
+      expectError(await u.patch(`/api-keys/${k.id}`, { expiresAt: at(190).toISOString() }), 422, 'KEY_EXPIRY_OUT_OF_RANGE');
+      const renewed = await u.post(`/api-keys/${k.id}/renew`, {});
+      expect(renewed.status).toBe(201);
+      expect(renewed.body.status).toBe('active');
+      expect(new Date(renewed.body.expiresAt).getTime()).toBe(at(183 + 182).getTime());
     });
 
     it('a key that jumps straight past the 1d threshold gets only the 1d warning; blocked keys are ignored', async () => {
@@ -96,7 +92,7 @@ describe('jobs', () => {
       t.clock.now = at(181.9);
       expect(await runKeyExpiry(t.deps)).toEqual({ warned: 1, expired: 0 });
       expect(await t.notificationsOf('key_expires_1d', u.email)).toHaveLength(1);
-      expect(await t.notificationsOf('key_expires_14d', u.email)).toHaveLength(0);
+      expect(await t.notificationsOf('key_expires_7d', u.email)).toHaveLength(0);
       expect((await t.keyRow(k.id)).notified14d).toBe(true);
       t.clock.now = at(200);
       expect(await runKeyExpiry(t.deps)).toEqual({ warned: 0, expired: 1 });

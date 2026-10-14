@@ -16,6 +16,27 @@ function mask(secret: string) {
   return `${secret.slice(0, 6)}…${secret.slice(-4)}`;
 }
 
+const DAY = 86400000;
+
+/** #11: every key is rotated at the latest KEY_LIFETIME_DAYS after its creation, also after changing its expiry. */
+function maxExpiry(deps: Deps, createdAt: Date) {
+  return new Date(createdAt.getTime() + deps.env.KEY_LIFETIME_DAYS * DAY);
+}
+
+/**
+ * The requested expiry, by default the latest allowed one. A "valid until" date picked in the UI ends at the end of
+ * that day, which on the last allowed day lies a few hours after the limit; such a date is capped to the limit.
+ */
+function resolveExpiry(deps: Deps, createdAt: Date, requested?: string) {
+  const max = maxExpiry(deps, createdAt);
+  if (!requested) return max;
+  const d = new Date(requested);
+  if (d.getTime() <= deps.now().getTime() || d.getTime() > max.getTime() + DAY) {
+    throw new ApiError('KEY_EXPIRY_OUT_OF_RANGE', `The expiry must lie after now and at most ${deps.env.KEY_LIFETIME_DAYS} days after the key was created`);
+  }
+  return d > max ? max : d;
+}
+
 /** The key's models grouped by provider; models without a known provider come last. */
 async function modelGroups(deps: Deps, models: string[]) {
   const rows = models.length ? await deps.db.query.providers.findMany({ where: inArray(providers.modelName, models), columns: { modelName: true, provider: true } }) : [];
@@ -42,9 +63,11 @@ export async function keyView(deps: Deps, k: KeyRow) {
     budgetPeriod: k.budgetPeriod,
     // F-KEY-11: a monthly budget is compared with this month's spend
     spend: await spendForKey(deps, k.id, k.budgetPeriod ? currentPeriod(k.budgetPeriod, deps.now()) : undefined),
-    status: k.status,
+    // LiteLLM refuses an expired key right away (#11); the expiry job marks it later
+    status: (k.status === 'active' && k.expiresAt <= deps.now() ? 'expired' : k.status) as KeyStatus,
     createdAt: k.createdAt.toISOString(),
     expiresAt: k.expiresAt.toISOString(),
+    maxExpiresAt: maxExpiry(deps, k.createdAt).toISOString(),
     lastExtendedAt: k.lastExtendedAt?.toISOString() ?? null,
   };
 }
@@ -82,8 +105,11 @@ function missingProviderModels(allowed: { modelName: string; provider: string | 
 export async function createKey(
   deps: Deps,
   cu: CurrentUser,
-  input: { name: string; models: string[]; providers: string[]; costCenterId: string; budget?: number | null; budgetPeriod?: KeyBudgetPeriod | null },
+  input: { name: string; models: string[]; providers: string[]; costCenterId: string; budget?: number | null; budgetPeriod?: KeyBudgetPeriod | null; expiresAt?: string },
+  /** set by a renewal: the old key's budget does not count, and the LiteLLM alias (unique there) gets a suffix */
+  opts: { renewOf?: string } = {},
 ) {
+  const expiresAt = resolveExpiry(deps, deps.now(), input.expiresAt);
   const cc = await getCostCenter(deps, input.costCenterId);
   if (cc.status !== 'approved') throw new ApiError('COST_CENTER_NOT_APPROVED');
   if (!(await isMember(deps, cu.id, cc))) throw new ApiError('COST_CENTER_NOT_MEMBER');
@@ -108,15 +134,14 @@ export async function createKey(
   models.push(...missingProviderModels(allowed, keyProviders, models));
   const budgetState = await getBudgetState(deps, cu.id);
   if (budgetState.blocked || cc.blockedAt) throw new ApiError('KEY_NOT_ACTIVE', 'Budget exhausted');
-  await assertKeyBudgets(deps, cu.id, input.budget ?? null);
+  await assertKeyBudgets(deps, cu.id, input.budget ?? null, opts.renewOf);
   // A period only makes sense with an amount (F-KEY-11).
   const budgetPeriod = input.budget == null ? null : (input.budgetPeriod ?? null);
-  const expiresAt = new Date(deps.now().getTime() + deps.env.KEY_LIFETIME_DAYS * 86400000);
   // Keys hang on the cost center's LiteLLM team (E-8); the user id is shared with LiteLLM (E-7).
   const created = await deps.litellm.createKey({
     litellmUserId: cu.id,
     teamId: await ensureTeam(deps, cc),
-    alias: `${cu.email}:${input.name}`,
+    alias: `${cu.email}:${input.name}${opts.renewOf ? ` #${crypto.randomUUID().slice(0, 6)}` : ''}`,
     models,
     maxBudget: input.budget ?? null,
     budgetDuration: budgetDurationFor(budgetPeriod),
@@ -137,14 +162,26 @@ export async function createKey(
       budget: input.budget == null ? null : String(input.budget),
       budgetPeriod,
       expiresAt,
+      // the 6-month limit (#11) is counted from here, on the same clock as expiresAt
+      createdAt: deps.now(),
     })
     .returning();
-  await audit(deps, { actorId: cu.id, action: 'key.create', entity: 'api_key', entityId: row!.id, payload: { name: input.name, models, providers: keyProviders, costCenter: cc.number } });
+  await audit(deps, {
+    actorId: cu.id,
+    action: opts.renewOf ? 'key.renew' : 'key.create',
+    entity: 'api_key',
+    entityId: row!.id,
+    payload: { name: input.name, models, providers: keyProviders, costCenter: cc.number, expiresAt, ...(opts.renewOf ? { renewedFrom: opts.renewOf } : {}) },
+  });
   return { ...(await keyView(deps, row!)), secret: created.secret };
 }
 
-export async function updateKey(deps: Deps, cu: CurrentUser, id: string, input: { budget?: number | null; budgetPeriod?: KeyBudgetPeriod | null; name?: string }) {
+export async function updateKey(deps: Deps, cu: CurrentUser, id: string, input: { budget?: number | null; budgetPeriod?: KeyBudgetPeriod | null; name?: string; expiresAt?: string }) {
   const k = await getOwnKey(deps, cu, id);
+  if (k.status === 'deleted') throw new ApiError('KEY_NOT_ACTIVE', 'Key is deleted');
+  const expiresAt = input.expiresAt !== undefined ? resolveExpiry(deps, k.createdAt, input.expiresAt) : undefined;
+  // #11: an expired key with a new date in the allowed range runs again; keys blocked for another reason stay blocked
+  const revives = expiresAt !== undefined && (k.status === 'expired' || k.blockedReason === 'expired');
   if (input.budget !== undefined) await assertKeyBudgets(deps, cu.id, input.budget, k.id);
   // F-KEY-11: removing the amount also removes the period.
   const budget = input.budget !== undefined ? input.budget : k.budget === null ? null : Number(k.budget);
@@ -154,6 +191,9 @@ export async function updateKey(deps: Deps, cu: CurrentUser, id: string, input: 
     maxBudget: input.budget,
     ...(periodChanged ? { budgetDuration: budgetDurationFor(budgetPeriod) } : {}),
     alias: input.name ? `${cu.email}:${input.name}` : undefined,
+    ...(expiresAt ? { expiresAt } : {}),
+    // keys blocked at expiry before #11 are unblocked again
+    ...(revives && k.blockedReason === 'expired' ? { blocked: false } : {}),
   });
   const [row] = await deps.db
     .update(apiKeys)
@@ -161,6 +201,14 @@ export async function updateKey(deps: Deps, cu: CurrentUser, id: string, input: 
       ...(input.budget !== undefined ? { budget: input.budget == null ? null : String(input.budget) } : {}),
       ...(periodChanged ? { budgetPeriod } : {}),
       ...(input.name ? { name: input.name } : {}),
+      ...(expiresAt
+        ? {
+            expiresAt,
+            // warnings start over for a later date
+            ...(expiresAt > k.expiresAt ? { notified14d: false, notified1d: false } : {}),
+            ...(revives ? { status: 'active' as const, blockedReason: null } : {}),
+          }
+        : {}),
     })
     .where(eq(apiKeys.id, id))
     .returning();
@@ -175,19 +223,33 @@ export async function deleteKey(deps: Deps, cu: CurrentUser, id: string) {
   await audit(deps, { actorId: cu.id, action: 'key.delete', entity: 'api_key', entityId: id });
 }
 
-/** F-KEY-5a: extend by the configured lifetime from now; reactivates expired keys. */
-export async function extendKey(deps: Deps, cu: CurrentUser, id: string) {
+/**
+ * #11 (replaces extending, F-KEY-5a): a new key with a new secret and the same settings. The old key stays valid
+ * until its own expiry, so applications can switch over, unless `revokeOld` deletes it right away.
+ */
+export async function renewKey(deps: Deps, cu: CurrentUser, id: string, input: { expiresAt?: string; revokeOld?: boolean }) {
   const k = await getOwnKey(deps, cu, id);
-  if (k.status === 'blocked' && k.blockedReason !== 'expired') throw new ApiError('KEY_NOT_ACTIVE', 'Key is blocked');
-  const expiresAt = new Date(deps.now().getTime() + deps.env.KEY_LIFETIME_DAYS * 86400000);
-  await deps.litellm.updateKey(k.litellmKeyId, { expiresAt, blocked: false });
-  const [row] = await deps.db
-    .update(apiKeys)
-    .set({ expiresAt, lastExtendedAt: deps.now(), status: 'active', blockedReason: null, notified14d: false, notified1d: false })
-    .where(eq(apiKeys.id, id))
-    .returning();
-  await audit(deps, { actorId: cu.id, action: 'key.extend', entity: 'api_key', entityId: id, payload: { expiresAt } });
-  return keyView(deps, row!);
+  if (k.status === 'deleted' || (k.status === 'blocked' && k.blockedReason !== 'expired')) throw new ApiError('KEY_NOT_ACTIVE', 'Only active or expired keys can be renewed');
+  // Models no longer released on the cost center are left out; a provider brings its current models again.
+  const allowed = await allowedModelsForCostCenter(deps, await getCostCenter(deps, k.costCenterId));
+  const providerModels = new Set(missingProviderModels(allowed, k.providers, []));
+  const models = k.models.filter((m) => !providerModels.has(m) && allowed.some((a) => a.modelName === m));
+  const created = await createKey(
+    deps,
+    cu,
+    {
+      name: k.name,
+      models,
+      providers: k.providers,
+      costCenterId: k.costCenterId,
+      budget: k.budget === null ? null : Number(k.budget),
+      budgetPeriod: k.budgetPeriod,
+      expiresAt: input.expiresAt,
+    },
+    { renewOf: k.id },
+  );
+  if (input.revokeOld) await deleteKey(deps, cu, k.id);
+  return created;
 }
 
 /**

@@ -139,33 +139,86 @@ describe('api keys', () => {
     // gone for further operations
     expectError(await user.delete(`/api-keys/${k.id}`), 404, 'NOT_FOUND');
     expectError(await user.patch(`/api-keys/${k.id}`, { name: 'x' }), 404, 'NOT_FOUND');
-    expectError(await user.post(`/api-keys/${k.id}/extend`), 404, 'NOT_FOUND');
+    expectError(await user.post(`/api-keys/${k.id}/renew`, {}), 404, 'NOT_FOUND');
     expect((await admin.get('/admin/api-keys')).body.items.find((x: { id: string }) => x.id === k.id)).toBeUndefined();
     expect((await admin.get('/admin/api-keys?status=deleted')).body.items.find((x: { id: string }) => x.id === k.id)).toBeDefined();
   });
 
-  it('extend sets expiresAt to now + KEY_LIFETIME_DAYS and resets the expiry notifications', async () => {
-    const k = (await create(user, { name: 'extend' })).body;
-    await t.db.update(apiKeys).set({ notified14d: true, notified1d: true }).where(eq(apiKeys.id, k.id));
-    t.clock.now = new Date(t.clock.now.getTime() + 10 * DAY);
-    const r = await user.post(`/api-keys/${k.id}/extend`);
-    expect(r.status).toBe(200);
-    const v = expectShape(ApiKeySchema, r.body);
-    expect(new Date(v.expiresAt).getTime()).toBe(t.clock.now.getTime() + 182 * DAY);
-    expect(v.lastExtendedAt).toBe(t.clock.now.toISOString());
-    expect(v.status).toBe('active');
-    const row = await t.keyRow(k.id);
-    expect(row.notified14d).toBe(false);
-    expect(row.notified1d).toBe(false);
-    expect(t.mock.keys.get(row.litellmKeyId)!.expires).toBe(v.expiresAt);
-    t.clock.now = new Date(t.clock.now.getTime() - 10 * DAY);
+  describe('expiry and renewal (#11)', () => {
+    const iso = (days: number) => new Date(t.clock.now.getTime() + days * DAY).toISOString();
+
+    it('the expiry is chosen at creation, at most KEY_LIFETIME_DAYS ahead', async () => {
+      const k = expectShape(CreatedApiKeySchema, (await create(user, { name: 'workshop', expiresAt: iso(30) })).body);
+      expect(k.expiresAt).toBe(iso(30));
+      expect(k.maxExpiresAt).toBe(iso(182));
+      expect(t.mock.keys.get(await t.litellmKeyIdOf(k.id))!.expires).toBe(iso(30));
+      // the end of the last allowed day is capped to the limit
+      expect((await create(user, { name: 'last-day', expiresAt: iso(182.5) })).body.expiresAt).toBe(iso(182));
+      expectError(await create(user, { name: 'too-long', expiresAt: iso(184) }), 422, 'KEY_EXPIRY_OUT_OF_RANGE');
+      expectError(await create(user, { name: 'past', expiresAt: iso(-1) }), 422, 'KEY_EXPIRY_OUT_OF_RANGE');
+      expectError(await create(user, { name: 'bad', expiresAt: 'tomorrow' }), 400, 'VALIDATION_ERROR');
+    });
+
+    it('the expiry can be shortened and moved back out to creation + KEY_LIFETIME_DAYS, not further', async () => {
+      const k = (await create(user, { name: 'change-expiry' })).body;
+      await t.db.update(apiKeys).set({ notified14d: true, notified1d: true }).where(eq(apiKeys.id, k.id));
+      t.clock.now = new Date(t.clock.now.getTime() + 10 * DAY);
+      const shorter = await user.patch(`/api-keys/${k.id}`, { expiresAt: iso(5) });
+      expect(shorter.status).toBe(200);
+      expect(expectShape(ApiKeySchema, shorter.body).expiresAt).toBe(iso(5));
+      expect(t.mock.keys.get(await t.litellmKeyIdOf(k.id))!.expires).toBe(iso(5));
+      // later again: up to 182 days after creation (= 172 days from now), warnings start over
+      const later = await user.patch(`/api-keys/${k.id}`, { expiresAt: iso(172) });
+      expect(later.body.expiresAt).toBe(iso(172));
+      expect((await t.keyRow(k.id)).notified14d).toBe(false);
+      expectError(await user.patch(`/api-keys/${k.id}`, { expiresAt: iso(180) }), 422, 'KEY_EXPIRY_OUT_OF_RANGE');
+      t.clock.now = new Date(t.clock.now.getTime() - 10 * DAY);
+    });
+
+    it('a key past its expiry shows as expired right away and runs again with a new date in range', async () => {
+      const k = (await create(user, { name: 'short', expiresAt: iso(2) })).body;
+      t.clock.now = new Date(t.clock.now.getTime() + 3 * DAY);
+      expect((await user.get('/api-keys')).body.items.find((x: { id: string }) => x.id === k.id).status).toBe('expired');
+      const r = await user.patch(`/api-keys/${k.id}`, { expiresAt: iso(30) });
+      expect(r.body.status).toBe('active');
+      t.clock.now = new Date(t.clock.now.getTime() - 3 * DAY);
+    });
+
+    it('renew creates a new key with the same settings; the old one stays valid until it expires', async () => {
+      const old = expectShape(CreatedApiKeySchema, (await create(user, { name: 'rotate', models: ['gpt-4o'], providers: ['anthropic'], budget: 1.5, budgetPeriod: 'monthly' })).body);
+      const r = await user.post(`/api-keys/${old.id}/renew`, { expiresAt: iso(90) });
+      expect(r.status).toBe(201);
+      const fresh = expectShape(CreatedApiKeySchema, r.body);
+      expect(fresh.id).not.toBe(old.id);
+      expect(fresh.secret).not.toBe(old.secret);
+      expect(fresh).toMatchObject({ name: 'rotate', providers: ['anthropic'], budget: 1.5, budgetPeriod: 'monthly', costCenter: { id: cc.id }, expiresAt: iso(90), status: 'active' });
+      expect([...fresh.models].sort()).toEqual([...old.models].sort());
+      // the LiteLLM alias must be unique there, so the new key gets a suffix
+      expect(t.mock.keys.get(await t.litellmKeyIdOf(fresh.id))!.alias).toMatch(new RegExp(`^${user.email}:rotate #[0-9a-f]{6}$`));
+      expect((await t.keyRow(old.id)).status).toBe('active');
+      const events = await admin.get(`/admin/events?entity=api_key&pageSize=50`);
+      expect(JSON.stringify(events.body)).toContain('key.renew');
+    });
+
+    it('renew with revokeOld deletes the old key; expired keys can be renewed', async () => {
+      const old = (await create(user, { name: 'revoke' })).body;
+      const fresh = await user.post(`/api-keys/${old.id}/renew`, { revokeOld: true });
+      expect(fresh.status).toBe(201);
+      expect((await t.keyRow(old.id)).status).toBe('deleted');
+      expect(t.mock.keys.get((await t.keyRow(old.id)).litellmKeyId)).toBeUndefined();
+
+      const expiring = (await create(user, { name: 'expired', expiresAt: iso(1) })).body;
+      t.clock.now = new Date(t.clock.now.getTime() + 2 * DAY);
+      expect((await user.post(`/api-keys/${expiring.id}/renew`, {})).status).toBe(201);
+      t.clock.now = new Date(t.clock.now.getTime() - 2 * DAY);
+    });
   });
 
   it("another user's key -> FORBIDDEN, unknown key -> NOT_FOUND", async () => {
     const k = (await create(user, { name: 'mine' })).body;
     expectError(await other.patch(`/api-keys/${k.id}`, { name: 'stolen' }), 403, 'FORBIDDEN');
     expectError(await other.delete(`/api-keys/${k.id}`), 403, 'FORBIDDEN');
-    expectError(await other.post(`/api-keys/${k.id}/extend`), 403, 'FORBIDDEN');
+    expectError(await other.post(`/api-keys/${k.id}/renew`, {}), 403, 'FORBIDDEN');
     expect((await other.get('/api-keys')).body.items.find((x: { id: string }) => x.id === k.id)).toBeUndefined();
     expectError(await other.patch('/api-keys/does-not-exist', { name: 'x' }), 404, 'NOT_FOUND');
     expectError(await other.delete('/api-keys/does-not-exist'), 404, 'NOT_FOUND');
@@ -194,7 +247,8 @@ describe('api keys', () => {
     expect((await t.keyRow(k.id)).blockedReason).toBe('admin');
     expect(t.mock.keys.get(await t.litellmKeyIdOf(k.id))!.blocked).toBe(true);
     expect((await user.get('/api-keys')).body.items.find((x: { id: string }) => x.id === k.id).status).toBe('blocked');
-    expectError(await user.post(`/api-keys/${k.id}/extend`), 409, 'KEY_NOT_ACTIVE');
+    // a key blocked by an admin cannot be replaced by a renewal (#11)
+    expectError(await user.post(`/api-keys/${k.id}/renew`, {}), 409, 'KEY_NOT_ACTIVE');
     expect((await admin.get('/admin/api-keys?status=blocked')).body.items.map((x: { id: string }) => x.id)).toContain(k.id);
 
     const u = await admin.post(`/admin/api-keys/${k.id}/block`, { blocked: false });

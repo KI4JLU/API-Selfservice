@@ -34,6 +34,8 @@ export const MeSchema = z.object({
     .nullable(),
   /** Set while an admin acts as this user (debugging). */
   impersonatedBy: z.object({ id: IdSchema, name: z.string(), email: z.string().email() }).nullable(),
+  /** #11: longest key validity in days (KEY_LIFETIME_DAYS) */
+  keyLifetimeDays: z.number().int(),
   /** Whether admins may impersonate users on this instance (IMPERSONATION_ENABLED). */
   impersonationEnabled: z.boolean(),
 });

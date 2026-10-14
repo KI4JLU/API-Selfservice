@@ -104,17 +104,28 @@ const T: Record<NotificationType, Record<Locale, Template>> = {
       body: 'The budget of cost center {{number}} “{{name}}” ({{budget}} EUR) is exhausted. All keys of this cost center were blocked.\n\n{{appUrl}}/cost-centers',
     },
   },
+  // before #11; only rendered for notifications that were already stored
   key_expires_14d: {
-    de: { subject: 'API-Key „{{keyName}}“ läuft in 14 Tagen ab', body: 'Ihr API-Key „{{keyName}}“ läuft am {{expiresAt}} ab. Sie können ihn im Portal verlängern.\n\n{{appUrl}}/keys' },
-    en: { subject: 'API key “{{keyName}}” expires in 14 days', body: 'Your API key “{{keyName}}” expires on {{expiresAt}}. You can extend it in the portal.\n\n{{appUrl}}/keys' },
+    de: { subject: 'API-Key „{{keyName}}“ läuft in 14 Tagen ab', body: 'Ihr API-Key „{{keyName}}“ läuft am {{expiresAt}} ab. Sie können ihn im Portal erneuern.\n\n{{appUrl}}/keys' },
+    en: { subject: 'API key “{{keyName}}” expires in 14 days', body: 'Your API key “{{keyName}}” expires on {{expiresAt}}. You can renew it in the portal.\n\n{{appUrl}}/keys' },
+  },
+  key_expires_7d: {
+    de: {
+      subject: 'API-Key „{{keyName}}“ läuft in 7 Tagen ab',
+      body: 'Ihr API-Key „{{keyName}}“ läuft am {{expiresAt}} ab. Erneuern Sie ihn: Sie erhalten einen neuen Key mit denselben Einstellungen, der alte bleibt bis zum Ablauf gültig.\n\nKey erneuern: {{appUrl}}/keys?renew={{keyId}}',
+    },
+    en: {
+      subject: 'API key “{{keyName}}” expires in 7 days',
+      body: 'Your API key “{{keyName}}” expires on {{expiresAt}}. Renew it: you get a new key with the same settings, the old one stays valid until it expires.\n\nRenew key: {{appUrl}}/keys?renew={{keyId}}',
+    },
   },
   key_expires_1d: {
-    de: { subject: 'API-Key „{{keyName}}“ läuft morgen ab', body: 'Ihr API-Key „{{keyName}}“ läuft am {{expiresAt}} ab. Verlängern Sie ihn jetzt.\n\n{{appUrl}}/keys' },
-    en: { subject: 'API key “{{keyName}}” expires tomorrow', body: 'Your API key “{{keyName}}” expires on {{expiresAt}}. Extend it now.\n\n{{appUrl}}/keys' },
+    de: { subject: 'API-Key „{{keyName}}“ läuft morgen ab', body: 'Ihr API-Key „{{keyName}}“ läuft am {{expiresAt}} ab. Erneuern Sie ihn jetzt.\n\nKey erneuern: {{appUrl}}/keys?renew={{keyId}}' },
+    en: { subject: 'API key “{{keyName}}” expires tomorrow', body: 'Your API key “{{keyName}}” expires on {{expiresAt}}. Renew it now.\n\nRenew key: {{appUrl}}/keys?renew={{keyId}}' },
   },
   key_expired: {
-    de: { subject: 'API-Key „{{keyName}}“ abgelaufen', body: 'Ihr API-Key „{{keyName}}“ ist abgelaufen und wurde gesperrt. Sie können ihn im Portal verlängern.\n\n{{appUrl}}/keys' },
-    en: { subject: 'API key “{{keyName}}” expired', body: 'Your API key “{{keyName}}” expired and was blocked. You can extend it in the portal.\n\n{{appUrl}}/keys' },
+    de: { subject: 'API-Key „{{keyName}}“ abgelaufen', body: 'Ihr API-Key „{{keyName}}“ ist abgelaufen. Erneuern Sie ihn, um einen neuen Key mit denselben Einstellungen zu erhalten.\n\nKey erneuern: {{appUrl}}/keys?renew={{keyId}}' },
+    en: { subject: 'API key “{{keyName}}” expired', body: 'Your API key “{{keyName}}” expired. Renew it to get a new key with the same settings.\n\nRenew key: {{appUrl}}/keys?renew={{keyId}}' },
   },
   budget_exhausted_keys_blocked: {
     de: { subject: 'Keys gesperrt: Budget erschöpft', body: '{{detail}}\n\n{{appUrl}}/' },

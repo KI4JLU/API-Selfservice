@@ -7,7 +7,7 @@ import { apiLogin, devLogin, formatCc, tableLoaded, uniqueCostCenter, uniqueEmai
  * Names and e-mails start with "test" because the API may run against a real LiteLLM proxy (LITELLM_MODE=http).
  */
 test.describe('walkthrough: user', () => {
-  test('user signs in, creates, tests, extends and deletes an API key', async ({ page }) => {
+  test('user signs in, creates, tests, changes the expiry of and deletes an API key', async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width: 1280, height: 900 });
     const shot = walkthroughShots(page, 'user');
@@ -60,9 +60,12 @@ test.describe('walkthrough: user', () => {
     await expect(row.getByTestId('key-status')).toHaveAttribute('data-status', 'active');
     await shot('keys-list');
 
-    await row.getByTestId('btn-extend-key').click();
-    await expect(page.getByTestId('toast-key-extended')).toBeVisible();
-    await shot('key-extended');
+    // #11: the expiry can be changed within 6 months after creation
+    await row.getByTestId('btn-key-expiry').click();
+    await expect(page.getByTestId('dialog-key-expiry')).toBeVisible();
+    await shot('key-expiry');
+    await page.getByTestId('btn-save-key-expiry').click();
+    await expect(page.getByTestId('toast-key-expiry-changed')).toBeVisible();
 
     // --- test the key
     await page.getByTestId('nav-key-test').click();

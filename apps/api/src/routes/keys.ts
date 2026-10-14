@@ -1,7 +1,7 @@
 import { createRoute, z } from '@hono/zod-openapi';
-import { ApiKeySchema, AdminApiKeySchema, AdminApiKeysQuery, CreateApiKeySchema, CreatedApiKeySchema, UpdateApiKeySchema, paginated } from '@api-selfservice/shared';
+import { ApiKeySchema, AdminApiKeySchema, AdminApiKeysQuery, CreateApiKeySchema, CreatedApiKeySchema, RenewApiKeySchema, UpdateApiKeySchema, paginated } from '@api-selfservice/shared';
 import { createRouter, body, json, errors, IdParam, okBody } from './_util.js';
-import { adminBlockKey, adminListKeys, createKey, deleteKey, extendKey, listMyKeys, updateKey } from '../services/keys.js';
+import { adminBlockKey, adminListKeys, createKey, deleteKey, listMyKeys, renewKey, updateKey } from '../services/keys.js';
 import { requireAdmin } from '../middleware/roles.js';
 
 const r = createRouter();
@@ -33,8 +33,16 @@ r.openapi(createRoute({ method: 'delete', path: '/api-keys/{id}', tags: ['api-ke
   await deleteKey(c.get('deps'), c.get('user'), c.req.valid('param').id);
   return c.json({ ok: true as const }, 200);
 });
-r.openapi(createRoute({ method: 'post', path: '/api-keys/{id}/extend', tags: ['api-keys'], request: { params: IdParam }, responses: { 200: json(ApiKeySchema, 'Extended'), ...errors } }), async (c) =>
-  c.json(await extendKey(c.get('deps'), c.get('user'), c.req.valid('param').id), 200),
+r.openapi(
+  createRoute({
+    method: 'post',
+    path: '/api-keys/{id}/renew',
+    tags: ['api-keys'],
+    description: 'Creates a new key (new secret) with the same settings; the old key stays valid until it expires unless revokeOld is set.',
+    request: { params: IdParam, body: body(RenewApiKeySchema) },
+    responses: { 201: json(CreatedApiKeySchema, 'Renewed; new secret shown once'), ...errors },
+  }),
+  async (c) => c.json(await renewKey(c.get('deps'), c.get('user'), c.req.valid('param').id, c.req.valid('json')), 201),
 );
 
 r.use('/admin/api-keys', requireAdmin);

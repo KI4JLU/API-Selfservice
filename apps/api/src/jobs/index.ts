@@ -1,4 +1,5 @@
 import { Cron } from 'croner';
+import { KEY_EXPIRY_WARN_DAYS } from '@api-selfservice/shared';
 import type { Deps } from '../context.js';
 import { ingestSpendLogs } from '../services/spend.js';
 import { evaluateUserBudget } from '../services/budgets.js';
@@ -20,22 +21,20 @@ export async function runIngestAndBudgets(deps: Deps) {
   return res;
 }
 
-/** F-KEY-4/5: warn at 14d and 1d, block at expiry. */
+/**
+ * F-KEY-4/5 (#11): warn 7 days and 1 day ahead, mark expired keys. LiteLLM enforces the expiry itself (`expires`),
+ * so expired keys are not blocked there; blocking stays for manual and budget blocks.
+ */
 export async function runKeyExpiry(deps: Deps) {
   const now = deps.now();
-  const in14 = new Date(now.getTime() + 14 * 86400000);
+  const inWarn = new Date(now.getTime() + KEY_EXPIRY_WARN_DAYS * 86400000);
   const in1 = new Date(now.getTime() + 1 * 86400000);
   const active = await deps.db.query.apiKeys.findMany({ where: eq(apiKeys.status, 'active') });
   let warned = 0;
   let expired = 0;
   for (const k of active) {
-    const vars = { keyName: k.name, expiresAt: k.expiresAt.toISOString().slice(0, 10) };
+    const vars = { keyName: k.name, keyId: k.id, expiresAt: k.expiresAt.toISOString().slice(0, 10) };
     if (k.expiresAt <= now) {
-      try {
-        await deps.litellm.updateKey(k.litellmKeyId, { blocked: true });
-      } catch (e) {
-        await auditError(deps, { action: 'litellm.update_key', entity: 'api_key', entityId: k.id, err: e, payload: { blocked: true, reason: 'expired' } });
-      }
       await deps.db.update(apiKeys).set({ status: 'expired', blockedReason: 'expired' }).where(eq(apiKeys.id, k.id));
       await notifyUser(deps, k.userId, 'key_expired', vars);
       await audit(deps, { actorId: null, action: 'key.expire', entity: 'api_key', entityId: k.id, payload: vars });
@@ -44,9 +43,10 @@ export async function runKeyExpiry(deps: Deps) {
       await deps.db.update(apiKeys).set({ notified1d: true, notified14d: true }).where(eq(apiKeys.id, k.id));
       await notifyUser(deps, k.userId, 'key_expires_1d', vars);
       warned++;
-    } else if (k.expiresAt <= in14 && !k.notified14d) {
+    } else if (k.expiresAt <= inWarn && !k.notified14d) {
+      // the column still carries its old name; it marks the first warning
       await deps.db.update(apiKeys).set({ notified14d: true }).where(eq(apiKeys.id, k.id));
-      await notifyUser(deps, k.userId, 'key_expires_14d', vars);
+      await notifyUser(deps, k.userId, 'key_expires_7d', vars);
       warned++;
     }
   }

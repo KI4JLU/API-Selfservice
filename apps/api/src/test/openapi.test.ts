@@ -45,7 +45,7 @@ describe('openapi / docs / health', () => {
       '/cost-center-requests/{id}/reject',
       '/api-keys',
       '/api-keys/{id}',
-      '/api-keys/{id}/extend',
+      '/api-keys/{id}/renew',
       '/key-test',
       '/key-test/models',
       '/admin/api-keys',

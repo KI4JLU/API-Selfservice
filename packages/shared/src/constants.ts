@@ -43,7 +43,9 @@ export const NOTIFICATION_TYPES = [
   'user_budget_100',
   'cost_center_budget_80',
   'cost_center_budget_100',
+  /** before #11 the first warning came 14 days ahead; kept for existing notifications */
   'key_expires_14d',
+  'key_expires_7d',
   'key_expires_1d',
   'key_expired',
   'budget_exhausted_keys_blocked',
@@ -57,8 +59,8 @@ export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export const BUDGET_WARN_THRESHOLD = 0.8;
 export const DEFAULT_KEY_LIFETIME_DAYS = 182;
-/** F-KEY-4: first expiry warning, also the window for the dashboard hint. */
-export const KEY_EXPIRY_WARN_DAYS = 14;
+/** F-KEY-5 (#11): first expiry warning, also the window for the dashboard hint. */
+export const KEY_EXPIRY_WARN_DAYS = 7;
 export const DEFAULT_DELETION_GRACE_DAYS = 365;
 
 /** Event log (audit_log): info = change, warning = alert (e.g. budget exhausted), error = failure. */
