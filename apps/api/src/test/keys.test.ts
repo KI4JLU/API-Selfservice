@@ -234,6 +234,11 @@ describe('provider keys (F-KEY-10)', () => {
     const both = expectShape(CreatedApiKeySchema, (await create({ models: ['gpt-4o', 'claude-opus-5'], providers: ['anthropic'] })).body);
     expect(both).toMatchObject({ models: ['gpt-4o', 'claude-opus-5', 'claude-sonnet-5'], providers: ['anthropic'] });
     expect(expectShape(paginated(ApiKeySchema), (await user.get('/api-keys')).body).items.find((x) => x.id === both.id)!.providers).toEqual(['anthropic']);
+    // #10: models grouped by provider for the table popover
+    expect(both.modelGroups).toEqual([
+      { provider: 'anthropic', models: ['claude-opus-5', 'claude-sonnet-5'] },
+      { provider: 'openai', models: ['gpt-4o'] },
+    ]);
   });
 
   it('validates providers against the cost center', async () => {

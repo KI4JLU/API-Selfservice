@@ -10,6 +10,8 @@ export const ApiKeySchema = z.object({
   models: z.array(z.string()),
   /** F-KEY-10: providers whose current and future models are added to the key automatically */
   providers: z.array(z.string()),
+  /** The key's models grouped by provider (sorted; models without a provider last), for compact display */
+  modelGroups: z.array(z.object({ provider: z.string().nullable(), models: z.array(z.string()) })),
   budget: Money.nullable(),
   /** F-KEY-11: `monthly` resets the budget every month; null = once for the key's lifetime */
   budgetPeriod: z.enum(KEY_BUDGET_PERIODS).nullable(),

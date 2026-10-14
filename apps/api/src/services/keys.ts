@@ -16,6 +16,18 @@ function mask(secret: string) {
   return `${secret.slice(0, 6)}…${secret.slice(-4)}`;
 }
 
+/** The key's models grouped by provider; models without a known provider come last. */
+async function modelGroups(deps: Deps, models: string[]) {
+  const rows = models.length ? await deps.db.query.providers.findMany({ where: inArray(providers.modelName, models), columns: { modelName: true, provider: true } }) : [];
+  const providerOf = new Map(rows.map((r) => [r.modelName, r.provider]));
+  const groups = new Map<string | null, string[]>();
+  for (const m of [...models].sort()) {
+    const p = providerOf.get(m) ?? null;
+    groups.set(p, [...(groups.get(p) ?? []), m]);
+  }
+  return [...groups.entries()].map(([provider, ms]) => ({ provider, models: ms })).sort((a, b) => (a.provider === null ? 1 : b.provider === null ? -1 : a.provider.localeCompare(b.provider)));
+}
+
 export async function keyView(deps: Deps, k: KeyRow) {
   const cc = await deps.db.query.costCenters.findFirst({ where: eq(costCenters.id, k.costCenterId) });
   return {
@@ -25,6 +37,7 @@ export async function keyView(deps: Deps, k: KeyRow) {
     costCenter: { id: k.costCenterId, number: cc?.number ?? '', name: cc?.name ?? '' },
     models: k.models,
     providers: k.providers,
+    modelGroups: await modelGroups(deps, k.models),
     budget: k.budget === null ? null : Number(k.budget),
     budgetPeriod: k.budgetPeriod,
     // F-KEY-11: a monthly budget is compared with this month's spend

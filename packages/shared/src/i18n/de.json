@@ -178,7 +178,8 @@
     "providerAllModels": "alle Modelle, auch künftige",
     "providerPicked": "{{count}} von {{total}}",
     "releaseProvider": "Gesamten Provider {{provider}} freigeben",
-    "providerAll": "{{provider}} (alle Modelle)"
+    "providerAll": "{{provider}} – alle Modelle",
+    "moreModels": "{{count}} weitere Modelle anzeigen"
   },
   "keyTest": {
     "title": "Key testen",

@@ -7,7 +7,6 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { useDeleteKey, useExtendKey, useKeys, type ApiKey, type CreatedApiKey } from '@/lib/queries';
 import { fmtDate, fmtMoney } from '@/lib/format';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page';
 import { DataTable } from '@/components/ui/data-table';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -15,6 +14,7 @@ import { WithTooltip } from '@/components/ui/tooltip';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CreateKeyDialog } from '@/components/keys/CreateKeyDialog';
 import { KeySecretDialog } from '@/components/keys/KeySecretDialog';
+import { KeyModels } from '@/components/keys/KeyModels';
 
 export const Route = createFileRoute('/_app/keys')({
   component: KeysPage,
@@ -65,25 +65,7 @@ function KeysPage() {
       {
         header: t('keys.models'),
         accessorKey: 'models',
-        cell: ({ row }) => (
-          <div className="flex max-w-xs flex-wrap gap-1">
-            {row.original.providers.map((p) => (
-              <Badge key={p} variant="outline" data-testid="key-provider">
-                {t('keys.providerAll', { provider: p })}
-              </Badge>
-            ))}
-            {row.original.models.slice(0, 3).map((m) => (
-              <Badge key={m} variant="secondary" className="font-mono">
-                {m}
-              </Badge>
-            ))}
-            {row.original.models.length > 3 ? (
-              <WithTooltip text={row.original.models.slice(3).join(', ')}>
-                <Badge variant="outline">+{row.original.models.length - 3}</Badge>
-              </WithTooltip>
-            ) : null}
-          </div>
-        ),
+        cell: ({ row }) => <KeyModels apiKey={row.original} />,
       },
       {
         header: t('common.budget'),
