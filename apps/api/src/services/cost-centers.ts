@@ -87,28 +87,26 @@ export function effectiveMemberBudget(cc: Pick<CC, 'memberBudget'>, member: { bu
 }
 
 /** #15: mirrors a member's budget to LiteLLM (max_budget_in_team). The default cost center has no member budgets. */
-async function applyMemberBudget(deps: Deps, cc: CC, teamId: string, userId: string) {
+async function applyMemberBudget(deps: Deps, cc: CC, teamId: string, member: { userId: string; budget: string | null }) {
   if (cc.isDefault) return;
-  const member = await deps.db.query.costCenterMembers.findFirst({ where: and(eq(costCenterMembers.costCenterId, cc.id), eq(costCenterMembers.userId, userId)) });
-  if (!member) return;
   try {
-    await deps.litellm.setTeamMemberBudget(teamId, userId, { maxBudget: effectiveMemberBudget(cc, member), budgetDuration: budgetDurationFor(cc.memberBudgetPeriod) });
+    await deps.litellm.setTeamMemberBudget(teamId, member.userId, { maxBudget: effectiveMemberBudget(cc, member), budgetDuration: budgetDurationFor(cc.memberBudgetPeriod) });
   } catch (e) {
-    await auditError(deps, { action: 'litellm.set_member_budget', entity: 'cost_center', entityId: cc.id, err: e, payload: { userId } });
+    await auditError(deps, { action: 'litellm.set_member_budget', entity: 'cost_center', entityId: cc.id, err: e, payload: { userId: member.userId } });
   }
 }
 
-async function setTeamMember(deps: Deps, costCenterId: string, teamId: string, userId: string, role: 'admin' | 'user') {
+/** Sets the member on the LiteLLM team; `member` (the membership row, if any) brings its budget along (#15). */
+async function setTeamMember(deps: Deps, cc: CC, teamId: string, userId: string, role: 'admin' | 'user', member: { budget: string | null } | null) {
   const stored = await deps.litellm.setTeamMember(teamId, userId, role);
-  const cc = await deps.db.query.costCenters.findFirst({ where: eq(costCenters.id, costCenterId) });
-  if (cc) await applyMemberBudget(deps, cc, teamId, userId);
+  if (member) await applyMemberBudget(deps, cc, teamId, { userId, budget: member.budget });
   if (stored !== role) {
     await audit(deps, {
       actorId: null,
       severity: 'warning',
       action: 'litellm.team_admin_downgraded',
       entity: 'cost_center',
-      entityId: costCenterId,
+      entityId: cc.id,
       payload: { userId, role, litellmRole: stored },
     });
   }
@@ -128,7 +126,7 @@ export async function syncTeamMembership(deps: Deps, userId: string, costCenterI
     role = u && !u.deletedAt ? 'user' : null;
   }
   try {
-    if (role) await setTeamMember(deps, costCenterId, teamId, userId, role);
+    if (role) await setTeamMember(deps, cc, teamId, userId, role, member ?? null);
     else await deps.litellm.removeTeamMember(teamId, userId);
   } catch (e) {
     await auditError(deps, { action: 'litellm.sync_team_member', entity: 'cost_center', entityId: costCenterId, err: e, payload: { userId, role } });
@@ -408,7 +406,7 @@ export async function updateCostCenter(
   if (teamId && memberBudgetsChange) {
     const all = input.memberBudget !== undefined || input.memberBudgetPeriod !== undefined;
     const members = await deps.db.query.costCenterMembers.findMany({ where: eq(costCenterMembers.costCenterId, id) });
-    for (const m of members) if (all || input.memberBudgets!.some((b) => b.userId === m.userId)) await applyMemberBudget(deps, updated!, teamId, m.userId);
+    for (const m of members) if (all || input.memberBudgets!.some((b) => b.userId === m.userId)) await applyMemberBudget(deps, updated!, teamId, m);
   }
   // F-KEY-10: provider keys only receive released models; widening the release may add some.
   if (patch.models !== undefined) await syncProviderKeyModels(deps);
@@ -466,16 +464,16 @@ async function resyncTeam(deps: Deps, cc: CC) {
   else await deps.litellm.createTeam({ teamId, ...team, metadata: { cost_center: cc.number, api_selfservice: true } });
   if (!cc.litellmTeamId) await deps.db.update(costCenters).set({ litellmTeamId: teamId }).where(eq(costCenters.id, cc.id));
   await deps.litellm.setTeamBlocked(teamId, cc.status === 'archived' || cc.blockedAt !== null);
-  const members: { userId: string; role: 'admin' | 'user' }[] = await deps.db.query.costCenterMembers.findMany({ where: eq(costCenterMembers.costCenterId, cc.id) });
+  const members: { userId: string; role: 'admin' | 'user'; budget: string | null }[] = await deps.db.query.costCenterMembers.findMany({ where: eq(costCenterMembers.costCenterId, cc.id) });
   if (cc.isDefault) {
     // Everyone active is on the default team (F-KST-9).
     const users = await deps.db.query.user.findMany({ where: isNull(user.deletedAt), columns: { id: true } });
-    for (const u of users) if (!members.some((m) => m.userId === u.id)) members.push({ userId: u.id, role: 'user' });
+    for (const u of users) if (!members.some((m) => m.userId === u.id)) members.push({ userId: u.id, role: 'user', budget: null });
   }
   // A failed member does not fail the team (e.g. team admins need LiteLLM Enterprise); like syncTeamMembership, it is logged.
   for (const m of members) {
     try {
-      await setTeamMember(deps, cc.id, teamId, m.userId, m.role);
+      await setTeamMember(deps, cc, teamId, m.userId, m.role, m);
     } catch (e) {
       await auditError(deps, { action: 'litellm.sync_team_member', entity: 'cost_center', entityId: cc.id, err: e, payload: { userId: m.userId, role: m.role } });
     }

@@ -8,6 +8,8 @@ import { audit } from './audit.js';
 const SENDER_KEY = 'sap.sender_cost_center';
 export const DEFAULT_SAP_TEXT = 'API-Kosten: {Provider}';
 const HEADER = ['Belegdatum', 'Buchungsdatum', 'KoSt alt', 'KoSt_neu', 'Auftrag_neu', 'Text', 'Leistungsart'];
+/** length of the SAP posting text field (SGTXT) */
+const MAX_TEXT = 50;
 
 const PROVIDER_LABELS: Record<string, string> = {
   azure: 'Azure',
@@ -79,10 +81,16 @@ export async function sapExportPreview(deps: Deps, input: Input) {
 
   const groups = new Map<string, { type: 'cost_center' | 'project'; number: string; provider: string; amount: number; costCenters: Map<string, { id: string; number: string; name: string }> }>();
   const missing = new Map<string, { id: string; number: string; name: string; spend: number }>();
+  // spend that belongs to no (existing) cost center cannot be charged; it is reported, not dropped silently
+  let unassigned = 0;
   for (const r of spend) {
     const cc = r.costCenterId ? ccById.get(r.costCenterId) : undefined;
     const amount = Number(r.s ?? 0);
-    if (!cc || amount <= 0) continue;
+    if (amount <= 0) continue;
+    if (!cc) {
+      unassigned += amount;
+      continue;
+    }
     if (!cc.sapRecipientType || !cc.sapRecipientNumber) {
       const prev = missing.get(cc.id) ?? { id: cc.id, number: cc.number, name: cc.name, spend: 0 };
       missing.set(cc.id, { ...prev, spend: prev.spend + amount });
@@ -109,6 +117,10 @@ export async function sapExportPreview(deps: Deps, input: Input) {
       costCenters: [...g.costCenters.values()],
     }))
     .filter((r) => r.amount > 0)
+    .map((r) => {
+      if (r.text.length > MAX_TEXT) throw new ApiError('VALIDATION_ERROR', `Posting text "${r.text}" is longer than ${MAX_TEXT} characters`);
+      return r;
+    })
     .sort((a, b) => (a.recipientCostCenter ?? a.recipientOrder!).localeCompare(b.recipientCostCenter ?? b.recipientOrder!) || a.text.localeCompare(b.text));
   return {
     month: input.month,
@@ -119,6 +131,7 @@ export async function sapExportPreview(deps: Deps, input: Input) {
     rows,
     total: cents(rows.reduce((a, r) => a + r.amount, 0)),
     missingRecipient: [...missing.values()].map((x) => ({ ...x, spend: cents(x.spend) })).sort((a, b) => b.spend - a.spend),
+    unassignedSpend: cents(unassigned),
   };
 }
 

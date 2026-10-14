@@ -90,23 +90,23 @@ function assertManageable(cc: CC) {
   if (cc.isDefault) throw new ApiError('COST_CENTER_DEFAULT_IMMUTABLE', 'Every user is a member of the default cost center');
 }
 
-/** #15: spend per member on this cost center in the current member budget period (monthly, else since the start). */
-async function memberSpends(deps: Deps, cc: CC) {
+/** #15: spend per member on this cost center in the current member budget period (monthly, else since the start); `userId` limits it to one member. */
+async function memberSpends(deps: Deps, cc: CC, userId?: string) {
   const p = cc.memberBudgetPeriod ? currentPeriod('monthly', deps.now()) : { start: new Date(0), end: new Date(deps.now().getTime() + 86400000) };
   const rows = await deps.db
     .select({ userId: requestLogs.userId, s: sum(requestLogs.cost) })
     .from(requestLogs)
-    .where(and(eq(requestLogs.costCenterId, cc.id), gte(requestLogs.time, p.start), lt(requestLogs.time, p.end)))
+    .where(and(eq(requestLogs.costCenterId, cc.id), userId ? eq(requestLogs.userId, userId) : undefined, gte(requestLogs.time, p.start), lt(requestLogs.time, p.end)))
     .groupBy(requestLogs.userId);
   return new Map(rows.map((r) => [r.userId, Number(r.s ?? 0)]));
 }
 
-/** #13: keys per member on this cost center that are not deleted. */
-async function memberKeyCounts(deps: Deps, cc: CC) {
+/** #13: keys per member on this cost center that are not deleted; `userId` limits it to one member. */
+async function memberKeyCounts(deps: Deps, cc: CC, userId?: string) {
   const rows = await deps.db
     .select({ userId: apiKeys.userId, n: count() })
     .from(apiKeys)
-    .where(and(eq(apiKeys.costCenterId, cc.id), ne(apiKeys.status, 'deleted')))
+    .where(and(eq(apiKeys.costCenterId, cc.id), userId ? eq(apiKeys.userId, userId) : undefined, ne(apiKeys.status, 'deleted')))
     .groupBy(apiKeys.userId);
   return new Map(rows.map((r) => [r.userId, Number(r.n)]));
 }
@@ -132,7 +132,7 @@ async function getMember(deps: Deps, costCenterId: string, userId: string) {
   if (!m) throw notFound('Member');
   const u = await deps.db.query.user.findFirst({ where: eq(user.id, userId) });
   const cc = await getCostCenter(deps, costCenterId);
-  return memberView(m, u ?? null, cc, await memberSpends(deps, cc), await memberKeyCounts(deps, cc));
+  return memberView(m, u ?? null, cc, await memberSpends(deps, cc, userId), await memberKeyCounts(deps, cc, userId));
 }
 
 export async function listMembers(deps: Deps, costCenterId: string) {

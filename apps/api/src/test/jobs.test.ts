@@ -85,6 +85,22 @@ describe('jobs', () => {
       expect(new Date(renewed.body.expiresAt).getTime()).toBe(at(183 + 182).getTime());
     });
 
+    it('a renewed key that keeps running gets no reminders and no expiry mail (review)', async () => {
+      const { u, k } = await userWithKey('renewed');
+      t.clock.now = at(170);
+      const r = await u.post(`/api-keys/${k.id}/renew`, {});
+      expect(r.status).toBe(201);
+      expect((await t.keyRow(k.id)).replacedBy).toBe(r.body.id);
+      t.clock.now = at(176);
+      await runKeyExpiry(t.deps);
+      t.clock.now = at(181.5);
+      await runKeyExpiry(t.deps);
+      t.clock.now = at(183);
+      await runKeyExpiry(t.deps);
+      expect((await t.keyRow(k.id)).status).toBe('expired');
+      for (const type of ['key_expires_7d', 'key_expires_1d', 'key_expired'] as const) expect(await t.notificationsOf(type, u.email)).toHaveLength(0);
+    });
+
     it('a key that jumps straight past the 1d threshold gets only the 1d warning; blocked keys are ignored', async () => {
       const { u, k } = await userWithKey('late');
       const { k: blocked } = await userWithKey('blocked');

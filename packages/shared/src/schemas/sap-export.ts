@@ -55,6 +55,8 @@ export const SapExportPreviewSchema = z.object({
   total: Money,
   /** cost centers with spend in the month but no SAP recipient; not exported */
   missingRecipient: z.array(z.object({ id: IdSchema, number: z.string(), name: z.string(), spend: Money })),
+  /** spend without an (existing) portal cost center in the month; not exported */
+  unassignedSpend: Money,
 });
 
 export const SapExportSchema = z.object({

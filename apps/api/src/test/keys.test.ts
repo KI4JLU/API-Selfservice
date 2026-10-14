@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AdminApiKeySchema, ApiKeySchema, CreatedApiKeySchema, paginated } from '@api-selfservice/shared';
-import { apiKeys, eq } from '@api-selfservice/db';
+import { apiKeys, budgets, costCenters, eq } from '@api-selfservice/db';
 import { approvedCostCenterFor, createTestApp, DAY, expectError, expectShape, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
 
 describe('api keys', () => {
@@ -214,6 +214,55 @@ describe('api keys', () => {
     });
   });
 
+  describe('renewal and expiry respect releases and budgets (review)', () => {
+    const iso = (days: number) => new Date(t.clock.now.getTime() + days * DAY).toISOString();
+
+    it('a renewal never creates a key without models; providers no longer released are left out', async () => {
+      const cc2 = await approvedCostCenterFor(t, admin, user);
+      const single = (await user.post('/api-keys', { name: 'single', models: ['gpt-4o'], costCenterId: cc2.id })).body;
+      const mixed = (await user.post('/api-keys', { name: 'mixed', models: ['claude-sonnet-5'], providers: ['openai'], costCenterId: cc2.id })).body;
+      // the release shrinks to the anthropic models
+      await t.db
+        .update(costCenters)
+        .set({ models: ['claude-sonnet-5', 'claude-opus-5'] })
+        .where(eq(costCenters.id, cc2.id));
+      expectError(await user.post(`/api-keys/${single.id}/renew`, {}), 409, 'MODEL_NOT_ALLOWED');
+      const renewed = expectShape(CreatedApiKeySchema, (await user.post(`/api-keys/${mixed.id}/renew`, {})).body);
+      expect(renewed).toMatchObject({ models: ['claude-sonnet-5'], providers: [] });
+      expect(t.mock.keys.get(await t.litellmKeyIdOf(renewed.id))!.models).toEqual(['claude-sonnet-5']);
+    });
+
+    it('the old key still counts against the user budget unless it is deleted or expired', async () => {
+      const u = await t.login();
+      const cc3 = await approvedCostCenterFor(t, admin, u);
+      await admin.put(`/admin/users/${u.userId}/budget`, { amount: 10, period: 'monthly' });
+      const k = (await u.post('/api-keys', { name: 'budget', models: ['gpt-4o'], costCenterId: cc3.id, budget: 10 })).body;
+      expectError(await u.post(`/api-keys/${k.id}/renew`, {}), 409, 'KEY_BUDGET_EXCEEDS_USER_BUDGET');
+      expect((await u.post(`/api-keys/${k.id}/renew`, { revokeOld: true })).status).toBe(201);
+    });
+
+    it('an expired key does not come back while the user budget is exhausted', async () => {
+      const u = await t.login();
+      const cc4 = await approvedCostCenterFor(t, admin, u);
+      await admin.put(`/admin/users/${u.userId}/budget`, { amount: 10, period: 'monthly' });
+      const k = (await u.post('/api-keys', { name: 'blocked-budget', models: ['gpt-4o'], costCenterId: cc4.id, expiresAt: iso(1) })).body;
+      t.clock.now = new Date(t.clock.now.getTime() + 2 * DAY);
+      await t.db.update(budgets).set({ blockedAt: t.clock.now }).where(eq(budgets.userId, u.userId));
+      expectError(await u.patch(`/api-keys/${k.id}`, { expiresAt: iso(30) }), 409, 'KEY_NOT_ACTIVE');
+      t.clock.now = new Date(t.clock.now.getTime() - 2 * DAY);
+    });
+
+    it('changing the expiry of a key blocked by an admin keeps it blocked', async () => {
+      const k = (await user.post('/api-keys', { name: 'admin-blocked', models: ['gpt-4o'], costCenterId: cc.id, expiresAt: iso(1) })).body;
+      await admin.post(`/admin/api-keys/${k.id}/block`, { blocked: true });
+      t.clock.now = new Date(t.clock.now.getTime() + 2 * DAY);
+      const r = await user.patch(`/api-keys/${k.id}`, { expiresAt: iso(30) });
+      expect(r.body.status).toBe('blocked');
+      expect(t.mock.keys.get(await t.litellmKeyIdOf(k.id))!.blocked).toBe(true);
+      t.clock.now = new Date(t.clock.now.getTime() - 2 * DAY);
+    });
+  });
+
   it("another user's key -> FORBIDDEN, unknown key -> NOT_FOUND", async () => {
     const k = (await create(user, { name: 'mine' })).body;
     expectError(await other.patch(`/api-keys/${k.id}`, { name: 'stolen' }), 403, 'FORBIDDEN');
@@ -230,7 +279,7 @@ describe('api keys', () => {
 
   it('admin lists all keys with owners and can block / unblock', async () => {
     const k = (await create(user, { name: 'blockme' })).body;
-    const list = expectShape(paginated(AdminApiKeySchema), (await admin.get('/admin/api-keys')).body);
+    const list = expectShape(paginated(AdminApiKeySchema), (await admin.get('/admin/api-keys?pageSize=200')).body);
     expect(list.total).toBeGreaterThanOrEqual(3);
     const mine = list.items.find((x) => x.id === k.id)!;
     expect(mine.user).toEqual({ id: user.userId, name: expect.any(String), email: user.email });

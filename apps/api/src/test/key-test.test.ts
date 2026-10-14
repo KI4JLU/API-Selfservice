@@ -85,6 +85,17 @@ describe('key test (F-KEY-9)', () => {
     const r2 = await send();
     spy2.mockRestore();
     expectError(r2, 422, 'KEY_INVALID');
+    // LiteLLM's own budget and rate limits are no provider errors
+    const own429 = JSON.stringify({ error: { message: 'litellm.RateLimitError: Rate limit reached for key, limit 5 rpm', type: 'throttling_error', code: '429' } });
+    const spy3 = vi.spyOn(t.mock, 'chatWithKey').mockRejectedValueOnce(new LiteLLMHttpError(429, own429, '/v1/chat/completions'));
+    const r3 = await send();
+    spy3.mockRestore();
+    expectError(r3, 502, 'KEY_TEST_FAILED');
+    const budget = JSON.stringify({ error: { message: 'litellm.BudgetExceededError: Budget has been exceeded! Current cost: 2, Max budget: 1', type: 'budget_exceeded', code: '400' } });
+    const spy4 = vi.spyOn(t.mock, 'chatWithKey').mockRejectedValueOnce(new LiteLLMHttpError(400, budget, '/v1/chat/completions'));
+    const r4 = await send();
+    spy4.mockRestore();
+    expectError(r4, 502, 'KEY_TEST_FAILED');
   });
 
   it('never puts the key into logs or the event log, also not through other errors', async () => {

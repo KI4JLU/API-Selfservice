@@ -256,6 +256,8 @@ export const apiKeys = apiSelfservice.table(
     lastExtendedAt: ts('last_extended_at'),
     notified14d: boolean('notified_14d').notNull().default(false),
     notified1d: boolean('notified_1d').notNull().default(false),
+    /** #11: the key that replaced this one when it was renewed; no more expiry reminders then */
+    replacedBy: text('replaced_by'),
     deletedAt: ts('deleted_at'),
   },
   (t) => [uniqueIndex('api_key_litellm_idx').on(t.litellmKeyId), index('api_key_user_idx').on(t.userId), index('api_key_cc_idx').on(t.costCenterId)],

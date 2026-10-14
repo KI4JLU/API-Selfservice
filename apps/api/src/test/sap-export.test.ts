@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { SapExportPreviewSchema, SapExportSchema } from '@api-selfservice/shared';
-import { costCenters, eq } from '@api-selfservice/db';
+import { costCenters, eq, requestLogs } from '@api-selfservice/db';
 import { encodeCp1252, providerLabel, sapCsv, sapExportFile } from '../services/sap-export.js';
 import { addMember, createTestApp, expectError, expectShape, litellmOwner, randomCostCenter, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
 
@@ -52,6 +52,8 @@ describe('SAP export (#14)', () => {
       // other months do not count
       await t.addLog(kA, { spend: 999, startTime: '2026-09-01T00:00:00.000Z', model: 'gpt-4o' }),
     ]);
+    // spend without a portal cost center (e.g. a key created outside the portal)
+    await t.db.insert(requestLogs).values({ requestId: 'sap-unassigned-1', time: new Date('2026-08-09T10:00:00Z'), status: 'success', model: 'gpt-4o', provider: 'openai', cost: '3.25' });
   });
   afterAll(() => t.close());
 
@@ -83,9 +85,18 @@ describe('SAP export (#14)', () => {
     // two portal cost centers share the recipient 11223344
     expect(p.rows[1]!.costCenters.map((c) => c.id).sort()).toEqual([ccA.id, ccSameAsA.id].sort());
     expect(p.missingRecipient).toEqual([{ id: ccMissing.id, number: ccMissing.number, name: `CC ${ccMissing.number}`, spend: 9 }]);
+    // spend without cost center is reported, not dropped silently
+    expect(p.unassignedSpend).toBe(3.25);
     // own dates and text
     const custom = expectShape(SapExportPreviewSchema, (await admin.post('/admin/sap-export/preview', { month, documentDate: '2026-08-22', postingDate: '2026-08-30', text: 'KI {Provider}' })).body);
     expect(custom.rows[0]).toMatchObject({ documentDate: '22082026', postingDate: '30082026', text: 'KI Anthropic' });
+    // the SAP text field has 50 characters; checked after {Provider} is replaced
+    await t.db.insert(requestLogs).values({ requestId: 'sap-bedrock-1', costCenterId: ccA.id, time: new Date('2026-07-09T10:00:00Z'), status: 'success', model: 'x', provider: 'bedrock', cost: '1' });
+    const long = `${'x'.repeat(39)} {Provider}`;
+    expect(long.length).toBe(50);
+    // "AWS Bedrock" is longer than "{Provider}"
+    expectError(await admin.post('/admin/sap-export/preview', { month: '2026-07', text: long }), 400, 'VALIDATION_ERROR');
+    expect((await admin.post('/admin/sap-export/preview', { month: '2026-07' })).body.rows[0].text).toBe('API-Kosten: AWS Bedrock');
   });
 
   it('the export needs the sender cost center; the CSV keeps the LSMW format and is offered again from the history', async () => {

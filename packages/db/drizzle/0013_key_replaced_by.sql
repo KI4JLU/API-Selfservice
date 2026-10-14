@@ -1,0 +1,1 @@
+ALTER TABLE "api_selfservice"."api_keys" ADD COLUMN "replaced_by" text;

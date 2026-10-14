@@ -36,9 +36,13 @@ export async function runKeyExpiry(deps: Deps) {
     const vars = { keyName: k.name, keyId: k.id, expiresAt: k.expiresAt.toISOString().slice(0, 10) };
     if (k.expiresAt <= now) {
       await deps.db.update(apiKeys).set({ status: 'expired', blockedReason: 'expired' }).where(eq(apiKeys.id, k.id));
-      await notifyUser(deps, k.userId, 'key_expired', vars);
+      // a renewed key ran out as planned; its replacement already exists
+      if (!k.replacedBy) await notifyUser(deps, k.userId, 'key_expired', vars);
       await audit(deps, { actorId: null, action: 'key.expire', entity: 'api_key', entityId: k.id, payload: vars });
       expired++;
+    } else if (k.replacedBy) {
+      // renewed: no reminders to renew it again
+      continue;
     } else if (k.expiresAt <= in1 && !k.notified1d) {
       await deps.db.update(apiKeys).set({ notified1d: true, notified14d: true }).where(eq(apiKeys.id, k.id));
       await notifyUser(deps, k.userId, 'key_expires_1d', vars);

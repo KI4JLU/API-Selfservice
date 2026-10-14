@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { CostCenterEventsSchema } from '@api-selfservice/shared';
+import { auditLog } from '@api-selfservice/db';
 import { audit } from '../services/audit.js';
 import { addMember, createTestApp, expectError, expectShape, randomCostCenter, syncProvidersWithFree, type Client, type TestApp } from './harness.js';
 
@@ -69,6 +70,19 @@ describe('cost center event log (#13)', () => {
     expect((await events(ccAdmin, `?from=${new Date(Date.now() + 86400000).toISOString()}`)).total).toBe(0);
     const paged = await events(ccAdmin, '?pageSize=2&page=2');
     expect(paged.items).toHaveLength(2);
+  });
+
+  it('has no size limit: counts and paging are exact also beyond 2000 events', async () => {
+    const before = (await events(ccAdmin)).counts;
+    const rows = Array.from({ length: 2100 }, (_, i) => ({ actorId: member.userId, action: 'key.update', entity: 'api_key', entityId: keyId, payload: { n: i } }));
+    await t.db.insert(auditLog).values(rows);
+    const e = await events(ccAdmin, '?pageSize=500');
+    expect(e.counts.keys).toBe(before.keys + 2100);
+    expect(e.total).toBe(before.all + 2100);
+    const last = await events(ccAdmin, `?pageSize=500&page=${Math.ceil(e.total / 500)}`);
+    expect(last.items.length).toBe(e.total % 500 || 500);
+    // the oldest event is still there
+    expect(last.items.at(-1)!.action).toBe('cost_center.create');
   });
 
   it('only for admins and the cost center admins of this cost center', async () => {

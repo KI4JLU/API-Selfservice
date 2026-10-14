@@ -19,13 +19,14 @@ function keyTestError(e: unknown): ApiError {
 
 /**
  * Errors raised by the provider behind a model (e.g. a wrong upstream API key in the proxy config) come back
- * with the same 401 as a rejected portal key, but LiteLLM prefixes their message with its exception class
- * (`litellm.AuthenticationError: ... OpenAIException ...`). Errors of the proxy's own key check have no prefix.
+ * with the same 401 as a rejected portal key, but LiteLLM prefixes their message with its exception class and
+ * names the provider's exception (`litellm.AuthenticationError: ... OpenAIException - ...`). Errors of the proxy
+ * itself (key check, key budget, rate limits) carry no provider exception and keep their own mapping.
  */
 function isProviderError(body: string) {
   try {
     const message = (JSON.parse(body) as { error?: { message?: unknown } }).error?.message;
-    return typeof message === 'string' && /^litellm\.\w+Error:/.test(message);
+    return typeof message === 'string' && /^litellm\.\w+Error:/.test(message) && /\b\w+Exception\b/.test(message);
   } catch {
     return false;
   }

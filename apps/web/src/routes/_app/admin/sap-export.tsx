@@ -164,6 +164,11 @@ function SapExportPage() {
               {t('errors.SAP_SENDER_MISSING')}
             </Banner>
           ) : null}
+          {p && p.unassignedSpend > 0 ? (
+            <Banner variant="warning" testId="hint-sap-unassigned">
+              {t('sap.unassigned', { amount: fmtMoney(p.unassignedSpend) })}
+            </Banner>
+          ) : null}
           {p?.missingRecipient.length ? (
             <Banner variant="warning" title={t('sap.missingTitle', { count: p.missingRecipient.length })} testId="hint-sap-missing-recipient">
               {p.missingRecipient.map((c) => `${fmtCostCenter(c.number)} ${c.name} (${fmtMoney(c.spend)})`).join(' · ')}

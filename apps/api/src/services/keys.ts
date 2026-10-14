@@ -106,8 +106,11 @@ export async function createKey(
   deps: Deps,
   cu: CurrentUser,
   input: { name: string; models: string[]; providers: string[]; costCenterId: string; budget?: number | null; budgetPeriod?: KeyBudgetPeriod | null; expiresAt?: string },
-  /** set by a renewal: the old key's budget does not count, and the LiteLLM alias (unique there) gets a suffix */
-  opts: { renewOf?: string } = {},
+  /**
+   * Set by a renewal: the LiteLLM alias (unique there) gets a suffix; `excludeBudgetOf` leaves the old key's budget out of
+   * the user budget check, only when the old key cannot spend any more (deleted with the renewal or expired).
+   */
+  opts: { renewOf?: string; excludeBudgetOf?: string } = {},
 ) {
   const expiresAt = resolveExpiry(deps, deps.now(), input.expiresAt);
   const cc = await getCostCenter(deps, input.costCenterId);
@@ -132,9 +135,11 @@ export async function createKey(
   }
   const models = [...new Set(input.models)];
   models.push(...missingProviderModels(allowed, keyProviders, models));
+  // An empty model list means "all models" in LiteLLM; a key always names its models.
+  if (models.length === 0) throw new ApiError('MODEL_NOT_ALLOWED', 'No released model for this key');
   const budgetState = await getBudgetState(deps, cu.id);
   if (budgetState.blocked || cc.blockedAt) throw new ApiError('KEY_NOT_ACTIVE', 'Budget exhausted');
-  await assertKeyBudgets(deps, cu.id, input.budget ?? null, opts.renewOf);
+  await assertKeyBudgets(deps, cu.id, input.budget ?? null, opts.excludeBudgetOf);
   // A period only makes sense with an amount (F-KEY-11).
   const budgetPeriod = input.budget == null ? null : (input.budgetPeriod ?? null);
   // Keys hang on the cost center's LiteLLM team (E-8); the user id is shared with LiteLLM (E-7).
@@ -181,7 +186,14 @@ export async function updateKey(deps: Deps, cu: CurrentUser, id: string, input: 
   if (k.status === 'deleted') throw new ApiError('KEY_NOT_ACTIVE', 'Key is deleted');
   const expiresAt = input.expiresAt !== undefined ? resolveExpiry(deps, k.createdAt, input.expiresAt) : undefined;
   // #11: an expired key with a new date in the allowed range runs again; keys blocked for another reason stay blocked
-  const revives = expiresAt !== undefined && (k.status === 'expired' || k.blockedReason === 'expired');
+  // (also before the expiry job has marked it: LiteLLM refuses it from its expiry on)
+  // keys blocked for another reason (admin, budget) are never revived here
+  const revives = expiresAt !== undefined && (k.status === 'expired' || k.blockedReason === 'expired' || (k.status === 'active' && k.expiresAt <= deps.now()));
+  // like creating a key: no key comes back while the user's or the cost center's budget is exhausted
+  if (revives) {
+    const cc = await getCostCenter(deps, k.costCenterId);
+    if ((await getBudgetState(deps, cu.id)).blocked || cc.blockedAt) throw new ApiError('KEY_NOT_ACTIVE', 'Budget exhausted');
+  }
   if (input.budget !== undefined) await assertKeyBudgets(deps, cu.id, input.budget, k.id);
   // F-KEY-11: removing the amount also removes the period.
   const budget = input.budget !== undefined ? input.budget : k.budget === null ? null : Number(k.budget);
@@ -230,24 +242,29 @@ export async function deleteKey(deps: Deps, cu: CurrentUser, id: string) {
 export async function renewKey(deps: Deps, cu: CurrentUser, id: string, input: { expiresAt?: string; revokeOld?: boolean }) {
   const k = await getOwnKey(deps, cu, id);
   if (k.status === 'deleted' || (k.status === 'blocked' && k.blockedReason !== 'expired')) throw new ApiError('KEY_NOT_ACTIVE', 'Only active or expired keys can be renewed');
-  // Models no longer released on the cost center are left out; a provider brings its current models again.
+  // Models and providers no longer released on the cost center are left out; a provider brings its current models again.
+  // Nothing left -> createKey refuses (MODEL_NOT_ALLOWED) instead of creating a key without models.
   const allowed = await allowedModelsForCostCenter(deps, await getCostCenter(deps, k.costCenterId));
-  const providerModels = new Set(missingProviderModels(allowed, k.providers, []));
+  const keyProviders = k.providers.filter((p) => allowed.some((a) => a.provider === p));
+  const providerModels = new Set(missingProviderModels(allowed, keyProviders, []));
   const models = k.models.filter((m) => !providerModels.has(m) && allowed.some((a) => a.modelName === m));
+  const oldCannotSpend = input.revokeOld || k.status === 'expired' || k.expiresAt <= deps.now();
   const created = await createKey(
     deps,
     cu,
     {
       name: k.name,
       models,
-      providers: k.providers,
+      providers: keyProviders,
       costCenterId: k.costCenterId,
       budget: k.budget === null ? null : Number(k.budget),
       budgetPeriod: k.budgetPeriod,
       expiresAt: input.expiresAt,
     },
-    { renewOf: k.id },
+    { renewOf: k.id, excludeBudgetOf: oldCannotSpend ? k.id : undefined },
   );
+  // the old key gets no more expiry reminders (#11)
+  await deps.db.update(apiKeys).set({ replacedBy: created.id }).where(eq(apiKeys.id, k.id));
   if (input.revokeOld) await deleteKey(deps, cu, k.id);
   return created;
 }

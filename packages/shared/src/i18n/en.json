@@ -745,6 +745,7 @@
     "total": "{{rows}} rows · total {{total}}",
     "missingTitle_one": "{{count}} cost center without SAP recipient is not exported",
     "missingTitle_other": "{{count}} cost centers without SAP recipient are not exported",
+    "unassigned": "{{amount}} of spend without a portal cost center (key without or with a deleted cost center) is not exported.",
     "history": "Previous exports",
     "created": "Created",
     "by": "By",
