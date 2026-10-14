@@ -102,9 +102,7 @@ export function CostCenterUsage({ id, range, setRange }: { id: string; range: Us
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">{t('ccDetail.usageTitle')}</h2>
-          {detail.data ? (
-            <p className="text-muted-foreground text-xs">{t('ccDetail.usageSummary', { users: detail.data.users.length, keys: keyCount, requests: fmtNumber(total) })}</p>
-          ) : null}
+          {detail.data ? <p className="text-muted-foreground text-xs">{t('ccDetail.usageSummary', { users: detail.data.users.length, keys: keyCount, requests: fmtNumber(total) })}</p> : null}
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <Field label={t('ccDetail.range')} htmlFor="usage-range">

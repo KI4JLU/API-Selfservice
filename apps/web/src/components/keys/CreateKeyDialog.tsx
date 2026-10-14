@@ -96,7 +96,9 @@ export function CreateKeyDialog({ open, onOpenChange, me, onCreated }: { open: b
     }
     const b = budget.trim() === '' ? null : Number(budget);
     const period = b === null || budgetPeriod === 'once' ? null : budgetPeriod;
-    const created = await create.mutateAsync({ name: name.trim(), costCenterId, models, providers: selectedProviders, budget: b, budgetPeriod: period, expiresAt: endOfLocalDay(expiry) }).catch(() => null);
+    const created = await create
+      .mutateAsync({ name: name.trim(), costCenterId, models, providers: selectedProviders, budget: b, budgetPeriod: period, expiresAt: endOfLocalDay(expiry) })
+      .catch(() => null);
     if (created) {
       toast.success(t('keys.created'));
       onOpenChange(false);
@@ -171,7 +173,13 @@ export function CreateKeyDialog({ open, onOpenChange, me, onCreated }: { open: b
                         ) : (
                           <span className="size-4" />
                         )}
-                        <button type="button" className="flex flex-1 items-center gap-2 text-left" onClick={() => toggleGroup(key)} aria-expanded={expanded} data-testid={`btn-model-group-${g.name ?? 'none'}`}>
+                        <button
+                          type="button"
+                          className="flex flex-1 items-center gap-2 text-left"
+                          onClick={() => toggleGroup(key)}
+                          aria-expanded={expanded}
+                          data-testid={`btn-model-group-${g.name ?? 'none'}`}
+                        >
                           {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                           {label}
                           <span className="text-xs font-normal text-muted-foreground">

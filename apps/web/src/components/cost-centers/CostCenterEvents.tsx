@@ -31,7 +31,8 @@ function eventDetail(e: CostCenterEvent, t: TFunction): string | null {
   const parts: string[] = [];
   if (e.entity === 'api_key' && e.entityLabel) parts.push(t('ccDetail.eventKey', { name: e.entityLabel }));
   if (typeof p.maxBudget === 'number' || p.maxBudget === null) parts.push(t('ccDetail.eventBudget', { value: p.maxBudget === null ? t('common.unlimited') : fmtMoney(p.maxBudget as number) }));
-  if (typeof p.memberBudget === 'number' || p.memberBudget === null) parts.push(t('ccDetail.eventMemberBudget', { value: p.memberBudget === null ? t('common.unlimited') : fmtMoney(p.memberBudget as number) }));
+  if (typeof p.memberBudget === 'number' || p.memberBudget === null)
+    parts.push(t('ccDetail.eventMemberBudget', { value: p.memberBudget === null ? t('common.unlimited') : fmtMoney(p.memberBudget as number) }));
   if (typeof p.threshold === 'number') parts.push(t('ccDetail.eventThreshold', { pct: Math.round((p.threshold as number) * 100) }));
   if (typeof p.role === 'string') parts.push(t('ccDetail.eventRole', { role: t(`members.roles.${p.role}`, { defaultValue: p.role }) }));
   if (typeof p.reason === 'string') parts.push(t('ccDetail.eventReason', { reason: p.reason }));
@@ -63,7 +64,10 @@ export function CostCenterEvents({ id, number }: { id: string; number: string })
       e.actor?.name ?? t('events.system'),
       e.subject?.name ?? '',
     ]);
-    downloadCsv(`ereignisse-${number}.csv`, toCsv([[t('events.time'), t('events.severity'), t('ccDetail.category'), t('events.action'), t('ccDetail.details'), t('ccDetail.by'), t('ccDetail.concerns')], ...rows]));
+    downloadCsv(
+      `ereignisse-${number}.csv`,
+      toCsv([[t('events.time'), t('events.severity'), t('ccDetail.category'), t('events.action'), t('ccDetail.details'), t('ccDetail.by'), t('ccDetail.concerns')], ...rows]),
+    );
   };
 
   const chip = (key: CostCenterEventCategory | null, label: string, count?: number) => (

@@ -52,7 +52,12 @@ export function KeyModels({ apiKey }: { apiKey: ApiKey }) {
               <Badge variant="outline">+{hidden}</Badge>
             </button>
           </PopoverTrigger>
-          <PopoverContent className="max-h-80 w-auto max-w-[min(400px,calc(100vw-2rem))] overflow-y-auto" onMouseEnter={() => hover(true)} onMouseLeave={() => hover(false)} data-testid="popover-key-models">
+          <PopoverContent
+            className="max-h-80 w-auto max-w-[min(400px,calc(100vw-2rem))] overflow-y-auto"
+            onMouseEnter={() => hover(true)}
+            onMouseLeave={() => hover(false)}
+            data-testid="popover-key-models"
+          >
             <div className="grid gap-3 text-sm">
               {groups.map((g) => (
                 <div key={g.provider ?? ''} className="grid gap-1" data-testid={`key-models-group-${g.provider ?? 'none'}`}>

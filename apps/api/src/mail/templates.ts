@@ -124,7 +124,10 @@ const T: Record<NotificationType, Record<Locale, Template>> = {
     en: { subject: 'API key “{{keyName}}” expires tomorrow', body: 'Your API key “{{keyName}}” expires on {{expiresAt}}. Renew it now.\n\nRenew key: {{appUrl}}/keys?renew={{keyId}}' },
   },
   key_expired: {
-    de: { subject: 'API-Key „{{keyName}}“ abgelaufen', body: 'Ihr API-Key „{{keyName}}“ ist abgelaufen. Erneuern Sie ihn, um einen neuen Key mit denselben Einstellungen zu erhalten.\n\nKey erneuern: {{appUrl}}/keys?renew={{keyId}}' },
+    de: {
+      subject: 'API-Key „{{keyName}}“ abgelaufen',
+      body: 'Ihr API-Key „{{keyName}}“ ist abgelaufen. Erneuern Sie ihn, um einen neuen Key mit denselben Einstellungen zu erhalten.\n\nKey erneuern: {{appUrl}}/keys?renew={{keyId}}',
+    },
     en: { subject: 'API key “{{keyName}}” expired', body: 'Your API key “{{keyName}}” expired. Renew it to get a new key with the same settings.\n\nRenew key: {{appUrl}}/keys?renew={{keyId}}' },
   },
   budget_exhausted_keys_blocked: {

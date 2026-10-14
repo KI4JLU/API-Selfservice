@@ -100,7 +100,11 @@ function CostCenterDetailPage() {
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-5" data-testid="cost-center-kpis">
-        <Kpi label={t('costCenters.maxBudget')} value={c.maxBudget === null ? t('common.unlimited') : fmtMoney(c.maxBudget)} hint={c.maxBudget === null ? t('ccDetail.noLimit') : t(`period.${c.budgetPeriod ?? 'monthly'}`)} />
+        <Kpi
+          label={t('costCenters.maxBudget')}
+          value={c.maxBudget === null ? t('common.unlimited') : fmtMoney(c.maxBudget)}
+          hint={c.maxBudget === null ? t('ccDetail.noLimit') : t(`period.${c.budgetPeriod ?? 'monthly'}`)}
+        />
         <Kpi label={t('common.spend')} value={fmtMoney(c.spendCurrentPeriod, { precise: true })} hint={t('ccDetail.currentPeriod')}>
           {util !== null ? (
             <Progress value={Math.min(100, util * 100)} className="mt-2" indicatorClassName={util >= 1 ? 'bg-destructive' : util >= BUDGET_WARN_THRESHOLD ? 'bg-warning' : undefined} />

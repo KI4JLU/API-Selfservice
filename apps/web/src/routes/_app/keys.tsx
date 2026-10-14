@@ -109,7 +109,13 @@ function KeysPage() {
               </Button>
             </WithTooltip>
             <WithTooltip text={t('keys.renewTooltip')}>
-              <Button variant="outline" size="sm" onClick={() => setToRenew(row.original)} disabled={row.original.status === 'deleted' || row.original.status === 'blocked'} data-testid="btn-renew-key">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setToRenew(row.original)}
+                disabled={row.original.status === 'deleted' || row.original.status === 'blocked'}
+                data-testid="btn-renew-key"
+              >
                 <RefreshCw />
                 <span className="hidden sm:inline">{t('keys.renew')}</span>
               </Button>
