@@ -14,6 +14,7 @@ import {
   CostCenterRequestSchema,
   CostCenterSchema,
   CostCenterResyncResultSchema,
+  CostCenterEventsSchema,
   CostCenterLookupSchema,
   CreatedApiKeySchema,
   RenewApiKeySchema,
@@ -81,6 +82,8 @@ export const qk = {
   costCenters: (params: Record<string, unknown>) => ['cost-centers', params] as const,
   managedCostCenters: ['cost-centers', 'managed'] as const,
   costCenterMembers: (id: string) => ['cost-centers', id, 'members'] as const,
+  costCenter: (id: string) => ['cost-centers', id] as const,
+  costCenterEvents: (id: string, params: Record<string, unknown>) => ['cost-centers', id, 'events', params] as const,
   memberCandidates: (id: string, q: string) => ['cost-centers', id, 'member-candidates', q] as const,
   myJoinRequests: ['me', 'join-requests'] as const,
   joinRequests: (id: string) => ['cost-centers', id, 'join-requests'] as const,
@@ -160,6 +163,19 @@ export function useCostCenterLookup(q?: string) {
 
 export function useManagedCostCenters() {
   return useQuery({ queryKey: qk.managedCostCenters, queryFn: () => api.get('/cost-centers/managed', PagedCostCenters, { pageSize: 200 }) });
+}
+
+/** #13: full view for admins and the cost center's own admins. */
+export function useCostCenter(id: string) {
+  return useQuery({ queryKey: qk.costCenter(id), queryFn: () => api.get(`/cost-centers/${id}`, CostCenterSchema) });
+}
+
+export type CostCenterEvent = z.infer<typeof CostCenterEventsSchema>['items'][number];
+export type CostCenterEventsParams = { category?: string; warningsOnly?: string; q?: string; from?: string; page?: number; pageSize?: number };
+
+/** #13: event log of one cost center. */
+export function useCostCenterEvents(id: string, params: CostCenterEventsParams) {
+  return useQuery({ queryKey: qk.costCenterEvents(id, params), queryFn: () => api.get(`/cost-centers/${id}/events`, CostCenterEventsSchema, params), placeholderData: (prev) => prev });
 }
 
 export function useCostCenterMembers(id: string | null) {

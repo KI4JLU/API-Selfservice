@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
+import { Link, createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, Pencil, TriangleAlert, Users } from 'lucide-react';
+import { ArrowRight, BarChart3, Pencil, TriangleAlert, Users } from 'lucide-react';
 import { requireCostCenterAdmin } from '@/lib/guards';
 import { useManagedCostCenters, useOpenJoinRequestCounts, type CostCenter } from '@/lib/queries';
 import { fmtCostCenter, fmtDate, fmtMoney, fmtPercent } from '@/lib/format';
@@ -52,7 +52,12 @@ function MyCostCentersPage() {
               <Card key={c.id} data-testid="card-cost-center">
                 <CardHeader>
                   <CardDescription className="font-mono">{fmtCostCenter(c.number)}</CardDescription>
-                  <CardTitle className="truncate">{c.name}</CardTitle>
+                  <CardTitle className="truncate">
+                    {/* #13: the detail page brings members, spend and events together */}
+                    <Link to="/cost-centers/$id" params={{ id: c.id }} className="hover:underline" data-testid="link-cost-center-detail">
+                      {c.name}
+                    </Link>
+                  </CardTitle>
                   <CardDescription className="truncate">
                     {c.ownerName} · {c.ownerEmail}
                   </CardDescription>
@@ -107,6 +112,12 @@ function MyCostCentersPage() {
                   <Button variant="outline" size="sm" onClick={() => setEditing(c)} disabled={c.isDefault} data-testid="btn-edit-cost-center">
                     <Pencil />
                     {t('costCenters.editBudget')}
+                  </Button>
+                  <Button size="sm" asChild data-testid="btn-open-cost-center">
+                    <Link to="/cost-centers/$id" params={{ id: c.id }}>
+                      {t('ccDetail.open')}
+                      <ArrowRight />
+                    </Link>
                   </Button>
                 </CardFooter>
               </Card>

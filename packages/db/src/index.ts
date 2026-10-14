@@ -3,7 +3,7 @@ import pg from 'pg';
 import { schema } from './schema.js';
 
 export * from './schema.js';
-export { sql, eq, and, or, ne, gte, lt, lte, gt, inArray, isNull, isNotNull, desc, asc, like, ilike, count, sum } from 'drizzle-orm';
+export { sql, eq, and, or, ne, gte, lt, lte, gt, inArray, isNull, isNotNull, desc, asc, like, notLike, ilike, count, sum, max } from 'drizzle-orm';
 
 export type Db = NodePgDatabase<typeof schema>;
 

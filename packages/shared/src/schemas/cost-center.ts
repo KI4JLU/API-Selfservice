@@ -118,6 +118,8 @@ export const CostCenterMemberSchema = z.object({
   effectiveBudget: Money.nullable(),
   /** #15: spend on this cost center in the current member budget period */
   spendCurrentPeriod: Money,
+  /** #13: the member's keys on this cost center that are not deleted */
+  keyCount: z.number().int(),
 });
 
 export const AddCostCenterMemberSchema = z.object({

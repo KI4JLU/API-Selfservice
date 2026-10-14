@@ -25,6 +25,7 @@ import { Route as AppAdminNotificationsRouteImport } from './routes/_app/admin/n
 import { Route as AppAdminProvidersRouteImport } from './routes/_app/admin/providers'
 import { Route as AppAdminReportsRouteImport } from './routes/_app/admin/reports'
 import { Route as AppAdminUsersRouteImport } from './routes/_app/admin/users'
+import { Route as AppCostCentersIdRouteImport } from './routes/_app/cost-centers_.$id'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -105,6 +106,11 @@ const AppAdminUsersRoute = AppAdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCostCentersIdRoute = AppCostCentersIdRouteImport.update({
+  id: '/cost-centers_/$id',
+  path: '/cost-centers/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/admin/providers': typeof AppAdminProvidersRoute
   '/admin/reports': typeof AppAdminReportsRoute
   '/admin/users': typeof AppAdminUsersRoute
+  '/cost-centers/$id': typeof AppCostCentersIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/admin/providers': typeof AppAdminProvidersRoute
   '/admin/reports': typeof AppAdminReportsRoute
   '/admin/users': typeof AppAdminUsersRoute
+  '/cost-centers/$id': typeof AppCostCentersIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/_app/admin/providers': typeof AppAdminProvidersRoute
   '/_app/admin/reports': typeof AppAdminReportsRoute
   '/_app/admin/users': typeof AppAdminUsersRoute
+  '/_app/cost-centers_/$id': typeof AppCostCentersIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/admin/providers'
     | '/admin/reports'
     | '/admin/users'
+    | '/cost-centers/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/admin/providers'
     | '/admin/reports'
     | '/admin/users'
+    | '/cost-centers/$id'
   id:
     | '__root__'
     | '/_app'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/_app/admin/providers'
     | '/_app/admin/reports'
     | '/_app/admin/users'
+    | '/_app/cost-centers_/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -333,6 +345,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminUsersRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/cost-centers_/$id': {
+      id: '/_app/cost-centers_/$id'
+      path: '/cost-centers/$id'
+      fullPath: '/cost-centers/$id'
+      preLoaderRoute: typeof AppCostCentersIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -351,6 +370,7 @@ interface AppRouteChildren {
   AppAdminProvidersRoute: typeof AppAdminProvidersRoute
   AppAdminReportsRoute: typeof AppAdminReportsRoute
   AppAdminUsersRoute: typeof AppAdminUsersRoute
+  AppCostCentersIdRoute: typeof AppCostCentersIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -368,6 +388,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAdminProvidersRoute: AppAdminProvidersRoute,
   AppAdminReportsRoute: AppAdminReportsRoute,
   AppAdminUsersRoute: AppAdminUsersRoute,
+  AppCostCentersIdRoute: AppCostCentersIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

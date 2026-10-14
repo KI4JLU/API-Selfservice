@@ -591,7 +591,8 @@
     "bulkBack": "Zurück",
     "bulkSubmit": "{{count}} hinzufügen",
     "bulkAdded": "{{count}} Mitglieder hinzugefügt",
-    "bulkFailed": "Nicht hinzugefügt ({{count}})"
+    "bulkFailed": "Nicht hinzugefügt ({{count}})",
+    "keys": "Keys"
   },
   "litellmUsers": {
     "title": "LiteLLM-User",
@@ -633,6 +634,77 @@
     "reasonLabel": "Begründung",
     "approved": "{{name}} ist jetzt Mitglied",
     "rejected": "Anfrage von {{name}} abgelehnt",
-    "openCount": "{{count}} offene Anfragen"
+    "openCount": "{{count}} offene Anfragen",
+    "reason": "Begründung",
+    "showAll": "Vollständig anzeigen",
+    "showLess": "Weniger anzeigen"
+  },
+  "ccDetail": {
+    "open": "Öffnen",
+    "owner": "Verantwortlich",
+    "exportReport": "Report exportieren",
+    "noLimit": "kein Limit gesetzt",
+    "currentPeriod": "aktueller Zeitraum",
+    "openRequests_one": "{{count}} offene Anfrage",
+    "openRequests_other": "{{count}} offene Anfragen",
+    "allKeys": "über alle Keys",
+    "openBadge": "{{count}} offen",
+    "usageTab": "Budgetverbrauch",
+    "eventsTab": "Ereignisse",
+    "defaultMembers": "Zur Default-Kostenstelle gehören alle User; Mitglieder werden hier nicht verwaltet.",
+    "usageTitle": "Verbrauch nach User und Key",
+    "usageSummary": "{{users}} User · {{keys}} Keys · {{requests}} Requests",
+    "range": "Zeitraum",
+    "groupBy": "Gruppieren",
+    "ranges": {
+      "current": "Aktueller Zeitraum",
+      "last": "Letzter Monat",
+      "30d": "Letzte 30 Tage",
+      "90d": "Letzte 90 Tage",
+      "year": "Dieses Jahr"
+    },
+    "groups": {
+      "user": "nach User",
+      "key": "nach Key",
+      "model": "nach Modell"
+    },
+    "groupHeads": {
+      "user": "User / Key",
+      "key": "Key",
+      "model": "Modell"
+    },
+    "shareRequests": "Anteil Requests",
+    "lastUsed": "Letzte Nutzung",
+    "noUsage": "Keine Nutzung im gewählten Zeitraum.",
+    "categories": {
+      "limits": "Limits",
+      "requests": "Anfragen",
+      "membership": "Mitgliedschaft",
+      "keys": "Keys",
+      "budget": "Budget"
+    },
+    "warningsOnly": "Nur Warnungen & Kritisch",
+    "searchEvents": "Person oder Key suchen",
+    "periods": {
+      "7": "Letzte 7 Tage",
+      "30": "Letzte 30 Tage",
+      "90": "Letzte 90 Tage",
+      "all": "Gesamter Zeitraum"
+    },
+    "exportCsv": "CSV exportieren",
+    "category": "Kategorie",
+    "event": "Ereignis",
+    "details": "Details",
+    "by": "Ausgeführt von",
+    "concerns": "Betrifft",
+    "noEvents": "Keine Ereignisse für diese Auswahl.",
+    "eventsShown": "{{shown}} von {{total}} Ereignissen angezeigt",
+    "loadOlder": "Ältere laden",
+    "eventKey": "Key {{name}}",
+    "eventBudget": "Max-Budget {{value}}",
+    "eventMemberBudget": "Budget je User {{value}}",
+    "eventThreshold": "Schwelle {{pct}} %",
+    "eventRole": "Rolle {{role}}",
+    "eventReason": "Begründung: {{reason}}"
   }
 }

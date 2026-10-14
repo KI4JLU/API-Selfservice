@@ -1,4 +1,4 @@
-import { and, apiKeys, costCenterMembers, costCenters, count, eq, gte, lt, ne, requestLogs, sum, user } from '@api-selfservice/db';
+import { and, apiKeys, costCenterMembers, costCenters, count, eq, gte, lt, max, ne, requestLogs, sum, user } from '@api-selfservice/db';
 import type { CurrentUser, Deps } from '../context.js';
 import { forbidden, notFound } from '../errors.js';
 import { costCenterPeriod } from './cost-centers.js';
@@ -59,24 +59,34 @@ export async function costCenterReportDetail(deps: Deps, cu: CurrentUser, id: st
   const summary = await rowFor(deps, cc, start, end);
   const where = and(eq(requestLogs.costCenterId, cc.id), gte(requestLogs.time, start), lt(requestLogs.time, end));
   const perUser = await deps.db
-    .select({ userId: requestLogs.userId, name: user.name, email: user.email, spend: sum(requestLogs.cost), n: count() })
+    .select({ userId: requestLogs.userId, name: user.name, email: user.email, spend: sum(requestLogs.cost), n: count(), last: max(requestLogs.time) })
     .from(requestLogs)
     .leftJoin(user, eq(user.id, requestLogs.userId))
     .where(where)
     .groupBy(requestLogs.userId, user.name, user.email);
   const perKey = await deps.db
-    .select({ userId: requestLogs.userId, keyId: requestLogs.apiKeyId, keyName: apiKeys.name, spend: sum(requestLogs.cost), n: count() })
+    .select({ userId: requestLogs.userId, keyId: requestLogs.apiKeyId, keyName: apiKeys.name, spend: sum(requestLogs.cost), n: count(), last: max(requestLogs.time) })
     .from(requestLogs)
     .leftJoin(apiKeys, eq(apiKeys.id, requestLogs.apiKeyId))
     .where(where)
     .groupBy(requestLogs.userId, requestLogs.apiKeyId, apiKeys.name);
+  const perModel = await deps.db
+    .select({ model: requestLogs.model, spend: sum(requestLogs.cost), n: count(), last: max(requestLogs.time) })
+    .from(requestLogs)
+    .where(where)
+    .groupBy(requestLogs.model);
+  const iso = (d: Date | string | null) => (d ? new Date(d).toISOString() : null);
   return {
     summary,
     users: perUser.map((u) => ({
       user: { id: u.userId ?? '', name: u.name ?? '(unknown)', email: u.email ?? '' },
       spend: Number(u.spend ?? 0),
       requests: Number(u.n),
-      keys: perKey.filter((k) => k.userId === u.userId).map((k) => ({ keyId: k.keyId, keyName: k.keyName ?? '(unknown)', spend: Number(k.spend ?? 0), requests: Number(k.n) })),
+      lastUsedAt: iso(u.last),
+      keys: perKey
+        .filter((k) => k.userId === u.userId)
+        .map((k) => ({ keyId: k.keyId, keyName: k.keyName ?? '(unknown)', spend: Number(k.spend ?? 0), requests: Number(k.n), lastUsedAt: iso(k.last) })),
     })),
+    byModel: perModel.map((m) => ({ model: m.model, spend: Number(m.spend ?? 0), requests: Number(m.n), lastUsedAt: iso(m.last) })).sort((a, b) => b.spend - a.spend || b.requests - a.requests),
   };
 }

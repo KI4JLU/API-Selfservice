@@ -17,7 +17,7 @@ import {
   type CostCenterMember,
   type MemberCandidate,
 } from '@/lib/queries';
-import { fmtCostCenter, fmtDateTime } from '@/lib/format';
+import { fmtCostCenter, fmtDateTime, fmtMoney } from '@/lib/format';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -62,7 +62,7 @@ export function CostCenterMembersSheet({ costCenter, onClose }: { costCenter: Co
 }
 
 /** F-KST-16: open join requests; approving adds the requester as plain member. */
-function JoinRequests({ id }: { id: string }) {
+export function JoinRequests({ id }: { id: string }) {
   const { t } = useTranslation();
   const requests = usePendingJoinRequests(id);
   const approve = useApproveJoinRequest();
@@ -106,7 +106,7 @@ function JoinRequests({ id }: { id: string }) {
                 <div className="text-muted-foreground truncate text-xs">
                   {r.user.email} · {fmtDateTime(r.createdAt)}
                 </div>
-                {r.message ? <p className="mt-1 text-sm whitespace-pre-line">{r.message}</p> : null}
+                {r.message ? <RequestReason text={r.message} /> : null}
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={() => onApprove(r)} loading={approve.isPending && approve.variables?.requestId === r.id} data-testid="btn-approve-join-request">
@@ -146,12 +146,32 @@ function JoinRequests({ id }: { id: string }) {
   );
 }
 
+/** #13: long reasons are cut to two lines and can be expanded, so the list stays calm. */
+function RequestReason({ text }: { text: string }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const long = text.length > 160 || text.split('\n').length > 2;
+  return (
+    <div className="bg-muted/40 mt-1 rounded-md px-3 py-2">
+      <div className="text-muted-foreground text-xs">{t('joinRequests.reason')}</div>
+      <p className={`text-sm whitespace-pre-line ${long && !open ? 'line-clamp-2' : ''}`} data-testid="join-request-reason">
+        {text}
+      </p>
+      {long ? (
+        <button type="button" className="text-primary mt-1 text-xs font-medium" onClick={() => setOpen((o) => !o)} data-testid="btn-join-request-reason-toggle">
+          {open ? t('joinRequests.showLess') : t('joinRequests.showAll')}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function useRoleOptions() {
   const { t } = useTranslation();
   return COST_CENTER_MEMBER_ROLES.map((r) => ({ value: r, label: t(`members.roles.${r}`) }));
 }
 
-function AddMember({ id, canManageAdmins }: { id: string; canManageAdmins: boolean }) {
+export function AddMember({ id, canManageAdmins }: { id: string; canManageAdmins: boolean }) {
   const { t } = useTranslation();
   const roleOptions = useRoleOptions();
   const [qInput, setQInput] = useState('');
@@ -227,7 +247,7 @@ function AddMember({ id, canManageAdmins }: { id: string; canManageAdmins: boole
   );
 }
 
-function MemberList({ id, ownerUserId, canManageAdmins }: { id: string; ownerUserId: string | null; canManageAdmins: boolean }) {
+export function MemberList({ id, ownerUserId, canManageAdmins }: { id: string; ownerUserId: string | null; canManageAdmins: boolean }) {
   const { t } = useTranslation();
   const roleOptions = useRoleOptions();
   const members = useCostCenterMembers(id);
@@ -269,19 +289,21 @@ function MemberList({ id, ownerUserId, canManageAdmins }: { id: string; ownerUse
               <TableHead>{t('common.name')}</TableHead>
               <TableHead>{t('common.status')}</TableHead>
               <TableHead>{t('common.role')}</TableHead>
+              <TableHead className="text-right">{t('members.keys')}</TableHead>
+              <TableHead className="text-right">{t('common.spend')}</TableHead>
               <TableHead className="text-right">{t('common.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {members.isLoading ? (
               <TableRow>
-                <TableCell colSpan={4}>
+                <TableCell colSpan={6}>
                   <Skeleton className="h-8 w-full" />
                 </TableCell>
               </TableRow>
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-20 text-center">
+                <TableCell colSpan={6} className="h-20 text-center">
                   {t('members.empty')}
                 </TableCell>
               </TableRow>
@@ -314,6 +336,10 @@ function MemberList({ id, ownerUserId, canManageAdmins }: { id: string; ownerUse
                       />
                     </WithTooltip>
                   </TableCell>
+                  <TableCell className="text-right tabular-nums" data-testid="member-key-count">
+                    {m.keyCount}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{fmtMoney(m.spendCurrentPeriod, { precise: true })}</TableCell>
                   <TableCell className="text-right">
                     <WithTooltip text={removeLock(m) ?? t('members.remove')}>
                       <Button variant="ghost" size="icon" disabled={removeLock(m) !== undefined} onClick={() => setRemoving(m)} aria-label={t('members.remove')} data-testid="btn-remove-member">

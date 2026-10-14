@@ -21,6 +21,8 @@ import {
   BulkAddCostCenterMembersSchema,
   BulkAddCostCenterMembersResultSchema,
   CostCenterResyncResultSchema,
+  CostCenterEventsQuery,
+  CostCenterEventsSchema,
   paginated,
 } from '@api-selfservice/shared';
 import { createRouter, body, json, errors, IdParam, okBody } from './_util.js';
@@ -40,6 +42,7 @@ import {
 } from '../services/cost-centers.js';
 import { addMember, addMembers, listMembers, removeMember, resolveMemberEmails, searchMemberCandidates, updateMember } from '../services/cost-center-members.js';
 import { approveJoinRequest, createJoinRequest, listJoinRequests, listMyJoinRequests, listPendingJoinRequests, rejectJoinRequest } from '../services/cost-center-join-requests.js';
+import { listCostCenterEvents } from '../services/cost-center-events.js';
 import { requireAdmin, requireCostCenterAdmin } from '../middleware/roles.js';
 import { requireCostCenterScope } from '../middleware/scope.js';
 import { forbidden } from '../errors.js';
@@ -105,6 +108,21 @@ r.openapi(
     responses: { 200: json(CostCenterSchema, 'Updated'), ...errors },
   }),
   async (c) => c.json(await updateCostCenter(c.get('deps'), c.get('user'), c.req.valid('param').id, c.req.valid('json')), 200),
+);
+
+// ---------- Event log (#13): admins for every cost center, cost center admins for their own ----------
+
+r.use('/cost-centers/:id/events', requireCostCenterAdmin, requireCostCenterScope('id'));
+r.openapi(
+  createRoute({
+    method: 'get',
+    path: '/cost-centers/{id}/events',
+    tags: ['cost-centers'],
+    description: 'Events of one cost center: members, join requests, keys, budget and limits. Newest first.',
+    request: { params: IdParam, query: CostCenterEventsQuery },
+    responses: { 200: json(CostCenterEventsSchema, 'Events with counts per category'), ...errors },
+  }),
+  async (c) => c.json(await listCostCenterEvents(c.get('deps'), c.req.valid('param').id, c.req.valid('query')), 200),
 );
 
 // ---------- Members (F-KST-10 to F-KST-13): admins for every cost center, cost center admins for their own ----------

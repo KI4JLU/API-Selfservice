@@ -1,4 +1,4 @@
-import { and, costCenterMembers, costCenters, eq, gte, inArray, jobState, lt, requestLogs, sum, user } from '@api-selfservice/db';
+import { and, apiKeys, costCenterMembers, costCenters, count, eq, gte, inArray, jobState, lt, ne, requestLogs, sum, user } from '@api-selfservice/db';
 import { currentPeriod, formatCostCenter, type CostCenterMemberRole } from '@api-selfservice/shared';
 import type { CurrentUser, Deps } from '../context.js';
 import { ApiError, notFound } from '../errors.js';
@@ -101,7 +101,17 @@ async function memberSpends(deps: Deps, cc: CC) {
   return new Map(rows.map((r) => [r.userId, Number(r.s ?? 0)]));
 }
 
-function memberView(m: Member, u: UserRow | null, cc: CC, spends: Map<string | null, number>) {
+/** #13: keys per member on this cost center that are not deleted. */
+async function memberKeyCounts(deps: Deps, cc: CC) {
+  const rows = await deps.db
+    .select({ userId: apiKeys.userId, n: count() })
+    .from(apiKeys)
+    .where(and(eq(apiKeys.costCenterId, cc.id), ne(apiKeys.status, 'deleted')))
+    .groupBy(apiKeys.userId);
+  return new Map(rows.map((r) => [r.userId, Number(r.n)]));
+}
+
+function memberView(m: Member, u: UserRow | null, cc: CC, spends: Map<string | null, number>, keyCounts: Map<string, number> = new Map()) {
   return {
     userId: m.userId,
     email: u?.email ?? m.email,
@@ -113,6 +123,7 @@ function memberView(m: Member, u: UserRow | null, cc: CC, spends: Map<string | n
     budget: m.budget === null ? null : Number(m.budget),
     effectiveBudget: cc.isDefault ? null : effectiveMemberBudget(cc, m),
     spendCurrentPeriod: spends.get(m.userId) ?? 0,
+    keyCount: keyCounts.get(m.userId) ?? 0,
   };
 }
 
@@ -121,7 +132,7 @@ async function getMember(deps: Deps, costCenterId: string, userId: string) {
   if (!m) throw notFound('Member');
   const u = await deps.db.query.user.findFirst({ where: eq(user.id, userId) });
   const cc = await getCostCenter(deps, costCenterId);
-  return memberView(m, u ?? null, cc, await memberSpends(deps, cc));
+  return memberView(m, u ?? null, cc, await memberSpends(deps, cc), await memberKeyCounts(deps, cc));
 }
 
 export async function listMembers(deps: Deps, costCenterId: string) {
@@ -129,7 +140,8 @@ export async function listMembers(deps: Deps, costCenterId: string) {
   assertManageable(cc);
   const rows = await deps.db.select({ m: costCenterMembers, u: user }).from(costCenterMembers).leftJoin(user, eq(user.id, costCenterMembers.userId)).where(eq(costCenterMembers.costCenterId, cc.id));
   const spends = await memberSpends(deps, cc);
-  const items = rows.map((r) => memberView(r.m, r.u, cc, spends));
+  const keyCounts = await memberKeyCounts(deps, cc);
+  const items = rows.map((r) => memberView(r.m, r.u, cc, spends, keyCounts));
   // Admins first, then by e-mail.
   items.sort((a, b) => (a.role === b.role ? (a.email ?? a.userId).localeCompare(b.email ?? b.userId) : a.role === 'admin' ? -1 : 1));
   return items;

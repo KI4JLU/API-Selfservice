@@ -69,4 +69,7 @@ export type AuditSeverity = (typeof AUDIT_SEVERITIES)[number];
 
 /** Entity kinds that appear in the event log (`request` = an API request, `job` = a cron job). */
 export const AUDIT_ENTITIES = ['user', 'api_key', 'cost_center', 'provider', 'request', 'job'] as const;
+/** #13: groups of the cost center event log */
+export const COST_CENTER_EVENT_CATEGORIES = ['limits', 'requests', 'membership', 'keys', 'budget'] as const;
+export type CostCenterEventCategory = (typeof COST_CENTER_EVENT_CATEGORIES)[number];
 export type AuditEntity = (typeof AUDIT_ENTITIES)[number];

@@ -82,9 +82,13 @@ describe('reports', () => {
     const byUser = Object.fromEntries(d.users.map((u) => [u.user.id, u]));
     expect(byUser[u1.userId]).toMatchObject({ user: { id: u1.userId, email: u1.email }, spend: 16, requests: 3 });
     expect(byUser[u1.userId]!.keys.sort((a, b) => a.keyName.localeCompare(b.keyName))).toEqual([
-      { keyId: k1a, keyName: 'u1-a', spend: 15, requests: 2 },
-      { keyId: k1b, keyName: 'u1-b', spend: 1, requests: 1 },
+      { keyId: k1a, keyName: 'u1-a', spend: 15, requests: 2, lastUsedAt: expect.any(String) },
+      { keyId: k1b, keyName: 'u1-b', spend: 1, requests: 1, lastUsedAt: expect.any(String) },
     ]);
+    // #13: last use and spend per model
+    expect(byUser[u1.userId]!.lastUsedAt).toBe([...byUser[u1.userId]!.keys.map((k) => k.lastUsedAt!)].sort().at(-1));
+    expect(d.byModel.reduce((a, m) => a + m.spend, 0)).toBeCloseTo(20, 6);
+    expect(d.byModel.reduce((a, m) => a + m.requests, 0)).toBe(4);
     expect(byUser[u2.userId]).toMatchObject({ spend: 4, requests: 1, keys: [{ keyId: k2, keyName: 'u2', spend: 4, requests: 1 }] });
     expect(d.users).toHaveLength(2);
     expectError(await admin.get('/reports/cost-centers/nope'), 404, 'NOT_FOUND');

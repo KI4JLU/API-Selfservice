@@ -591,7 +591,8 @@
     "bulkBack": "Back",
     "bulkSubmit": "Add {{count}}",
     "bulkAdded": "{{count}} members added",
-    "bulkFailed": "Not added ({{count}})"
+    "bulkFailed": "Not added ({{count}})",
+    "keys": "Keys"
   },
   "litellmUsers": {
     "title": "LiteLLM users",
@@ -633,6 +634,77 @@
     "reasonLabel": "Reason",
     "approved": "{{name}} is now a member",
     "rejected": "Request from {{name}} rejected",
-    "openCount": "{{count}} open requests"
+    "openCount": "{{count}} open requests",
+    "reason": "Reason",
+    "showAll": "Show all",
+    "showLess": "Show less"
+  },
+  "ccDetail": {
+    "open": "Open",
+    "owner": "Responsible",
+    "exportReport": "Export report",
+    "noLimit": "no limit set",
+    "currentPeriod": "current period",
+    "openRequests_one": "{{count}} open request",
+    "openRequests_other": "{{count}} open requests",
+    "allKeys": "across all keys",
+    "openBadge": "{{count}} open",
+    "usageTab": "Budget usage",
+    "eventsTab": "Events",
+    "defaultMembers": "Every user belongs to the default cost center; members are not managed here.",
+    "usageTitle": "Spend by user and key",
+    "usageSummary": "{{users}} users · {{keys}} keys · {{requests}} requests",
+    "range": "Range",
+    "groupBy": "Group",
+    "ranges": {
+      "current": "Current period",
+      "last": "Last month",
+      "30d": "Last 30 days",
+      "90d": "Last 90 days",
+      "year": "This year"
+    },
+    "groups": {
+      "user": "by user",
+      "key": "by key",
+      "model": "by model"
+    },
+    "groupHeads": {
+      "user": "User / key",
+      "key": "Key",
+      "model": "Model"
+    },
+    "shareRequests": "Share of requests",
+    "lastUsed": "Last used",
+    "noUsage": "No usage in the chosen range.",
+    "categories": {
+      "limits": "Limits",
+      "requests": "Requests",
+      "membership": "Membership",
+      "keys": "Keys",
+      "budget": "Budget"
+    },
+    "warningsOnly": "Warnings & critical only",
+    "searchEvents": "Search person or key",
+    "periods": {
+      "7": "Last 7 days",
+      "30": "Last 30 days",
+      "90": "Last 90 days",
+      "all": "All time"
+    },
+    "exportCsv": "Export CSV",
+    "category": "Category",
+    "event": "Event",
+    "details": "Details",
+    "by": "Done by",
+    "concerns": "Concerns",
+    "noEvents": "No events for this selection.",
+    "eventsShown": "{{shown}} of {{total}} events shown",
+    "loadOlder": "Load older",
+    "eventKey": "Key {{name}}",
+    "eventBudget": "Max budget {{value}}",
+    "eventMemberBudget": "Budget per user {{value}}",
+    "eventThreshold": "Threshold {{pct}} %",
+    "eventRole": "Role {{role}}",
+    "eventReason": "Reason: {{reason}}"
   }
 }
