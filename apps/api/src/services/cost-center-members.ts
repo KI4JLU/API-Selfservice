@@ -1,10 +1,10 @@
-import { and, costCenterMembers, costCenters, eq, inArray, jobState, user } from '@api-selfservice/db';
-import { formatCostCenter, type CostCenterMemberRole } from '@api-selfservice/shared';
+import { and, costCenterMembers, costCenters, eq, gte, inArray, jobState, lt, requestLogs, sum, user } from '@api-selfservice/db';
+import { currentPeriod, formatCostCenter, type CostCenterMemberRole } from '@api-selfservice/shared';
 import type { CurrentUser, Deps } from '../context.js';
 import { ApiError, notFound } from '../errors.js';
 import { audit } from './audit.js';
 import { notify, notifyUser } from './notifications.js';
-import { getCostCenter, getDefaultCostCenter, syncTeamMembership } from './cost-centers.js';
+import { effectiveMemberBudget, getCostCenter, getDefaultCostCenter, syncTeamMembership } from './cost-centers.js';
 import { deleteKeysOfMember } from './keys.js';
 
 // ---------- Cost center members = LiteLLM team members (F-KST-10 to F-KST-13) ----------
@@ -90,7 +90,18 @@ function assertManageable(cc: CC) {
   if (cc.isDefault) throw new ApiError('COST_CENTER_DEFAULT_IMMUTABLE', 'Every user is a member of the default cost center');
 }
 
-function memberView(m: Member, u: UserRow | null) {
+/** #15: spend per member on this cost center in the current member budget period (monthly, else since the start). */
+async function memberSpends(deps: Deps, cc: CC) {
+  const p = cc.memberBudgetPeriod ? currentPeriod('monthly', deps.now()) : { start: new Date(0), end: new Date(deps.now().getTime() + 86400000) };
+  const rows = await deps.db
+    .select({ userId: requestLogs.userId, s: sum(requestLogs.cost) })
+    .from(requestLogs)
+    .where(and(eq(requestLogs.costCenterId, cc.id), gte(requestLogs.time, p.start), lt(requestLogs.time, p.end)))
+    .groupBy(requestLogs.userId);
+  return new Map(rows.map((r) => [r.userId, Number(r.s ?? 0)]));
+}
+
+function memberView(m: Member, u: UserRow | null, cc: CC, spends: Map<string | null, number>) {
   return {
     userId: m.userId,
     email: u?.email ?? m.email,
@@ -99,6 +110,9 @@ function memberView(m: Member, u: UserRow | null) {
     status: !u ? ('never_signed_in' as const) : u.deletedAt ? ('deactivated' as const) : ('active' as const),
     addedBy: m.addedBy,
     addedAt: m.addedAt.toISOString(),
+    budget: m.budget === null ? null : Number(m.budget),
+    effectiveBudget: cc.isDefault ? null : effectiveMemberBudget(cc, m),
+    spendCurrentPeriod: spends.get(m.userId) ?? 0,
   };
 }
 
@@ -106,14 +120,16 @@ async function getMember(deps: Deps, costCenterId: string, userId: string) {
   const m = await getMembership(deps, userId, costCenterId);
   if (!m) throw notFound('Member');
   const u = await deps.db.query.user.findFirst({ where: eq(user.id, userId) });
-  return memberView(m, u ?? null);
+  const cc = await getCostCenter(deps, costCenterId);
+  return memberView(m, u ?? null, cc, await memberSpends(deps, cc));
 }
 
 export async function listMembers(deps: Deps, costCenterId: string) {
   const cc = await getCostCenter(deps, costCenterId);
   assertManageable(cc);
   const rows = await deps.db.select({ m: costCenterMembers, u: user }).from(costCenterMembers).leftJoin(user, eq(user.id, costCenterMembers.userId)).where(eq(costCenterMembers.costCenterId, cc.id));
-  const items = rows.map((r) => memberView(r.m, r.u));
+  const spends = await memberSpends(deps, cc);
+  const items = rows.map((r) => memberView(r.m, r.u, cc, spends));
   // Admins first, then by e-mail.
   items.sort((a, b) => (a.role === b.role ? (a.email ?? a.userId).localeCompare(b.email ?? b.userId) : a.role === 'admin' ? -1 : 1));
   return items;
@@ -205,7 +221,7 @@ export async function addMember(deps: Deps, actor: CurrentUser, costCenterId: st
   const vars = { number: cc.number, name: cc.name, actorName: actor.name };
   if (local) await notifyUser(deps, local.id, 'cost_center_member_added', vars);
   else if (known.email) await notify(deps, { type: 'cost_center_member_added', to: known.email, locale: 'de', vars });
-  return memberView(inserted[0]!, local);
+  return memberView(inserted[0]!, local, cc, new Map());
 }
 
 /** Bulk add, step 2: adds each user like addMember; failures are collected instead of aborting the batch. */

@@ -116,6 +116,10 @@ export const costCenters = apiSelfservice.table(
     budgetPeriod: text('budget_period', { enum: ['monthly', 'yearly', 'project'] }),
     periodStart: ts('period_start'),
     periodEnd: ts('period_end'),
+    /** #15: budget per member without an individual budget (LiteLLM max_budget_in_team); null = unlimited */
+    memberBudget: money('member_budget'),
+    /** #15: `monthly` resets member budgets every month; null = once */
+    memberBudgetPeriod: text('member_budget_period', { enum: ['monthly'] }),
     /** F-KST-15: models released for this cost center (mirrored as LiteLLM team `models`); empty = all models of its tier class */
     models: text('models')
       .array()
@@ -174,6 +178,8 @@ export const costCenterMembers = apiSelfservice.table(
     role: text('role', { enum: ['user', 'admin'] })
       .notNull()
       .default('user'),
+    /** #15: individual budget of this member, overrides the cost center's member budget; null = use that */
+    budget: money('budget'),
     addedBy: text('added_by'),
     addedAt: ts('added_at').notNull().defaultNow(),
   },

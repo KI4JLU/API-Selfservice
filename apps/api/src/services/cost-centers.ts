@@ -80,8 +80,28 @@ export async function ensureTeam(deps: Deps, cc: CC): Promise<string | null> {
  * `user` for everyone on the default cost center, otherwise removed.
  */
 /** Without LiteLLM Enterprise a cost center admin is only a team member in LiteLLM; the event log says so. */
+/** #15: the budget LiteLLM enforces for a member: the individual one, else the cost center's member budget. */
+export function effectiveMemberBudget(cc: Pick<CC, 'memberBudget'>, member: { budget: string | null } | null | undefined): number | null {
+  const v = member?.budget ?? cc.memberBudget;
+  return v === null || v === undefined ? null : Number(v);
+}
+
+/** #15: mirrors a member's budget to LiteLLM (max_budget_in_team). The default cost center has no member budgets. */
+async function applyMemberBudget(deps: Deps, cc: CC, teamId: string, userId: string) {
+  if (cc.isDefault) return;
+  const member = await deps.db.query.costCenterMembers.findFirst({ where: and(eq(costCenterMembers.costCenterId, cc.id), eq(costCenterMembers.userId, userId)) });
+  if (!member) return;
+  try {
+    await deps.litellm.setTeamMemberBudget(teamId, userId, { maxBudget: effectiveMemberBudget(cc, member), budgetDuration: budgetDurationFor(cc.memberBudgetPeriod) });
+  } catch (e) {
+    await auditError(deps, { action: 'litellm.set_member_budget', entity: 'cost_center', entityId: cc.id, err: e, payload: { userId } });
+  }
+}
+
 async function setTeamMember(deps: Deps, costCenterId: string, teamId: string, userId: string, role: 'admin' | 'user') {
   const stored = await deps.litellm.setTeamMember(teamId, userId, role);
+  const cc = await deps.db.query.costCenters.findFirst({ where: eq(costCenters.id, costCenterId) });
+  if (cc) await applyMemberBudget(deps, cc, teamId, userId);
   if (stored !== role) {
     await audit(deps, {
       actorId: null,
@@ -138,6 +158,8 @@ export async function costCenterView(deps: Deps, cc: CC) {
     budgetPeriod: cc.budgetPeriod,
     periodStart: cc.periodStart?.toISOString() ?? null,
     periodEnd: cc.periodEnd?.toISOString() ?? null,
+    memberBudget: cc.memberBudget === null ? null : Number(cc.memberBudget),
+    memberBudgetPeriod: cc.memberBudgetPeriod,
     models: cc.models,
     status: cc.status,
     isDefault: cc.isDefault,
@@ -311,16 +333,27 @@ export async function updateCostCenter(
     periodStart?: string | null;
     periodEnd?: string | null;
     models?: string[];
+    memberBudget?: number | null;
+    memberBudgetPeriod?: 'monthly' | null;
+    memberBudgets?: { userId: string; budget: number | null }[];
   },
 ) {
   const cc = await getCostCenter(deps, id);
+  const memberBudgetsChange = input.memberBudget !== undefined || input.memberBudgetPeriod !== undefined || input.memberBudgets !== undefined;
   const isAdmin = actor.role === 'admin';
   const manages = actor.managedCostCenterIds.includes(id);
   if (!isAdmin && !manages) throw forbidden();
   // Archived (and pending) cost centers are left to admins; a former cost center admin must not reopen them.
   if (!isAdmin && cc.status !== 'approved') throw new ApiError('COST_CENTER_NOT_APPROVED');
-  if (cc.isDefault && (input.name !== undefined || input.ownerUserId !== undefined)) {
+  if (cc.isDefault && (input.name !== undefined || input.ownerUserId !== undefined || memberBudgetsChange)) {
     throw new ApiError('COST_CENTER_DEFAULT_IMMUTABLE');
+  }
+  // #15: individual budgets only for members of this cost center
+  if (input.memberBudgets?.length) {
+    const ids = input.memberBudgets.map((b) => b.userId);
+    const found = await deps.db.query.costCenterMembers.findMany({ where: and(eq(costCenterMembers.costCenterId, id), inArray(costCenterMembers.userId, ids)) });
+    const missing = ids.find((u) => !found.some((f) => f.userId === u));
+    if (missing) throw notFound(`Member ${missing}`);
   }
   const patch: Partial<typeof costCenters.$inferInsert> = { updatedAt: deps.now() };
   if (isAdmin) {
@@ -337,7 +370,15 @@ export async function updateCostCenter(
   if (input.budgetPeriod !== undefined) patch.budgetPeriod = input.budgetPeriod;
   if (input.periodStart !== undefined) patch.periodStart = input.periodStart ? new Date(input.periodStart) : null;
   if (input.periodEnd !== undefined) patch.periodEnd = input.periodEnd ? new Date(input.periodEnd) : null;
+  if (input.memberBudget !== undefined) patch.memberBudget = input.memberBudget == null ? null : String(input.memberBudget);
+  if (input.memberBudgetPeriod !== undefined) patch.memberBudgetPeriod = input.memberBudgetPeriod;
   const [updated] = await deps.db.update(costCenters).set(patch).where(eq(costCenters.id, id)).returning();
+  for (const b of input.memberBudgets ?? []) {
+    await deps.db
+      .update(costCenterMembers)
+      .set({ budget: b.budget == null ? null : String(b.budget) })
+      .where(and(eq(costCenterMembers.costCenterId, id), eq(costCenterMembers.userId, b.userId)));
+  }
   await audit(deps, { actorId: actor.id, action: 'cost_center.update', entity: 'cost_center', entityId: id, payload: input });
   const teamId = updated!.litellmTeamId ?? (await ensureTeam(deps, updated!));
   if (teamId) {
@@ -351,6 +392,12 @@ export async function updateCostCenter(
     } catch (e) {
       await auditError(deps, { action: 'litellm.update_team', entity: 'cost_center', entityId: id, err: e, actorId: actor.id });
     }
+  }
+  // #15: member budgets go to LiteLLM; a new member budget or period concerns every member
+  if (teamId && memberBudgetsChange) {
+    const all = input.memberBudget !== undefined || input.memberBudgetPeriod !== undefined;
+    const members = await deps.db.query.costCenterMembers.findMany({ where: eq(costCenterMembers.costCenterId, id) });
+    for (const m of members) if (all || input.memberBudgets!.some((b) => b.userId === m.userId)) await applyMemberBudget(deps, updated!, teamId, m.userId);
   }
   // F-KEY-10: provider keys only receive released models; widening the release may add some.
   if (patch.models !== undefined) await syncProviderKeyModels(deps);

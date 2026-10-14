@@ -109,6 +109,8 @@ export interface LiteLLMAdapter {
   setTeamBlocked(teamId: string, blocked: boolean): Promise<void>;
   /** Adds the user to the team or changes their role; idempotent. Returns the role LiteLLM stored (see http adapter). */
   setTeamMember(teamId: string, userId: string, role: TeamRole): Promise<TeamRole>;
+  /** #15: the member's budget inside the team (max_budget_in_team); null = unlimited. */
+  setTeamMemberBudget(teamId: string, userId: string, budget: { maxBudget: number | null; budgetDuration: string | null }): Promise<void>;
   /** Removes the user from the team; a no-op when they are not a member. */
   removeTeamMember(teamId: string, userId: string): Promise<void>;
 

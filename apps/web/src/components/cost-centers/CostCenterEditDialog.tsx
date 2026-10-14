@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { BUDGET_PERIODS, type BudgetPeriod } from '@api-selfservice/shared';
-import { useAdminProviders, useUpdateCostCenter, type CostCenter } from '@/lib/queries';
+import { useAdminProviders, useCostCenterMembers, useUpdateCostCenter, type CostCenter } from '@/lib/queries';
 import { fmtCostCenter, toDateInput } from '@/lib/format';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { SimpleSelect } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TierBadge } from '@/components/StatusBadge';
 import { OwnerPicker, type Owner } from '@/components/admin/OwnerPicker';
+import { MemberBudgetDefault, MemberBudgetList, type MemberPeriod } from './MemberBudgets';
 
 export function BudgetFields({
   amount,
@@ -175,7 +176,10 @@ export function periodDates(period: BudgetPeriod, start: string, end: string) {
   };
 }
 
-/** Edit a cost center. `full` (admin) also edits name, owner and released models; otherwise only the max budget. */
+/**
+ * Edit a cost center. `full` (admin) also edits name, owner and released models; otherwise ("Budget bearbeiten",
+ * cost center admins) the max budget, the budget per member and individual member budgets (#15).
+ */
 export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter: CostCenter | null; onClose: () => void; full?: boolean }) {
   const { t } = useTranslation();
   const update = useUpdateCostCenter();
@@ -186,9 +190,17 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
   const [period, setPeriod] = useState<BudgetPeriod>('monthly');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
+  // #15: member budgets, not on the default cost center
+  const withMembers = !full && !!costCenter && !costCenter.isDefault;
+  const members = useCostCenterMembers(withMembers ? costCenter.id : null);
+  const [memberAmount, setMemberAmount] = useState('');
+  const [memberPeriod, setMemberPeriod] = useState<MemberPeriod>('monthly');
+  const [individual, setIndividual] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
     if (!costCenter) return;
+    setMemberAmount(costCenter.memberBudget === null ? '' : String(costCenter.memberBudget));
+    setMemberPeriod(costCenter.memberBudgetPeriod ?? (costCenter.memberBudget === null ? 'monthly' : 'once'));
     setName(costCenter.name);
     // Unlinked owners (legacy data) show as missing until an admin picks a LiteLLM user.
     setOwner(costCenter.ownerUserId ? { userId: costCenter.ownerUserId, name: costCenter.ownerName, email: costCenter.ownerEmail } : null);
@@ -199,6 +211,18 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
     setEnd(toDateInput(costCenter.periodEnd));
   }, [costCenter]);
 
+  useEffect(() => {
+    if (members.data) setIndividual(Object.fromEntries(members.data.map((m) => [m.userId, m.budget === null ? null : String(m.budget)])));
+  }, [members.data]);
+
+  const memberBudgetBody = () => {
+    const memberBudget = memberAmount.trim() === '' ? null : Number(memberAmount);
+    const toNumber = (v: string | null) => (v === null || v.trim() === '' ? null : Number(v));
+    // only members whose individual budget changed
+    const memberBudgets = (members.data ?? []).filter((m) => toNumber(individual[m.userId] ?? null) !== m.budget).map((m) => ({ userId: m.userId, budget: toNumber(individual[m.userId] ?? null) }));
+    return { memberBudget, memberBudgetPeriod: memberBudget === null || memberPeriod === 'once' ? null : memberPeriod, ...(memberBudgets.length ? { memberBudgets } : {}) };
+  };
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!costCenter) return;
@@ -208,6 +232,7 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
       maxBudget,
       budgetPeriod: maxBudget === null ? null : period,
       ...(maxBudget === null ? { periodStart: null, periodEnd: null } : periodDates(period, start, end)),
+      ...(withMembers ? memberBudgetBody() : {}),
     };
     const res = await update.mutateAsync({ id: costCenter.id, body }).catch(() => null);
     if (res) {
@@ -219,10 +244,10 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
   return (
     <Dialog open={!!costCenter} onOpenChange={(o) => !o && onClose()}>
       {/* Admin view: fixed max height, the model list takes the remaining space and scrolls on its own. */}
-      <DialogContent className={full ? 'flex max-h-[90svh] flex-col overflow-y-auto sm:max-w-3xl' : undefined} data-testid="dialog-edit-cost-center">
+      <DialogContent className={full ? 'flex max-h-[90svh] flex-col overflow-y-auto sm:max-w-3xl' : withMembers ? 'flex max-h-[90svh] flex-col overflow-y-auto sm:max-w-4xl' : undefined} data-testid="dialog-edit-cost-center">
         <form onSubmit={submit} className={full ? 'flex min-h-0 flex-1 flex-col gap-4' : 'grid gap-4'}>
           <DialogHeader>
-            <DialogTitle>{t('costCenters.edit')}</DialogTitle>
+            <DialogTitle>{full ? t('costCenters.edit') : t('costCenters.editBudget')}</DialogTitle>
             <DialogDescription>{costCenter ? `${fmtCostCenter(costCenter.number)} · ${costCenter.name}` : ''}</DialogDescription>
           </DialogHeader>
           {full ? (
@@ -232,6 +257,12 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
               </Field>
               <OwnerPicker value={owner} onChange={setOwner} idPrefix="cc" />
             </>
+          ) : null}
+          {withMembers ? (
+            <div>
+              <h3 className="text-sm font-semibold">{t('costCenters.ccBudgetTitle')}</h3>
+              <p className="text-xs text-muted-foreground">{t('costCenters.ccBudgetHint')}</p>
+            </div>
           ) : null}
           <BudgetFields
             amount={amount}
@@ -247,6 +278,12 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
             idPrefix="cc"
           />
           {full ? <ModelRelease value={models} onChange={setModels} /> : null}
+          {withMembers ? (
+            <>
+              <MemberBudgetDefault amount={memberAmount} setAmount={setMemberAmount} period={memberPeriod} setPeriod={setMemberPeriod} />
+              <MemberBudgetList members={members.data ?? []} loading={members.isLoading} defaultAmount={memberAmount} value={individual} onChange={(id, v) => setIndividual((o) => ({ ...o, [id]: v }))} />
+            </>
+          ) : null}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               {t('common.cancel')}

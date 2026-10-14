@@ -18,6 +18,8 @@ export interface MockTeam {
   models: string[];
   blocked: boolean;
   members: Map<string, TeamRole>;
+  /** #15: per-member budgets (max_budget_in_team) */
+  memberBudgets: Map<string, { maxBudget: number | null; budgetDuration: string | null }>;
 }
 
 /**
@@ -147,7 +149,7 @@ export function createMockAdapter(opts: { seedLogs?: boolean; now?: () => Date }
     },
     async createTeam({ teamId, alias, maxBudget, budgetDuration, models: ms }) {
       if (teams.has(teamId)) throw new Error(`mock: team ${teamId} exists`);
-      teams.set(teamId, { alias, maxBudget, budgetDuration, models: ms ?? [], blocked: false, members: new Map() });
+      teams.set(teamId, { alias, maxBudget, budgetDuration, models: ms ?? [], blocked: false, members: new Map(), memberBudgets: new Map() });
       return { teamId };
     },
     async updateTeam(teamId, patch) {
@@ -170,7 +172,13 @@ export function createMockAdapter(opts: { seedLogs?: boolean; now?: () => Date }
       ensureUser(userId).teams.add(teamId);
       return role;
     },
+    async setTeamMemberBudget(teamId, userId, budget) {
+      const t = teams.get(teamId);
+      if (!t?.members.has(userId)) throw new LiteLLMHttpError(400, 'user is not a member of the team', '/team/member_update');
+      t.memberBudgets.set(userId, budget);
+    },
     async removeTeamMember(teamId, userId) {
+      teams.get(teamId)?.memberBudgets.delete(userId);
       teams.get(teamId)?.members.delete(userId);
       users.get(userId)?.teams.delete(teamId);
     },

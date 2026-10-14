@@ -50,6 +50,14 @@ describe('http adapter', () => {
     expect(await a.createUser({ userId: 'u9', email: 'x@y.z' })).toEqual({ litellmUserId: 'u9' });
   });
 
+  it('setTeamMemberBudget posts max_budget_in_team and budget_duration to /team/member_update (#15)', async () => {
+    const { a, calls } = adapter();
+    await a.setTeamMemberBudget('t1', 'u1', { maxBudget: 50, budgetDuration: '30d' });
+    await a.setTeamMemberBudget('t1', 'u1', { maxBudget: null, budgetDuration: null });
+    expect(calls[0]).toMatchObject({ url: 'http://litellm.test/team/member_update', method: 'POST', body: { team_id: 't1', user_id: 'u1', max_budget_in_team: 50, budget_duration: '30d' } });
+    expect(calls[1]).toMatchObject({ body: { team_id: 't1', user_id: 'u1', max_budget_in_team: null, budget_duration: null } });
+  });
+
   it('updateUserBudget posts to /user/update', async () => {
     const { a, calls } = adapter();
     await a.updateUserBudget('u1', { maxBudget: 25, budgetDuration: '30d' });

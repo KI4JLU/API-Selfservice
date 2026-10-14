@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BUDGET_PERIODS, COST_CENTER_MEMBER_ROLES, COST_CENTER_STATUS } from '../constants.js';
+import { BUDGET_PERIODS, COST_CENTER_MEMBER_ROLES, COST_CENTER_STATUS, KEY_BUDGET_PERIODS } from '../constants.js';
 import { IdSchema, IsoDate, Money } from './common.js';
 
 export const CostCenterSchema = z.object({
@@ -14,6 +14,10 @@ export const CostCenterSchema = z.object({
   budgetPeriod: z.enum(BUDGET_PERIODS).nullable(),
   periodStart: IsoDate.nullable(),
   periodEnd: IsoDate.nullable(),
+  /** #15: budget per member without an individual one; null = unlimited */
+  memberBudget: Money.nullable(),
+  /** #15: `monthly` resets member budgets every month; null = once */
+  memberBudgetPeriod: z.enum(KEY_BUDGET_PERIODS).nullable(),
   /** F-KST-15: models released for the cost center (= LiteLLM team models); empty = all models of its tier class */
   models: z.array(z.string()),
   status: z.enum(COST_CENTER_STATUS),
@@ -74,6 +78,11 @@ export const UpdateCostCenterSchema = z.object({
   periodEnd: IsoDate.nullable().optional(),
   /** Admins only (F-KST-15): released models; empty = all */
   models: z.array(z.string()).optional(),
+  /** #15: budget per member without an individual budget, also for new members; null = unlimited */
+  memberBudget: CostCenterBudget.nullable().optional(),
+  memberBudgetPeriod: z.enum(KEY_BUDGET_PERIODS).nullable().optional(),
+  /** #15: individual member budgets; null = back to the member budget above */
+  memberBudgets: z.array(z.object({ userId: z.string().min(1), budget: CostCenterBudget.nullable() })).optional(),
 });
 
 export const CostCenterRequestSchema = z.object({
@@ -103,6 +112,12 @@ export const CostCenterMemberSchema = z.object({
   status: z.enum(['active', 'deactivated', 'never_signed_in']),
   addedBy: z.string().nullable(),
   addedAt: IsoDate,
+  /** #15: individual budget; null = the cost center's member budget applies */
+  budget: Money.nullable(),
+  /** #15: the budget LiteLLM enforces for this member (individual, else member budget); null = unlimited */
+  effectiveBudget: Money.nullable(),
+  /** #15: spend on this cost center in the current member budget period */
+  spendCurrentPeriod: Money,
 });
 
 export const AddCostCenterMemberSchema = z.object({

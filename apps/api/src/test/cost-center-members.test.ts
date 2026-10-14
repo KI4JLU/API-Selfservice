@@ -287,4 +287,38 @@ describe('cost center members (F-KST-10 to F-KST-13)', () => {
     expect((await t.keyRow(k.id)).status).toBe('deleted');
     expect((await m.post('/api-keys', { name: 'paid again', models: ['gpt-4o'], costCenterId: cc.id })).status).toBe(201);
   });
+
+  it('cost center admins set a member budget and individual budgets; LiteLLM gets them per member (#15)', async () => {
+    const own = await newCostCenter(ccAdmin.userId);
+    const a = await t.login({ name: 'Budget A' });
+    const b = await t.login({ name: 'Budget B' });
+    await addMember(ccAdmin, own.id, a);
+    await addMember(ccAdmin, own.id, b);
+    const team = () => t.mock.teams.get(own.id)!;
+
+    // no member budget yet: unlimited
+    expect(team().memberBudgets.get(a.userId)).toEqual({ maxBudget: null, budgetDuration: null });
+
+    const r = await ccAdmin.patch(`/cost-centers/${own.id}`, { memberBudget: 50, memberBudgetPeriod: 'monthly', memberBudgets: [{ userId: a.userId, budget: 150 }] });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body).toMatchObject({ memberBudget: 50, memberBudgetPeriod: 'monthly' });
+    expect(team().memberBudgets.get(a.userId)).toEqual({ maxBudget: 150, budgetDuration: '30d' });
+    expect(team().memberBudgets.get(b.userId)).toEqual({ maxBudget: 50, budgetDuration: '30d' });
+    const list = await members(ccAdmin, own.id);
+    expect(list.find((m) => m.userId === a.userId)).toMatchObject({ budget: 150, effectiveBudget: 150, spendCurrentPeriod: 0 });
+    expect(list.find((m) => m.userId === b.userId)).toMatchObject({ budget: null, effectiveBudget: 50 });
+
+    // new members get the member budget; resetting an individual budget falls back to it
+    const c = await t.login({ name: 'Budget C' });
+    await addMember(ccAdmin, own.id, c);
+    expect(team().memberBudgets.get(c.userId)).toEqual({ maxBudget: 50, budgetDuration: '30d' });
+    await ccAdmin.patch(`/cost-centers/${own.id}`, { memberBudgets: [{ userId: a.userId, budget: null }] });
+    expect(team().memberBudgets.get(a.userId)).toEqual({ maxBudget: 50, budgetDuration: '30d' });
+
+    // only members; never on the default cost center; plain members cannot set budgets
+    expectError(await ccAdmin.patch(`/cost-centers/${own.id}`, { memberBudgets: [{ userId: 'not-a-member', budget: 1 }] }), 404, 'NOT_FOUND');
+    expectError(await admin.patch(`/cost-centers/${defaultId}`, { memberBudget: 5 }), 409, 'COST_CENTER_DEFAULT_IMMUTABLE');
+    expectError(await b.patch(`/cost-centers/${own.id}`, { memberBudget: 500 }), 403, 'FORBIDDEN');
+    expectError(await ccAdmin.patch(`/cost-centers/${own.id}`, { memberBudget: 0 }), 400, 'VALIDATION_ERROR');
+  });
 });

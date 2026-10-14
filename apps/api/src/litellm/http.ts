@@ -193,6 +193,9 @@ export function createHttpAdapter(opts: Opts): LiteLLMAdapter {
         return 'user';
       }
     },
+    async setTeamMemberBudget(teamId, userId, { maxBudget, budgetDuration }) {
+      await call('POST', '/team/member_update', { team_id: teamId, user_id: userId, max_budget_in_team: maxBudget, budget_duration: budgetDuration });
+    },
     async removeTeamMember(teamId, userId) {
       try {
         await call('POST', '/team/member_delete', { team_id: teamId, user_id: userId });
