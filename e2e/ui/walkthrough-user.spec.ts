@@ -37,6 +37,8 @@ test.describe('walkthrough: user', () => {
     const dialog = page.getByTestId('dialog-create-key');
     await expect(dialog).toBeVisible();
     await dialog.getByTestId('input-key-name').fill(keyName);
+    // provider groups start collapsed (#9)
+    await dialog.getByTestId('list-models').locator('[data-testid^="btn-model-group-"]').first().click();
     const firstModel = dialog.getByTestId('list-models').locator('label').first();
     await expect(firstModel).toBeVisible();
     await firstModel.click();

@@ -171,12 +171,13 @@
     "empty": "Noch keine Keys. Legen Sie Ihren ersten Key an.",
     "extendHint": "Laufzeit um 6 Monate ab jetzt verlängern",
     "modelsSelected": "{{count}} ausgewählt",
+    "selectionSummary": "{{providers}} Provider · {{models}} Modelle",
     "secretClose": "Ich habe den Key kopiert",
     "selectModel": "Bitte mindestens ein Modell oder einen Provider wählen.",
-    "tabModels": "Modelle",
-    "tabProviders": "Provider",
-    "providersHint": "Der Key erhält alle aktuellen Modelle des Providers. Neue Modelle des Providers kommen automatisch hinzu.",
-    "providerModels": "Aktuell: {{models}}",
+    "providersHint": "Haken am Provider: Der Key erhält alle Modelle des Providers, auch künftige. Aufklappen, um einzelne Modelle zu wählen.",
+    "providerAllModels": "alle Modelle, auch künftige",
+    "providerPicked": "{{count}} von {{total}}",
+    "releaseProvider": "Gesamten Provider {{provider}} freigeben",
     "providerAll": "{{provider}} (alle Modelle)"
   },
   "keyTest": {

@@ -66,6 +66,8 @@ test.describe('API keys', () => {
     await dialog.getByTestId('input-key-name').fill('Playwright key');
     // default cost center -> only free models are offered; paid-model hint is shown
     await expect(dialog.getByTestId('hint-paid-models')).toBeVisible();
+    // provider groups start collapsed (#9)
+    await dialog.getByTestId('list-models').locator('[data-testid^="btn-model-group-"]').first().click();
     const firstModel = dialog.getByTestId('list-models').locator('label').first();
     await expect(firstModel).toBeVisible();
     // Radix renders a hidden <input> next to the checkbox button; click the label and assert via the role instead.
@@ -104,26 +106,26 @@ test.describe('API keys', () => {
     await expect(page.getByTestId('table-keys').locator('tr', { hasText: 'Playwright key' })).toHaveCount(0);
   });
 
-  test('create key for a whole provider via the provider tab (F-KEY-10)', async ({ page }) => {
+  test('create key for a whole provider via the provider checkbox (F-KEY-10, #9)', async ({ page }) => {
     await devLogin(page, { email: uniqueEmail('keys-provider'), name: 'Provider Key User' });
     await page.getByTestId('nav-keys').click();
     await page.getByTestId('btn-create-key').click();
     const dialog = page.getByTestId('dialog-create-key');
     await dialog.getByTestId('input-key-name').fill('Provider key');
-    await dialog.getByTestId('tab-providers').click();
-    // default cost center -> only providers with free models are offered
-    const firstProvider = dialog.getByTestId('list-providers').locator('label').first();
-    await expect(firstProvider).toBeVisible();
-    const providerName = ((await firstProvider.getAttribute('data-testid')) ?? '').replace(/^provider-/, '');
-    await firstProvider.click();
-    await expect(firstProvider.getByRole('checkbox')).toHaveAttribute('aria-checked', 'true');
-    // the provider's models show as included in the models tab
-    await dialog.getByTestId('tab-models').click();
-    await expect(dialog.getByTestId('list-models').getByRole('checkbox', { checked: true }).first()).toBeDisabled();
-    // the models tab is grouped by provider; the chosen provider's models sit in its group
-    const group = dialog.getByTestId(`model-group-${providerName}`);
-    await expect(group).toContainText(providerName);
-    await expect(group.getByRole('checkbox', { checked: true }).first()).toBeDisabled();
+    // one list, all provider groups collapsed; default cost center -> only providers with free models
+    const group = dialog.getByTestId('list-models').locator('[data-testid^="model-group-"]').first();
+    await expect(group).toBeVisible();
+    await expect(group.locator('[data-testid^="model-"]').and(dialog.locator('label'))).toHaveCount(0);
+    const providerName = ((await group.getAttribute('data-testid')) ?? '').replace(/^model-group-/, '');
+    // the provider is released right in its row, without expanding it
+    const providerBox = group.getByTestId(`provider-${providerName}`);
+    await providerBox.click();
+    await expect(providerBox).toHaveAttribute('aria-checked', 'true');
+    await expect(dialog.getByTestId('key-selection-summary')).toContainText('1');
+    // expanded, its models show as included and cannot be picked one by one
+    await group.getByTestId(`btn-model-group-${providerName}`).click();
+    await expect(group.locator('label').getByRole('checkbox').first()).toBeDisabled();
+    await expect(group.locator('label').getByRole('checkbox').first()).toHaveAttribute('aria-checked', 'true');
     await dialog.getByTestId('btn-submit-create-key').click();
 
     const secret = page.getByTestId('dialog-key-secret');

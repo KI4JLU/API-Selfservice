@@ -171,12 +171,13 @@
     "empty": "No keys yet. Create your first key.",
     "extendHint": "Extend lifetime by 6 months from now",
     "modelsSelected": "{{count}} selected",
+    "selectionSummary": "{{providers}} providers · {{models}} models",
     "secretClose": "I have copied the key",
     "selectModel": "Please select at least one model or provider.",
-    "tabModels": "Models",
-    "tabProviders": "Providers",
-    "providersHint": "The key gets all current models of the provider. New models of the provider are added automatically.",
-    "providerModels": "Currently: {{models}}",
+    "providersHint": "Tick a provider: the key gets all models of the provider, also future ones. Expand to pick single models.",
+    "providerAllModels": "all models, also future ones",
+    "providerPicked": "{{count}} of {{total}}",
+    "releaseProvider": "Release the whole provider {{provider}}",
     "providerAll": "{{provider}} (all models)"
   },
   "keyTest": {

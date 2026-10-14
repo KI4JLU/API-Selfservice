@@ -102,6 +102,8 @@ test('member creates a key on the cost center in the UI and gets a real answer f
     .getByRole('option')
     .filter({ hasText: `test ${RUN} ui` })
     .click();
+  // the filter opens the matching provider group (#9)
+  await dialog.getByTestId('input-key-models-filter').fill(model);
   await dialog.getByTestId('list-models').locator('label', { hasText: model }).first().click();
   await dialog.getByTestId('btn-submit-create-key').click();
 

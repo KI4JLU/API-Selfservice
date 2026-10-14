@@ -10,6 +10,8 @@ test.describe('key test', () => {
     await page.getByTestId('btn-create-key').click();
     const dialog = page.getByTestId('dialog-create-key');
     await dialog.getByTestId('input-key-name').fill('Key test');
+    // provider groups start collapsed (#9)
+    await dialog.getByTestId('list-models').locator('[data-testid^="btn-model-group-"]').first().click();
     await dialog.getByTestId('list-models').locator('label').first().click();
     await dialog.getByTestId('btn-submit-create-key').click();
     const secretDialog = page.getByTestId('dialog-key-secret');
