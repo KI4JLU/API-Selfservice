@@ -41,7 +41,8 @@ function Field({
   className?: string;
 }) {
   return (
-    <div className={cn('grid gap-2', className)}>
+    // content-start: in a stretched grid row, label and control stay at the top instead of spreading out
+    <div className={cn('grid content-start gap-2', className)}>
       <Label htmlFor={htmlFor}>
         {label}
         {required ? <RequiredMark /> : null}
