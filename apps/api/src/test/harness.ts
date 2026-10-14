@@ -260,7 +260,7 @@ export async function litellmOwner(t: TestApp, email = uniqEmail('owner'), alias
 /** Convenience: user as plain member of a new approved (non-default) cost center, which becomes their profile cost center. */
 export async function approvedCostCenterFor(t: TestApp, admin: Client, user: Client, number = randomCostCenter()) {
   const owner = await litellmOwner(t, `o-${number}@x.de`);
-  const r = await admin.post('/admin/cost-centers', { number, name: `CC ${number}`, ownerUserId: owner.userId });
+  const r = await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number, name: `CC ${number}`, ownerUserId: owner.userId });
   if (r.status !== 201) throw new Error(`create cost center failed: ${JSON.stringify(r.body)}`);
   await addMember(admin, r.body.id, user);
   return { id: r.body.id as string, number };

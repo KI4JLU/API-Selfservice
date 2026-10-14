@@ -24,7 +24,7 @@ describe('reports', () => {
     const mk = async (extra: Record<string, unknown> = {}) => {
       const number = randomCostCenter();
       const owner = await litellmOwner(t, `o-${number}@x.de`);
-      const r = await admin.post('/admin/cost-centers', { number, name: `CC ${number}`, ownerUserId: owner.userId, ...extra });
+      const r = await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number, name: `CC ${number}`, ownerUserId: owner.userId, ...extra });
       return { id: r.body.id as string, number };
     };
     cc1 = await mk({ maxBudget: 100 });
@@ -134,7 +134,16 @@ describe('reports', () => {
     const start = new Date(t.clock.now.getTime() - 2 * DAY).toISOString();
     const end = new Date(t.clock.now.getTime() + 10 * DAY).toISOString();
     const cc = (
-      await admin.post('/admin/cost-centers', { number, name: 'Project', ownerUserId: (await litellmOwner(t)).userId, maxBudget: 10, budgetPeriod: 'project', periodStart: start, periodEnd: end })
+      await admin.post('/admin/cost-centers', {
+        sapRecipient: { type: 'cost_center', number: '12345678' },
+        number,
+        name: 'Project',
+        ownerUserId: (await litellmOwner(t)).userId,
+        maxBudget: 10,
+        budgetPeriod: 'project',
+        periodStart: start,
+        periodEnd: end,
+      })
     ).body;
     const u = await t.login();
     await addMember(admin, cc.id, u);

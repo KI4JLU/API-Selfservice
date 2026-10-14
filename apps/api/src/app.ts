@@ -19,6 +19,7 @@ import { keyTestRoutes } from './routes/key-test.js';
 import { providerRoutes } from './routes/providers.js';
 import { adminRoutes } from './routes/admin.js';
 import { reportRoutes } from './routes/reports.js';
+import { sapExportRoutes } from './routes/sap-export.js';
 
 export interface App {
   app: OpenAPIHono<AppEnv>;
@@ -71,6 +72,7 @@ export function createApp(deps: Deps): App {
   v1.route('/', providerRoutes);
   v1.route('/', adminRoutes);
   v1.route('/', reportRoutes);
+  v1.route('/', sapExportRoutes);
 
   app.route('/api/v1', v1);
 

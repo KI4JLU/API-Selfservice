@@ -184,7 +184,7 @@ describe('budgets & spend', () => {
       const number = randomCostCenter();
       const ownerEmail = `owner-${number}@x.de`;
       const owner = await litellmOwner(t, ownerEmail);
-      const created = await admin.post('/admin/cost-centers', { number, name: 'Capped', ownerUserId: owner.userId, maxBudget: 5 });
+      const created = await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number, name: 'Capped', ownerUserId: owner.userId, maxBudget: 5 });
       expect(created.status).toBe(201);
       const ccId = created.body.id as string;
       const ccAdmin = await t.login();

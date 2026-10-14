@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { BUDGET_PERIODS, COST_CENTER_MEMBER_ROLES, COST_CENTER_STATUS, KEY_BUDGET_PERIODS } from '../constants.js';
 import { IdSchema, IsoDate, Money } from './common.js';
+import { SapRecipientSchema } from './sap-export.js';
 
 export const CostCenterSchema = z.object({
   id: IdSchema,
@@ -18,6 +19,8 @@ export const CostCenterSchema = z.object({
   memberBudget: Money.nullable(),
   /** #15: `monthly` resets member budgets every month; null = once */
   memberBudgetPeriod: z.enum(KEY_BUDGET_PERIODS).nullable(),
+  /** #14: recipient in the SAP cost allocation; null = not set yet (older cost centers, default cost center) */
+  sapRecipient: SapRecipientSchema.nullable(),
   /** F-KST-15: models released for the cost center (= LiteLLM team models); empty = all models of its tier class */
   models: z.array(z.string()),
   status: z.enum(COST_CENTER_STATUS),
@@ -61,6 +64,8 @@ export const AdminCreateCostCenterSchema = z.object({
   name: z.string().min(1).max(200),
   /** LiteLLM user id (GET /admin/litellm-users); becomes cost center admin (F-KST-14). */
   ownerUserId: z.string().min(1),
+  /** #14: required, no cost center without SAP recipient */
+  sapRecipient: SapRecipientSchema,
   maxBudget: CostCenterBudget.nullable().optional(),
   budgetPeriod: z.enum(BUDGET_PERIODS).nullable().optional(),
   periodStart: IsoDate.nullable().optional(),
@@ -78,6 +83,8 @@ export const UpdateCostCenterSchema = z.object({
   periodEnd: IsoDate.nullable().optional(),
   /** Admins only (F-KST-15): released models; empty = all */
   models: z.array(z.string()).optional(),
+  /** Admins only (#14): required once an admin edits a cost center without one */
+  sapRecipient: SapRecipientSchema.optional(),
   /** #15: budget per member without an individual budget, also for new members; null = unlimited */
   memberBudget: CostCenterBudget.nullable().optional(),
   memberBudgetPeriod: z.enum(KEY_BUDGET_PERIODS).nullable().optional(),

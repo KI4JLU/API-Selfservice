@@ -1,4 +1,21 @@
-import { Activity, Boxes, Building, Building2, ChartColumn, Database, FlaskConical, KeyRound, LayoutDashboard, Mail, ScrollText, User, Users, Wallet, type LucideIcon } from 'lucide-react';
+import {
+  Activity,
+  Boxes,
+  Building,
+  Building2,
+  ChartColumn,
+  Database,
+  FileSpreadsheet,
+  FlaskConical,
+  KeyRound,
+  LayoutDashboard,
+  Mail,
+  ScrollText,
+  User,
+  Users,
+  Wallet,
+  type LucideIcon,
+} from 'lucide-react';
 import type { Me } from './queries';
 
 export interface NavItem {
@@ -28,6 +45,7 @@ export const adminNav: NavItem[] = [
   { to: '/admin/cost-centers', labelKey: 'nav.adminCostCenters', testId: 'nav-admin-cost-centers', helpSection: 'admin-cost-centers', icon: Building2 },
   { to: '/admin/providers', labelKey: 'nav.adminProviders', testId: 'nav-admin-providers', helpSection: 'admin-providers', icon: Boxes },
   { to: '/admin/reports', labelKey: 'nav.adminReports', testId: 'nav-admin-reports', helpSection: 'admin-reports', icon: ChartColumn },
+  { to: '/admin/sap-export', labelKey: 'nav.adminSapExport', testId: 'nav-admin-sap-export', helpSection: 'admin-reports', icon: FileSpreadsheet },
   { to: '/admin/notifications', labelKey: 'nav.adminNotifications', testId: 'nav-admin-notifications', helpSection: 'admin-notifications', icon: Mail },
   { to: '/admin/events', labelKey: 'nav.adminEvents', testId: 'nav-admin-events', helpSection: 'admin-events', icon: Activity },
 ];

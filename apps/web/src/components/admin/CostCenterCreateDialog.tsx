@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/label';
 import { BudgetFields, periodDates } from '@/components/cost-centers/CostCenterEditDialog';
 import { OwnerPicker, type Owner } from '@/components/admin/OwnerPicker';
+import { SapRecipientFields, sapRecipientValid, type SapRecipientValue } from '@/components/cost-centers/SapRecipientFields';
 
 function formatNumberInput(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 8);
@@ -21,6 +22,7 @@ export function CostCenterCreateDialog({ open, onOpenChange }: { open: boolean; 
   const [number, setNumber] = useState('');
   const [name, setName] = useState('');
   const [owner, setOwner] = useState<Owner | null>(null);
+  const [sap, setSap] = useState<SapRecipientValue>({ type: 'cost_center', number: '' });
   const [amount, setAmount] = useState('');
   const [period, setPeriod] = useState<BudgetPeriod>('monthly');
   const [start, setStart] = useState('');
@@ -31,6 +33,7 @@ export function CostCenterCreateDialog({ open, onOpenChange }: { open: boolean; 
       setNumber('');
       setName('');
       setOwner(null);
+      setSap({ type: 'cost_center', number: '' });
       setAmount('');
       setPeriod('monthly');
       setStart('');
@@ -49,12 +52,17 @@ export function CostCenterCreateDialog({ open, onOpenChange }: { open: boolean; 
       toast.error(t('costCenters.ownerRequired'));
       return;
     }
+    if (!sapRecipientValid(sap)) {
+      toast.error(t('errors.SAP_RECIPIENT_REQUIRED'));
+      return;
+    }
     const maxBudget = amount.trim() === '' ? null : Number(amount);
     const res = await create
       .mutateAsync({
         number: digits,
         name: name.trim(),
         ownerUserId: owner.userId,
+        sapRecipient: sap,
         maxBudget,
         budgetPeriod: maxBudget === null ? null : period,
         ...(maxBudget === null ? { periodStart: null, periodEnd: null } : periodDates(period, start, end)),
@@ -92,6 +100,7 @@ export function CostCenterCreateDialog({ open, onOpenChange }: { open: boolean; 
             </Field>
           </div>
           <OwnerPicker value={owner} onChange={setOwner} idPrefix="ncc" />
+          <SapRecipientFields value={sap} onChange={setSap} idPrefix="ncc" />
           <BudgetFields
             amount={amount}
             minAmount={0.01}

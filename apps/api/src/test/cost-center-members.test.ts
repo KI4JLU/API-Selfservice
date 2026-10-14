@@ -15,7 +15,12 @@ describe('cost center members (F-KST-10 to F-KST-13)', () => {
   /** New approved cost center; the owner (default: a LiteLLM-only user) is its first cost center admin. */
   const newCostCenter = async (ownerUserId?: string) => {
     const number = randomCostCenter();
-    const r = await admin.post('/admin/cost-centers', { number, name: `CC ${number}`, ownerUserId: ownerUserId ?? (await litellmOwner(t)).userId });
+    const r = await admin.post('/admin/cost-centers', {
+      sapRecipient: { type: 'cost_center', number: '12345678' },
+      number,
+      name: `CC ${number}`,
+      ownerUserId: ownerUserId ?? (await litellmOwner(t)).userId,
+    });
     if (r.status !== 201) throw new Error(JSON.stringify(r.body));
     return { id: r.body.id as string, number };
   };

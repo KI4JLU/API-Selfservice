@@ -156,7 +156,9 @@ test.describe('walkthrough: user', () => {
     const root = await apiLogin({ email: uniqueEmail('test-walk-root'), name: 'Test Walkthrough Root', admin: true });
     const ccAdmin = await apiLogin({ email, name: 'Test Walkthrough CC Admin' });
     const member = await apiLogin({ email: memberEmail, name: 'Test Walkthrough CC Member' });
-    const created = await root.api.post('/api/v1/admin/cost-centers', { data: { number: cc, name: 'Test Walkthrough CC', ownerUserId: ccAdmin.id } });
+    const created = await root.api.post('/api/v1/admin/cost-centers', {
+      data: { sapRecipient: { type: 'cost_center', number: '12345678' }, number: cc, name: 'Test Walkthrough CC', ownerUserId: ccAdmin.id },
+    });
     expect(created.status(), await created.text()).toBe(201);
     const ccId = ((await created.json()) as { id: string }).id;
 

@@ -25,7 +25,7 @@ describe('cost center event log (#13)', () => {
     ccAdmin = await t.login({ name: 'Events Admin' });
     member = await t.login({ name: 'Events Member' });
     joiner = await t.login({ name: 'Events Joiner' });
-    const r = await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'Events', ownerUserId: ccAdmin.userId });
+    const r = await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: randomCostCenter(), name: 'Events', ownerUserId: ccAdmin.userId });
     cc = { id: r.body.id };
     await addMember(ccAdmin, cc.id, member);
     keyId = (await member.post('/api-keys', { name: 'events-key', models: ['gpt-4o'], costCenterId: cc.id })).body.id;
@@ -40,7 +40,9 @@ describe('cost center event log (#13)', () => {
   it('lists members, requests, keys, budget and limits of the cost center, newest first, with categories and subjects', async () => {
     const e = await events(ccAdmin);
     const actions = e.items.map((x) => x.action);
-    expect(actions).toEqual(expect.arrayContaining(['cost_center.create', 'cost_center.member_add', 'key.create', 'cost_center.join_request', 'cost_center.join_approve', 'cost_center.update', 'cost_center.warn']));
+    expect(actions).toEqual(
+      expect.arrayContaining(['cost_center.create', 'cost_center.member_add', 'key.create', 'cost_center.join_request', 'cost_center.join_approve', 'cost_center.update', 'cost_center.warn']),
+    );
     // technical LiteLLM errors stay in the admin log
     expect(actions).not.toContain('litellm.update_team');
     expect(e.items[0]!.action).toBe('cost_center.warn');
@@ -73,7 +75,7 @@ describe('cost center event log (#13)', () => {
     expect((await admin.get(`/cost-centers/${cc.id}/events`)).status).toBe(200);
     expectError(await member.get(`/cost-centers/${cc.id}/events`), 403, 'FORBIDDEN');
     const otherAdmin = await t.login();
-    await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'Other', ownerUserId: otherAdmin.userId });
+    await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: randomCostCenter(), name: 'Other', ownerUserId: otherAdmin.userId });
     expectError(await otherAdmin.get(`/cost-centers/${cc.id}/events`), 403, 'FORBIDDEN');
   });
 });

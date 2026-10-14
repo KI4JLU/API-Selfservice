@@ -160,6 +160,7 @@ export async function costCenterView(deps: Deps, cc: CC) {
     periodEnd: cc.periodEnd?.toISOString() ?? null,
     memberBudget: cc.memberBudget === null ? null : Number(cc.memberBudget),
     memberBudgetPeriod: cc.memberBudgetPeriod,
+    sapRecipient: cc.sapRecipientType && cc.sapRecipientNumber ? { type: cc.sapRecipientType, number: cc.sapRecipientNumber } : null,
     models: cc.models,
     status: cc.status,
     isDefault: cc.isDefault,
@@ -285,6 +286,7 @@ export async function adminCreateCostCenter(
     number: string;
     name: string;
     ownerUserId: string;
+    sapRecipient: { type: 'cost_center' | 'project'; number: string };
     maxBudget?: number | null;
     budgetPeriod?: BudgetPeriod | null;
     periodStart?: string | null;
@@ -306,6 +308,8 @@ export async function adminCreateCostCenter(
       ownerName: owner.name,
       ownerEmail: owner.email,
       ownerUserId: owner.userId,
+      sapRecipientType: input.sapRecipient.type,
+      sapRecipientNumber: input.sapRecipient.number,
       maxBudget: input.maxBudget == null ? null : String(input.maxBudget),
       budgetPeriod: input.budgetPeriod ?? (input.maxBudget != null ? 'monthly' : null),
       periodStart: input.periodStart ? new Date(input.periodStart) : null,
@@ -336,6 +340,7 @@ export async function updateCostCenter(
     memberBudget?: number | null;
     memberBudgetPeriod?: 'monthly' | null;
     memberBudgets?: { userId: string; budget: number | null }[];
+    sapRecipient?: { type: 'cost_center' | 'project'; number: string };
   },
 ) {
   const cc = await getCostCenter(deps, id);
@@ -363,7 +368,13 @@ export async function updateCostCenter(
       Object.assign(patch, { ownerName: owner.name, ownerEmail: owner.email, ownerUserId: owner.userId });
     }
     if (input.models !== undefined) patch.models = await validModels(deps, input.models);
-  } else if (input.name !== undefined || input.ownerUserId !== undefined || input.models !== undefined) {
+    if (input.sapRecipient) Object.assign(patch, { sapRecipientType: input.sapRecipient.type, sapRecipientNumber: input.sapRecipient.number });
+    // #14: whoever edits a cost center as admin must give it a SAP recipient (the default cost center has none)
+    const adminEdit = input.name !== undefined || input.ownerUserId !== undefined || input.models !== undefined;
+    if (adminEdit && !cc.isDefault && !input.sapRecipient && !(cc.sapRecipientType && cc.sapRecipientNumber)) {
+      throw new ApiError('SAP_RECIPIENT_REQUIRED', 'Set the SAP recipient of the cost center');
+    }
+  } else if (input.name !== undefined || input.ownerUserId !== undefined || input.models !== undefined || input.sapRecipient !== undefined) {
     throw forbidden('Cost center admins may only change the budget');
   }
   if (input.maxBudget !== undefined) patch.maxBudget = input.maxBudget == null ? null : String(input.maxBudget);

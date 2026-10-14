@@ -9,7 +9,9 @@ test.describe('cost center detail page', () => {
     const root = await apiLogin({ email: uniqueEmail('test-detail-root'), name: 'Test Root Admin', admin: true });
     const ccAdmin = await apiLogin({ email: ccAdminEmail, name: 'Test Detail Admin' });
     const joiner = await apiLogin({ email: uniqueEmail('test-detail-joiner'), name: 'Test Detail Joiner' });
-    const created = await root.api.post('/api/v1/admin/cost-centers', { data: { number: cc, name: 'Test Detail', ownerUserId: ccAdmin.id } });
+    const created = await root.api.post('/api/v1/admin/cost-centers', {
+      data: { sapRecipient: { type: 'cost_center', number: '12345678' }, number: cc, name: 'Test Detail', ownerUserId: ccAdmin.id },
+    });
     expect(created.status(), await created.text()).toBe(201);
     const ccId = ((await created.json()) as { id: string }).id;
     const req = await joiner.api.post('/api/v1/me/join-requests', { data: { costCenterId: ccId, message: 'x'.repeat(300) } });
@@ -17,7 +19,11 @@ test.describe('cost center detail page', () => {
 
     await devLogin(page, { email: ccAdminEmail, name: 'Test Detail Admin' });
     await page.getByTestId('nav-cost-centers').click();
-    await page.getByTestId('card-cost-center').filter({ hasText: formatCc(cc) }).getByTestId('btn-open-cost-center').click();
+    await page
+      .getByTestId('card-cost-center')
+      .filter({ hasText: formatCc(cc) })
+      .getByTestId('btn-open-cost-center')
+      .click();
     await expect(page.getByTestId('page-cost-center-detail')).toBeVisible();
     await expect(page.getByTestId('cost-center-title')).toHaveText('Test Detail');
     await expect(page.getByTestId('kpi-members')).toContainText('1');

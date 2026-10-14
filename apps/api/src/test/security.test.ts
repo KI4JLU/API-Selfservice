@@ -70,7 +70,11 @@ describe('security chain', () => {
       const gets = ['/admin/users', `/admin/users/${user.userId}`, '/admin/api-keys', '/admin/providers', '/admin/budgets', '/admin/notifications', '/cost-center-requests'];
       for (const p of gets) expectError(await user.get(p), 403, 'FORBIDDEN');
       expectError(await user.post('/admin/providers/sync'), 403, 'FORBIDDEN');
-      expectError(await user.post('/admin/cost-centers', { number: '22222222', name: 'x', ownerName: 'o', ownerEmail: 'o@x.de' }), 403, 'FORBIDDEN');
+      expectError(
+        await user.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: '22222222', name: 'x', ownerName: 'o', ownerEmail: 'o@x.de' }),
+        403,
+        'FORBIDDEN',
+      );
       expectError(await user.put(`/admin/users/${user.userId}/budget`, { amount: 1, period: 'monthly' }), 403, 'FORBIDDEN');
       expectError(await user.patch(`/admin/users/${user.userId}/role`, { role: 'admin' }), 403, 'FORBIDDEN');
       expectError(await user.post(`/admin/users/${user.userId}/deactivate`), 403, 'FORBIDDEN');

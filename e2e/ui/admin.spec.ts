@@ -53,7 +53,7 @@ test.describe('admin screens', () => {
     const cc = uniqueCostCenter();
     const root = await apiLogin({ email, name: 'Test Models Admin', admin: true });
     expect((await root.api.post('/api/v1/admin/providers/sync')).status()).toBe(200);
-    const created = await root.api.post('/api/v1/admin/cost-centers', { data: { number: cc, name: 'Test Models', ownerUserId: root.id } });
+    const created = await root.api.post('/api/v1/admin/cost-centers', { data: { sapRecipient: { type: 'cost_center', number: '12345678' }, number: cc, name: 'Test Models', ownerUserId: root.id } });
     expect(created.status(), await created.text()).toBe(201);
     const ccId = ((await created.json()) as { id: string }).id;
 

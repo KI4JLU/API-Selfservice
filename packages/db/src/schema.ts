@@ -120,6 +120,9 @@ export const costCenters = apiSelfservice.table(
     memberBudget: money('member_budget'),
     /** #15: `monthly` resets member budgets every month; null = once */
     memberBudgetPeriod: text('member_budget_period', { enum: ['monthly'] }),
+    /** #14: SAP recipient of the cost allocation: a cost center (8 digits, starts with 1 or 2) or a project (starts with 6 or 8) */
+    sapRecipientType: text('sap_recipient_type', { enum: ['cost_center', 'project'] }),
+    sapRecipientNumber: text('sap_recipient_number'),
     /** F-KST-15: models released for this cost center (mirrored as LiteLLM team `models`); empty = all models of its tier class */
     models: text('models')
       .array()
@@ -410,6 +413,33 @@ export const jobState = apiSelfservice.table('job_state', {
   updatedAt: ts('updated_at').notNull().defaultNow(),
 });
 
+/** Settings admins change in the UI (e.g. #14 `sap.sender_cost_center`). */
+export const appSettings = apiSelfservice.table('app_settings', {
+  key: text('key').primaryKey(),
+  value: jsonb('value'),
+  updatedBy: text('updated_by'),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
+});
+
+/** #14: one SAP export (CSV for the LSMW import) per run; the file is kept for downloading it again. */
+export const sapExports = apiSelfservice.table(
+  'sap_exports',
+  {
+    id: id(),
+    /** billing month, YYYY-MM */
+    month: text('month').notNull(),
+    documentDate: text('document_date').notNull(),
+    postingDate: text('posting_date').notNull(),
+    senderCostCenter: text('sender_cost_center').notNull(),
+    rowCount: integer('row_count').notNull(),
+    total: money('total').notNull(),
+    csv: text('csv').notNull(),
+    createdBy: text('created_by'),
+    createdAt: ts('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('sap_exports_created_idx').on(t.createdAt)],
+);
+
 export const schema = {
   user,
   session,
@@ -428,4 +458,6 @@ export const schema = {
   notifications,
   auditLog,
   jobState,
+  appSettings,
+  sapExports,
 };

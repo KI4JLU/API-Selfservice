@@ -13,7 +13,7 @@ describe('cost center join requests (F-KST-16)', () => {
 
   const newCostCenter = async (ownerUserId: string) => {
     const number = randomCostCenter();
-    const r = await admin.post('/admin/cost-centers', { number, name: `CC ${number}`, ownerUserId });
+    const r = await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number, name: `CC ${number}`, ownerUserId });
     if (r.status !== 201) throw new Error(JSON.stringify(r.body));
     return { id: r.body.id as string, number };
   };

@@ -58,6 +58,8 @@ test.describe('walkthrough: admin', () => {
       await create.getByTestId('btn-owner-search').click();
       await create.getByTestId('list-owner-candidates').locator('li', { hasText: ownerEmail }).getByTestId('btn-pick-owner').click();
       await expect(create.getByTestId('owner-selected')).toContainText('Test Walkthrough Owner');
+      // #14: SAP recipient is required
+      await create.getByTestId('input-sap-recipient-number').fill('12345678');
       await create.getByTestId('input-budget-amount').fill('100');
       await shot('cost-center-create');
       await create.getByTestId('btn-submit-create-cost-center').click();
@@ -74,6 +76,7 @@ test.describe('walkthrough: admin', () => {
       const edit = page.getByTestId('dialog-edit-cost-center');
       await expect(edit).toBeVisible();
       await edit.getByTestId('input-cc-name').fill('Test Walkthrough edited');
+      await expect(edit.getByTestId('input-sap-recipient-number')).toHaveValue('12345678');
       await edit.getByTestId('input-budget-amount').fill('150');
       await shot('cost-center-edit');
       await edit.getByTestId('btn-save-cost-center').click();

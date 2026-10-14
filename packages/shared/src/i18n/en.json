@@ -17,6 +17,7 @@
     "adminCostCenters": "Cost centers",
     "adminProviders": "Models",
     "adminReports": "Reports",
+    "adminSapExport": "SAP export",
     "adminNotifications": "Notifications",
     "adminEvents": "Event log",
     "help": "Help",
@@ -401,7 +402,8 @@
     "cost_center": "Cost center",
     "provider": "Model",
     "request": "Request",
-    "job": "Job"
+    "job": "Job",
+    "sap_export": "SAP export"
   },
   "auditActions": {
     "user": {
@@ -473,6 +475,10 @@
     "job": {
       "failed": "Job failed",
       "aborted": "Job aborted"
+    },
+    "sap": {
+      "settings": "SAP sender cost center changed",
+      "export": "SAP export created"
     }
   },
   "help": {
@@ -522,7 +528,9 @@
     "SELF_DEACTIVATION": "You cannot deactivate yourself.",
     "LITELLM_ERROR": "LiteLLM reported an error.",
     "RATE_LIMITED": "Too many attempts. Please try again later.",
-    "INTERNAL": "Internal error."
+    "INTERNAL": "Internal error.",
+    "SAP_RECIPIENT_REQUIRED": "Please set the SAP recipient of the cost center (cost center or project, 8 digits).",
+    "SAP_SENDER_MISSING": "Please set the sender cost center (KoSt alt) first."
   },
   "locale": {
     "de": "Deutsch",
@@ -706,5 +714,58 @@
     "eventThreshold": "Threshold {{pct}} %",
     "eventRole": "Role {{role}}",
     "eventReason": "Reason: {{reason}}"
+  },
+  "sap": {
+    "title": "SAP export",
+    "subtitle": "Internal cost allocation of the API costs as CSV for the SAP import (LSMW)",
+    "period": "Billing period",
+    "month": "Period",
+    "documentDate": "Document date",
+    "postingDate": "Posting date",
+    "dateHint": "Exported as DDMMYYYY",
+    "postingDateHint": "Default: last day of the period",
+    "sender": "Sender cost center (KoSt alt)",
+    "senderHint": "HRZ · is saved",
+    "senderSaved": "Sender cost center saved",
+    "text": "Posting text",
+    "textHint": "{Provider} is replaced by the provider, e.g. OpenAI",
+    "rowsPer": "Rows per",
+    "rowsPerValue": "Recipient × provider",
+    "zeroAmounts": "Amounts of 0 €",
+    "zeroSkip": "leave out",
+    "preview": "Preview",
+    "previewHint": "Columns and order match the CSV",
+    "copy": "Copy preview as CSV",
+    "copied": "Preview copied",
+    "download": "Download CSV",
+    "exported": "Export with {{rows}} rows created",
+    "amountColumn": "Leistungsart (€)",
+    "portalCostCenter": "Portal cost center",
+    "noRows": "No costs in the chosen period.",
+    "total": "{{rows}} rows · total {{total}}",
+    "missingTitle_one": "{{count}} cost center without SAP recipient is not exported",
+    "missingTitle_other": "{{count}} cost centers without SAP recipient are not exported",
+    "history": "Previous exports",
+    "created": "Created",
+    "by": "By",
+    "rows": "Rows",
+    "sum": "Total €",
+    "file": "File",
+    "statusExported": "Exported",
+    "noHistory": "No exports yet.",
+    "recipientType": "SAP recipient",
+    "recipientNumber": "SAP number",
+    "recipientTypes": {
+      "cost_center": "Cost center",
+      "project": "Project"
+    },
+    "recipientHint": {
+      "cost_center": "8 digits, starts with 1 or 2",
+      "project": "8 digits, starts with 6 or 8"
+    },
+    "recipientInvalid": {
+      "cost_center": "A cost center has 8 digits and starts with 1 or 2.",
+      "project": "A project has 8 digits and starts with 6 or 8."
+    }
   }
 }

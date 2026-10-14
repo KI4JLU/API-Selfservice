@@ -68,7 +68,11 @@ export const AUDIT_SEVERITIES = ['info', 'warning', 'error'] as const;
 export type AuditSeverity = (typeof AUDIT_SEVERITIES)[number];
 
 /** Entity kinds that appear in the event log (`request` = an API request, `job` = a cron job). */
-export const AUDIT_ENTITIES = ['user', 'api_key', 'cost_center', 'provider', 'request', 'job'] as const;
+export const AUDIT_ENTITIES = ['user', 'api_key', 'cost_center', 'provider', 'request', 'job', 'sap_export'] as const;
+/** #14: SAP recipient of a cost center: cost center (8 digits, starts with 1 or 2) or project (starts with 6 or 8) */
+export const SAP_RECIPIENT_TYPES = ['cost_center', 'project'] as const;
+export type SapRecipientType = (typeof SAP_RECIPIENT_TYPES)[number];
+
 /** #13: groups of the cost center event log */
 export const COST_CENTER_EVENT_CATEGORIES = ['limits', 'requests', 'membership', 'keys', 'budget'] as const;
 export type CostCenterEventCategory = (typeof COST_CENTER_EVENT_CATEGORIES)[number];

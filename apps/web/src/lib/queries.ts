@@ -15,6 +15,10 @@ import {
   CostCenterSchema,
   CostCenterResyncResultSchema,
   CostCenterEventsSchema,
+  SapExportPreviewSchema,
+  SapExportRequestSchema,
+  SapExportSchema,
+  SapExportSettingsSchema,
   CostCenterLookupSchema,
   CreatedApiKeySchema,
   RenewApiKeySchema,
@@ -83,6 +87,9 @@ export const qk = {
   managedCostCenters: ['cost-centers', 'managed'] as const,
   costCenterMembers: (id: string) => ['cost-centers', id, 'members'] as const,
   costCenter: (id: string) => ['cost-centers', id] as const,
+  sapSettings: ['sap-export', 'settings'] as const,
+  sapPreview: (params: Record<string, unknown>) => ['sap-export', 'preview', params] as const,
+  sapExports: ['sap-export', 'history'] as const,
   costCenterEvents: (id: string, params: Record<string, unknown>) => ['cost-centers', id, 'events', params] as const,
   memberCandidates: (id: string, q: string) => ['cost-centers', id, 'member-candidates', q] as const,
   myJoinRequests: ['me', 'join-requests'] as const,
@@ -501,4 +508,51 @@ export function useReactivateUser() {
     mutationFn: (id: string) => api.post(`/admin/users/${id}/reactivate`, {}, OkResponse),
     onSuccess: () => inv(['admin', 'users']),
   });
+}
+
+// ---------- #14: SAP export (admins) ----------
+
+export type SapExportPreview = z.infer<typeof SapExportPreviewSchema>;
+export type SapExport = z.infer<typeof SapExportSchema>;
+
+export function useSapSettings() {
+  return useQuery({ queryKey: qk.sapSettings, queryFn: () => api.get('/admin/sap-export/settings', SapExportSettingsSchema) });
+}
+
+export function useUpdateSapSettings() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: (senderCostCenter: string) => api.put('/admin/sap-export/settings', { senderCostCenter }, SapExportSettingsSchema),
+    onSuccess: () => inv(['sap-export']),
+  });
+}
+
+/** Rows as they will be exported; recomputed when month, dates or text change. */
+export function useSapPreview(params: z.infer<typeof SapExportRequestSchema>) {
+  return useQuery({ queryKey: qk.sapPreview(params), queryFn: () => api.post('/admin/sap-export/preview', params, SapExportPreviewSchema), placeholderData: (prev) => prev });
+}
+
+export function useSapExports() {
+  return useQuery({ queryKey: qk.sapExports, queryFn: () => api.get('/admin/sap-exports', z.array(SapExportSchema)) });
+}
+
+export function useCreateSapExport() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: (body: z.infer<typeof SapExportRequestSchema>) => api.post('/admin/sap-exports', body, SapExportSchema),
+    onSuccess: () => inv(qk.sapExports),
+  });
+}
+
+/** Downloads the stored CSV (Windows-1252) of an export. */
+export async function downloadSapExport(id: string) {
+  const res = await fetch(`/api/v1/admin/sap-exports/${id}/csv`, { credentials: 'include' });
+  if (!res.ok) throw new Error(`download failed: ${res.status}`);
+  const name = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? 'sap-export.csv';
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(url);
 }

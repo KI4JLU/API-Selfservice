@@ -66,7 +66,7 @@ describe('profile + cost centers', () => {
     it('switching to an approved cost center needs a membership (F-KST-12)', async () => {
       const u = await t.login();
       const number = randomCostCenter();
-      const created = await admin.post('/admin/cost-centers', { number, name: 'Approved', ownerUserId: owner.userId });
+      const created = await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number, name: 'Approved', ownerUserId: owner.userId });
       expect(created.status).toBe(201);
       expectError(await u.patch('/me', { costCenterNumber: number }), 409, 'COST_CENTER_NOT_MEMBER');
       await addMember(admin, created.body.id, u);
@@ -169,7 +169,7 @@ describe('profile + cost centers', () => {
     it('POST /admin/cost-centers creates an approved cost center; duplicates -> COST_CENTER_EXISTS', async () => {
       const number = randomCostCenter();
       const prof = await litellmOwner(t, 'prof@x.de', 'Prof');
-      const r = await admin.post('/admin/cost-centers', { number, name: 'Institut', ownerUserId: prof.userId, maxBudget: 100 });
+      const r = await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number, name: 'Institut', ownerUserId: prof.userId, maxBudget: 100 });
       expect(r.status).toBe(201);
       const cc = expectShape(CostCenterSchema, r.body);
       expect(cc).toMatchObject({ number, status: 'approved', isDefault: false, maxBudget: 100, budgetPeriod: 'monthly', blocked: false, approvedBy: admin.userId, spendCurrentPeriod: 0 });
@@ -177,30 +177,52 @@ describe('profile + cost centers', () => {
       expect(cc).toMatchObject({ ownerUserId: prof.userId, ownerName: 'Prof', ownerEmail: 'prof@x.de' });
       expect((await admin.get(`/cost-centers/${cc.id}/members`)).body).toEqual([expect.objectContaining({ userId: prof.userId, role: 'admin', status: 'never_signed_in' })]);
       expect(t.mock.teams.get(cc.id)?.members.get(prof.userId)).toBe('admin');
-      expectError(await admin.post('/admin/cost-centers', { number, name: 'Dup', ownerUserId: owner.userId }), 409, 'COST_CENTER_EXISTS');
-      expectError(await admin.post('/admin/cost-centers', { number: '11111111', name: 'Dup', ownerUserId: owner.userId }), 409, 'COST_CENTER_EXISTS');
+      expectError(await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number, name: 'Dup', ownerUserId: owner.userId }), 409, 'COST_CENTER_EXISTS');
+      expectError(
+        await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: '11111111', name: 'Dup', ownerUserId: owner.userId }),
+        409,
+        'COST_CENTER_EXISTS',
+      );
       // user requesting an already approved number -> COST_CENTER_EXISTS
       const u = await t.login();
       expectError(await u.post('/cost-centers', { number, name: 'n', ownerName: 'o', ownerEmail: 'o@x.de' }), 409, 'COST_CENTER_EXISTS');
     });
 
     it('validates input', async () => {
-      expectError(await admin.post('/admin/cost-centers', { number: '1234', name: 'x', ownerUserId: owner.userId }), 400, 'VALIDATION_ERROR');
-      expectError(await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'x' }), 400, 'VALIDATION_ERROR');
+      expectError(
+        await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: '1234', name: 'x', ownerUserId: owner.userId }),
+        400,
+        'VALIDATION_ERROR',
+      );
+      expectError(await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: randomCostCenter(), name: 'x' }), 400, 'VALIDATION_ERROR');
       // F-KST-14: the owner must be a LiteLLM user
-      expectError(await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'x', ownerUserId: 'nobody-in-litellm' }), 409, 'OWNER_NOT_LITELLM_USER');
+      expectError(
+        await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: randomCostCenter(), name: 'x', ownerUserId: 'nobody-in-litellm' }),
+        409,
+        'OWNER_NOT_LITELLM_USER',
+      );
       const u = await t.login();
       expectError(await u.post('/cost-centers', { number: randomCostCenter(), name: 'n', ownerEmail: 'nobody@x.de' }), 409, 'OWNER_NOT_LITELLM_USER');
-      expectError(await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'x', ownerUserId: owner.userId, maxBudget: -1 }), 400, 'VALIDATION_ERROR');
+      expectError(
+        await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: randomCostCenter(), name: 'x', ownerUserId: owner.userId, maxBudget: -1 }),
+        400,
+        'VALIDATION_ERROR',
+      );
       // A budget of 0 would block the team and its keys right away; no budget means unlimited.
-      expectError(await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'x', ownerUserId: owner.userId, maxBudget: 0 }), 400, 'VALIDATION_ERROR');
-      const { id } = (await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'x', ownerUserId: owner.userId, maxBudget: 10 })).body;
+      expectError(
+        await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: randomCostCenter(), name: 'x', ownerUserId: owner.userId, maxBudget: 0 }),
+        400,
+        'VALIDATION_ERROR',
+      );
+      const { id } = (
+        await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: randomCostCenter(), name: 'x', ownerUserId: owner.userId, maxBudget: 10 })
+      ).body;
       expectError(await admin.patch(`/cost-centers/${id}`, { maxBudget: 0 }), 400, 'VALIDATION_ERROR');
     });
 
     it('PATCH updates name, owner and budget period; project period is stored', async () => {
       const number = randomCostCenter();
-      const { id } = (await admin.post('/admin/cost-centers', { number, name: 'Old', ownerUserId: owner.userId })).body;
+      const { id } = (await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number, name: 'Old', ownerUserId: owner.userId })).body;
       const newOwner = await litellmOwner(t, undefined, 'New Owner');
       const r = await admin.patch(`/cost-centers/${id}`, {
         name: 'New',
@@ -234,8 +256,12 @@ describe('profile + cost centers', () => {
     it('budget, spend and owner of a cost center are only visible to admins and its own cost center admins (F-KST-8)', async () => {
       const ccAdmin = await t.login();
       const plain = await t.login();
-      const mine = (await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'Mine', ownerUserId: ccAdmin.userId, maxBudget: 100 })).body as { id: string };
-      const other = (await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'Other', ownerUserId: owner.userId, maxBudget: 200 })).body as { id: string };
+      const mine = (
+        await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: randomCostCenter(), name: 'Mine', ownerUserId: ccAdmin.userId, maxBudget: 100 })
+      ).body as { id: string };
+      const other = (
+        await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: randomCostCenter(), name: 'Other', ownerUserId: owner.userId, maxBudget: 200 })
+      ).body as { id: string };
       await addMember(ccAdmin, mine.id, plain);
       const sensitive = ['maxBudget', 'spendCurrentPeriod', 'ownerEmail', 'ownerName', 'ownerUserId', 'models', 'requestedBy', 'approvedBy'];
 
@@ -260,7 +286,15 @@ describe('profile + cost centers', () => {
       const member = await t.login();
       const created = expectShape(
         CostCenterSchema,
-        (await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'Models', ownerUserId: ccAdmin.userId, models: ['gpt-4o', 'gpt-4o'] })).body,
+        (
+          await admin.post('/admin/cost-centers', {
+            sapRecipient: { type: 'cost_center', number: '12345678' },
+            number: randomCostCenter(),
+            name: 'Models',
+            ownerUserId: ccAdmin.userId,
+            models: ['gpt-4o', 'gpt-4o'],
+          })
+        ).body,
       );
       expect(created.models).toEqual(['gpt-4o']);
       expect(t.mock.teams.get(created.id)?.models).toEqual(['gpt-4o']);
@@ -306,7 +340,9 @@ describe('profile + cost centers', () => {
       // emulate the http adapter's fallback when LiteLLM refuses team admins (premium feature)
       const spy = vi.spyOn(t.deps.litellm, 'setTeamMember').mockImplementation((teamId, userId) => setTeamMember(teamId, userId, 'user'));
       try {
-        const { id } = (await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'No license', ownerUserId: owner.userId })).body;
+        const { id } = (
+          await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: randomCostCenter(), name: 'No license', ownerUserId: owner.userId })
+        ).body;
         const deputy = await t.login();
         await addMember(admin, id, deputy, 'admin');
         expect((await admin.get(`/cost-centers/${id}/members`)).body).toContainEqual(expect.objectContaining({ userId: deputy.userId, role: 'admin' }));
@@ -322,7 +358,7 @@ describe('profile + cost centers', () => {
       await syncProvidersWithFree(admin);
       const u = await t.login();
       const number = randomCostCenter();
-      const { id } = (await admin.post('/admin/cost-centers', { number, name: 'Doomed', ownerUserId: owner.userId })).body;
+      const { id } = (await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number, name: 'Doomed', ownerUserId: owner.userId })).body;
       await addMember(admin, id, u);
       const deputy = await t.login();
       await addMember(admin, id, deputy, 'admin');
@@ -361,9 +397,12 @@ describe('profile + cost centers', () => {
 
     it('resync mirrors every cost center to its LiteLLM team', async () => {
       const u = await t.login();
-      const { id } = (await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'Drifted', ownerUserId: owner.userId, maxBudget: 50 })).body;
+      const { id } = (
+        await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: randomCostCenter(), name: 'Drifted', ownerUserId: owner.userId, maxBudget: 50 })
+      ).body;
       await addMember(admin, id, u);
-      const archived = (await admin.post('/admin/cost-centers', { number: randomCostCenter(), name: 'Gone', ownerUserId: owner.userId })).body;
+      const archived = (await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number: randomCostCenter(), name: 'Gone', ownerUserId: owner.userId }))
+        .body;
       await admin.post(`/admin/cost-centers/${archived.id}/archive`);
       // LiteLLM lost one team and unblocked the other
       t.mock.teams.delete(id);
@@ -382,7 +421,7 @@ describe('profile + cost centers', () => {
 
     it('lookup search by number (with spaces) and by name', async () => {
       const number = randomCostCenter();
-      await admin.post('/admin/cost-centers', { number, name: 'Searchable Lab', ownerUserId: owner.userId });
+      await admin.post('/admin/cost-centers', { sapRecipient: { type: 'cost_center', number: '12345678' }, number, name: 'Searchable Lab', ownerUserId: owner.userId });
       const u = await t.login();
       const byNumber = await u.get(`/cost-centers?q=${encodeURIComponent(`${number.slice(0, 4)} ${number.slice(4)}`)}`);
       expect(byNumber.body.items.map((c: { number: string }) => c.number)).toEqual([number]);

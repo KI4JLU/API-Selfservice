@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { TierBadge } from '@/components/StatusBadge';
 import { OwnerPicker, type Owner } from '@/components/admin/OwnerPicker';
 import { MemberBudgetDefault, MemberBudgetList, type MemberPeriod } from './MemberBudgets';
+import { SapRecipientFields, sapRecipientValid, type SapRecipientValue } from './SapRecipientFields';
 
 export function BudgetFields({
   amount,
@@ -186,6 +187,7 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
   const [name, setName] = useState('');
   const [owner, setOwner] = useState<Owner | null>(null);
   const [models, setModels] = useState<string[]>([]);
+  const [sap, setSap] = useState<SapRecipientValue>({ type: 'cost_center', number: '' });
   const [amount, setAmount] = useState('');
   const [period, setPeriod] = useState<BudgetPeriod>('monthly');
   const [start, setStart] = useState('');
@@ -205,6 +207,7 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
     // Unlinked owners (legacy data) show as missing until an admin picks a LiteLLM user.
     setOwner(costCenter.ownerUserId ? { userId: costCenter.ownerUserId, name: costCenter.ownerName, email: costCenter.ownerEmail } : null);
     setModels(costCenter.models);
+    setSap(costCenter.sapRecipient ?? { type: 'cost_center', number: '' });
     setAmount(costCenter.maxBudget === null ? '' : String(costCenter.maxBudget));
     setPeriod(costCenter.budgetPeriod ?? 'monthly');
     setStart(toDateInput(costCenter.periodStart));
@@ -226,9 +229,15 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!costCenter) return;
+    if (full && !costCenter.isDefault && !sapRecipientValid(sap)) {
+      toast.error(t('errors.SAP_RECIPIENT_REQUIRED'));
+      return;
+    }
     const maxBudget = amount.trim() === '' ? null : Number(amount);
     const body = {
       ...(full ? { name: name.trim(), models, ...(owner && owner.userId !== costCenter.ownerUserId ? { ownerUserId: owner.userId } : {}) } : {}),
+      // #14: required when an admin edits a cost center (not the default one)
+      ...(full && !costCenter.isDefault ? { sapRecipient: sap } : {}),
       maxBudget,
       budgetPeriod: maxBudget === null ? null : period,
       ...(maxBudget === null ? { periodStart: null, periodEnd: null } : periodDates(period, start, end)),
@@ -244,7 +253,10 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
   return (
     <Dialog open={!!costCenter} onOpenChange={(o) => !o && onClose()}>
       {/* Admin view: fixed max height, the model list takes the remaining space and scrolls on its own. */}
-      <DialogContent className={full ? 'flex max-h-[90svh] flex-col overflow-y-auto sm:max-w-3xl' : withMembers ? 'flex max-h-[90svh] flex-col overflow-y-auto sm:max-w-4xl' : undefined} data-testid="dialog-edit-cost-center">
+      <DialogContent
+        className={full ? 'flex max-h-[90svh] flex-col overflow-y-auto sm:max-w-3xl' : withMembers ? 'flex max-h-[90svh] flex-col overflow-y-auto sm:max-w-4xl' : undefined}
+        data-testid="dialog-edit-cost-center"
+      >
         <form onSubmit={submit} className={full ? 'flex min-h-0 flex-1 flex-col gap-4' : 'grid gap-4'}>
           <DialogHeader>
             <DialogTitle>{full ? t('costCenters.edit') : t('costCenters.editBudget')}</DialogTitle>
@@ -256,6 +268,7 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
                 <Input id="cc-name" required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} data-testid="input-cc-name" />
               </Field>
               <OwnerPicker value={owner} onChange={setOwner} idPrefix="cc" />
+              {!costCenter?.isDefault ? <SapRecipientFields value={sap} onChange={setSap} idPrefix="cc" /> : null}
             </>
           ) : null}
           {withMembers ? (
@@ -281,7 +294,13 @@ export function CostCenterEditDialog({ costCenter, onClose, full }: { costCenter
           {withMembers ? (
             <>
               <MemberBudgetDefault amount={memberAmount} setAmount={setMemberAmount} period={memberPeriod} setPeriod={setMemberPeriod} />
-              <MemberBudgetList members={members.data ?? []} loading={members.isLoading} defaultAmount={memberAmount} value={individual} onChange={(id, v) => setIndividual((o) => ({ ...o, [id]: v }))} />
+              <MemberBudgetList
+                members={members.data ?? []}
+                loading={members.isLoading}
+                defaultAmount={memberAmount}
+                value={individual}
+                onChange={(id, v) => setIndividual((o) => ({ ...o, [id]: v }))}
+              />
             </>
           ) : null}
           <DialogFooter>

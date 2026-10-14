@@ -24,6 +24,7 @@ import { Route as AppAdminLitellmUsersRouteImport } from './routes/_app/admin/li
 import { Route as AppAdminNotificationsRouteImport } from './routes/_app/admin/notifications'
 import { Route as AppAdminProvidersRouteImport } from './routes/_app/admin/providers'
 import { Route as AppAdminReportsRouteImport } from './routes/_app/admin/reports'
+import { Route as AppAdminSapExportRouteImport } from './routes/_app/admin/sap-export'
 import { Route as AppAdminUsersRouteImport } from './routes/_app/admin/users'
 import { Route as AppCostCentersIdRouteImport } from './routes/_app/cost-centers_.$id'
 
@@ -101,6 +102,11 @@ const AppAdminReportsRoute = AppAdminReportsRouteImport.update({
   path: '/admin/reports',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminSapExportRoute = AppAdminSapExportRouteImport.update({
+  id: '/admin/sap-export',
+  path: '/admin/sap-export',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAdminUsersRoute = AppAdminUsersRouteImport.update({
   id: '/admin/users',
   path: '/admin/users',
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/admin/notifications': typeof AppAdminNotificationsRoute
   '/admin/providers': typeof AppAdminProvidersRoute
   '/admin/reports': typeof AppAdminReportsRoute
+  '/admin/sap-export': typeof AppAdminSapExportRoute
   '/admin/users': typeof AppAdminUsersRoute
   '/cost-centers/$id': typeof AppCostCentersIdRoute
 }
@@ -145,6 +152,7 @@ export interface FileRoutesByTo {
   '/admin/notifications': typeof AppAdminNotificationsRoute
   '/admin/providers': typeof AppAdminProvidersRoute
   '/admin/reports': typeof AppAdminReportsRoute
+  '/admin/sap-export': typeof AppAdminSapExportRoute
   '/admin/users': typeof AppAdminUsersRoute
   '/cost-centers/$id': typeof AppCostCentersIdRoute
 }
@@ -165,6 +173,7 @@ export interface FileRoutesById {
   '/_app/admin/notifications': typeof AppAdminNotificationsRoute
   '/_app/admin/providers': typeof AppAdminProvidersRoute
   '/_app/admin/reports': typeof AppAdminReportsRoute
+  '/_app/admin/sap-export': typeof AppAdminSapExportRoute
   '/_app/admin/users': typeof AppAdminUsersRoute
   '/_app/cost-centers_/$id': typeof AppCostCentersIdRoute
 }
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/providers'
     | '/admin/reports'
+    | '/admin/sap-export'
     | '/admin/users'
     | '/cost-centers/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -203,6 +213,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/providers'
     | '/admin/reports'
+    | '/admin/sap-export'
     | '/admin/users'
     | '/cost-centers/$id'
   id:
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
     | '/_app/admin/notifications'
     | '/_app/admin/providers'
     | '/_app/admin/reports'
+    | '/_app/admin/sap-export'
     | '/_app/admin/users'
     | '/_app/cost-centers_/$id'
   fileRoutesById: FileRoutesById
@@ -338,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminReportsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/admin/sap-export': {
+      id: '/_app/admin/sap-export'
+      path: '/admin/sap-export'
+      fullPath: '/admin/sap-export'
+      preLoaderRoute: typeof AppAdminSapExportRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/admin/users': {
       id: '/_app/admin/users'
       path: '/admin/users'
@@ -369,6 +388,7 @@ interface AppRouteChildren {
   AppAdminNotificationsRoute: typeof AppAdminNotificationsRoute
   AppAdminProvidersRoute: typeof AppAdminProvidersRoute
   AppAdminReportsRoute: typeof AppAdminReportsRoute
+  AppAdminSapExportRoute: typeof AppAdminSapExportRoute
   AppAdminUsersRoute: typeof AppAdminUsersRoute
   AppCostCentersIdRoute: typeof AppCostCentersIdRoute
 }
@@ -387,6 +407,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAdminNotificationsRoute: AppAdminNotificationsRoute,
   AppAdminProvidersRoute: AppAdminProvidersRoute,
   AppAdminReportsRoute: AppAdminReportsRoute,
+  AppAdminSapExportRoute: AppAdminSapExportRoute,
   AppAdminUsersRoute: AppAdminUsersRoute,
   AppCostCentersIdRoute: AppCostCentersIdRoute,
 }

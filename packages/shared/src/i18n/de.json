@@ -17,6 +17,7 @@
     "adminCostCenters": "Kostenstellen",
     "adminProviders": "Modelle",
     "adminReports": "Reports",
+    "adminSapExport": "SAP-Export",
     "adminNotifications": "Benachrichtigungen",
     "adminEvents": "Ereignisprotokoll",
     "help": "Hilfe",
@@ -401,7 +402,8 @@
     "cost_center": "Kostenstelle",
     "provider": "Modell",
     "request": "Request",
-    "job": "Job"
+    "job": "Job",
+    "sap_export": "SAP-Export"
   },
   "auditActions": {
     "user": {
@@ -473,6 +475,10 @@
     "job": {
       "failed": "Job fehlgeschlagen",
       "aborted": "Job abgebrochen"
+    },
+    "sap": {
+      "settings": "SAP-Sender-Kostenstelle geändert",
+      "export": "SAP-Export erstellt"
     }
   },
   "help": {
@@ -522,7 +528,9 @@
     "SELF_DEACTIVATION": "Sie können sich nicht selbst deaktivieren.",
     "LITELLM_ERROR": "LiteLLM hat einen Fehler gemeldet.",
     "RATE_LIMITED": "Zu viele Versuche. Bitte versuchen Sie es später erneut.",
-    "INTERNAL": "Interner Fehler."
+    "INTERNAL": "Interner Fehler.",
+    "SAP_RECIPIENT_REQUIRED": "Bitte den SAP-Empfänger der Kostenstelle angeben (Kostenstelle oder Projektstelle, 8-stellig).",
+    "SAP_SENDER_MISSING": "Bitte zuerst die Sender-Kostenstelle (KoSt alt) festlegen."
   },
   "locale": {
     "de": "Deutsch",
@@ -706,5 +714,58 @@
     "eventThreshold": "Schwelle {{pct}} %",
     "eventRole": "Rolle {{role}}",
     "eventReason": "Begründung: {{reason}}"
+  },
+  "sap": {
+    "title": "SAP-Export",
+    "subtitle": "Interne Leistungsverrechnung der API-Kosten als CSV für den SAP-Import (LSMW)",
+    "period": "Abrechnungszeitraum",
+    "month": "Zeitraum",
+    "documentDate": "Belegdatum",
+    "postingDate": "Buchungsdatum",
+    "dateHint": "Export als TTMMJJJJ",
+    "postingDateHint": "Standard: letzter Tag des Zeitraums",
+    "sender": "Sender-Kostenstelle (KoSt alt)",
+    "senderHint": "HRZ · wird gespeichert",
+    "senderSaved": "Sender-Kostenstelle gespeichert",
+    "text": "Buchungstext",
+    "textHint": "{Provider} wird durch den Provider ersetzt, z. B. OpenAI",
+    "rowsPer": "Zeilen je",
+    "rowsPerValue": "Empfänger × Provider",
+    "zeroAmounts": "Beträge 0 €",
+    "zeroSkip": "auslassen",
+    "preview": "Vorschau",
+    "previewHint": "Spalten und Reihenfolge entsprechen der CSV",
+    "copy": "Vorschau als CSV kopieren",
+    "copied": "Vorschau kopiert",
+    "download": "CSV herunterladen",
+    "exported": "Export mit {{rows}} Zeilen erstellt",
+    "amountColumn": "Leistungsart (€)",
+    "portalCostCenter": "Portal-Kostenstelle",
+    "noRows": "Keine Kosten im gewählten Zeitraum.",
+    "total": "{{rows}} Zeilen · Summe {{total}}",
+    "missingTitle_one": "{{count}} Kostenstelle ohne SAP-Empfänger wird nicht exportiert",
+    "missingTitle_other": "{{count}} Kostenstellen ohne SAP-Empfänger werden nicht exportiert",
+    "history": "Bisherige Exporte",
+    "created": "Erstellt",
+    "by": "Von",
+    "rows": "Zeilen",
+    "sum": "Summe €",
+    "file": "Datei",
+    "statusExported": "Exportiert",
+    "noHistory": "Noch keine Exporte.",
+    "recipientType": "SAP-Empfänger",
+    "recipientNumber": "SAP-Nummer",
+    "recipientTypes": {
+      "cost_center": "Kostenstelle",
+      "project": "Projektstelle"
+    },
+    "recipientHint": {
+      "cost_center": "8-stellig, beginnt mit 1 oder 2",
+      "project": "8-stellig, beginnt mit 6 oder 8"
+    },
+    "recipientInvalid": {
+      "cost_center": "Eine Kostenstelle hat 8 Ziffern und beginnt mit 1 oder 2.",
+      "project": "Eine Projektstelle hat 8 Ziffern und beginnt mit 6 oder 8."
+    }
   }
 }

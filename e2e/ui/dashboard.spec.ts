@@ -36,7 +36,7 @@ test.describe('login and dashboard', () => {
   test('user asks to join a cost center from the directory', async ({ page }) => {
     const root = await apiLogin({ email: uniqueEmail('test-join-root'), name: 'Test Root Admin', admin: true });
     const name = `Test Join ${Date.now()}`;
-    const created = await root.api.post('/api/v1/admin/cost-centers', { data: { number: uniqueCostCenter(), name, ownerUserId: root.id } });
+    const created = await root.api.post('/api/v1/admin/cost-centers', { data: { sapRecipient: { type: 'cost_center', number: '12345678' }, number: uniqueCostCenter(), name, ownerUserId: root.id } });
     expect(created.status(), await created.text()).toBe(201);
 
     await devLogin(page, { email: uniqueEmail('test-joiner'), name: 'Test Joiner' });

@@ -23,7 +23,9 @@ test.describe('cost center members', () => {
     const root = await apiLogin({ email: uniqueEmail('test-cc-root'), name: 'Test Root Admin', admin: true });
     const ccAdmin = await apiLogin({ email: ccAdminEmail, name: 'Test Cc Admin' });
     const member = await apiLogin({ email: memberEmail, name: 'Test Member' });
-    const created = await root.api.post('/api/v1/admin/cost-centers', { data: { number: cc, name: 'Test Members', ownerUserId: ccAdmin.id } });
+    const created = await root.api.post('/api/v1/admin/cost-centers', {
+      data: { sapRecipient: { type: 'cost_center', number: '12345678' }, number: cc, name: 'Test Members', ownerUserId: ccAdmin.id },
+    });
     expect(created.status(), await created.text()).toBe(201);
     const ccId = ((await created.json()) as { id: string }).id;
 
@@ -91,7 +93,7 @@ test.describe('cost center members', () => {
     const ccAdmin = await apiLogin({ email: ccAdminEmail, name: 'Test Bulk Admin' });
     const ua = await apiLogin({ email: a, name: 'Test Bulk A' });
     const ub = await apiLogin({ email: b, name: 'Test Bulk B' });
-    const created = await root.api.post('/api/v1/admin/cost-centers', { data: { number: cc, name: 'Test Bulk', ownerUserId: ccAdmin.id } });
+    const created = await root.api.post('/api/v1/admin/cost-centers', { data: { sapRecipient: { type: 'cost_center', number: '12345678' }, number: cc, name: 'Test Bulk', ownerUserId: ccAdmin.id } });
     expect(created.status(), await created.text()).toBe(201);
 
     await devLogin(page, { email: ccAdminEmail, name: 'Test Bulk Admin' });
@@ -125,7 +127,7 @@ test.describe('cost center members', () => {
     const ccAdmin = await apiLogin({ email: ccAdminEmail, name: 'Test Cc Admin' });
     const joiner = await apiLogin({ email: uniqueEmail('test-cc-joiner'), name: 'Test Joiner' });
     const other = await apiLogin({ email: uniqueEmail('test-cc-joiner2'), name: 'Test Other Joiner' });
-    const created = await root.api.post('/api/v1/admin/cost-centers', { data: { number: cc, name: 'Test Join', ownerUserId: ccAdmin.id } });
+    const created = await root.api.post('/api/v1/admin/cost-centers', { data: { sapRecipient: { type: 'cost_center', number: '12345678' }, number: cc, name: 'Test Join', ownerUserId: ccAdmin.id } });
     expect(created.status(), await created.text()).toBe(201);
     const ccId = ((await created.json()) as { id: string }).id;
     for (const u of [joiner, other]) {
