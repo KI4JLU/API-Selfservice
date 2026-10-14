@@ -83,14 +83,24 @@ export async function keyExists(secret: string): Promise<boolean> {
   return true;
 }
 
-export async function getKey(secret: string): Promise<{ blocked: boolean; teamId: string | null; userId: string | null; models: string[] }> {
+export async function getKey(secret: string): Promise<{ blocked: boolean; teamId: string | null; userId: string | null; models: string[]; expires: string | null }> {
   const r = await ok<{ info: Raw }>('GET', `/key/info?key=${encodeURIComponent(secret)}`);
   return {
     blocked: Boolean(r.info.blocked),
     teamId: (r.info.team_id as string) ?? null,
     userId: (r.info.user_id as string) ?? null,
     models: (r.info.models as string[]) ?? [],
+    expires: (r.info.expires as string) ?? null,
   };
+}
+
+/** #15: a member's budget inside a team (team_memberships -> litellm_budget_table). */
+export async function memberBudget(teamId: string, userId: string): Promise<{ maxBudget: number | null; budgetDuration: string | null } | null> {
+  const r = await ok<{ team_memberships?: Raw[] }>('GET', `/team/info?team_id=${encodeURIComponent(teamId)}`);
+  const m = (r.team_memberships ?? []).find((x) => x.user_id === userId);
+  if (!m) return null;
+  const b = (m.litellm_budget_table as Raw | null) ?? {};
+  return { maxBudget: (b.max_budget as number) ?? null, budgetDuration: (b.budget_duration as string) ?? null };
 }
 
 /** One tiny chat completion with the user's key, straight against LiteLLM. Returns the HTTP status. */

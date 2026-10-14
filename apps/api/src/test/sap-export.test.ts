@@ -97,6 +97,8 @@ describe('SAP export (#14)', () => {
     // "AWS Bedrock" is longer than "{Provider}"
     expectError(await admin.post('/admin/sap-export/preview', { month: '2026-07', text: long }), 400, 'VALIDATION_ERROR');
     expect((await admin.post('/admin/sap-export/preview', { month: '2026-07' })).body.rows[0].text).toBe('API-Kosten: AWS Bedrock');
+    // a text that spreadsheets would read as formula is refused (CSV injection)
+    for (const text of ['=1+1 {Provider}', '+{Provider}', '-x', '@SUM(A1)']) expectError(await admin.post('/admin/sap-export/preview', { month, text }), 400, 'VALIDATION_ERROR');
   });
 
   it('the export needs the sender cost center; the CSV keeps the LSMW format and is offered again from the history', async () => {

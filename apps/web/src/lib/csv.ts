@@ -1,7 +1,12 @@
-/** Semicolon-separated CSV as Excel in German locales expects it; fields with separators, quotes or line breaks are quoted. */
+/**
+ * Semicolon-separated CSV as Excel in German locales expects it; fields with separators, quotes or line breaks are
+ * quoted. Text starting with = + - @ (or a tab / CR) gets a leading ' so spreadsheets do not run it as a formula
+ * (CSV injection, e.g. through a join request reason).
+ */
 export function toCsv(rows: (string | number | null | undefined)[][]): string {
   const cell = (v: string | number | null | undefined) => {
-    const s = v === null || v === undefined ? '' : typeof v === 'number' ? String(v).replace('.', ',') : v;
+    let s = v === null || v === undefined ? '' : typeof v === 'number' ? String(v).replace('.', ',') : v;
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return rows.map((r) => r.map(cell).join(';')).join('\r\n') + '\r\n';

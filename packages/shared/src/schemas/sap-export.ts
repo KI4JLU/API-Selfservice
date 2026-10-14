@@ -24,8 +24,14 @@ export const SapExportRequestSchema = z.object({
   /** default: last day of the month */
   documentDate: Day.optional(),
   postingDate: Day.optional(),
-  /** posting text; `{Provider}` is replaced by the provider name */
-  text: z.string().trim().min(1).max(50).optional(),
+  /** posting text; `{Provider}` is replaced by the provider name. No leading = + - @: spreadsheets would read a formula. */
+  text: z
+    .string()
+    .trim()
+    .min(1)
+    .max(50)
+    .refine((v) => !/^[=+\-@]/.test(v), 'The posting text must not start with = + - @')
+    .optional(),
 });
 
 export const SapExportRowSchema = z.object({

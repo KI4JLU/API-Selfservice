@@ -3,6 +3,25 @@ import { loadEnvFile } from './test-env';
 
 // E2E_ENV_FILE=.env.test (pnpm test:e2e:local) runs against the local Docker proxy; without it .env is used
 if (process.env.E2E_ENV_FILE) loadEnvFile(process.env.E2E_ENV_FILE);
+if (!process.env.LITELLM_BASE_URL) {
+  try {
+    loadEnvFile('.env');
+  } catch {
+    // no .env: the global setup reports the missing settings
+  }
+}
+// The suite creates users, teams and keys and sends real requests. A proxy that is not on this machine (e.g. production)
+// needs an explicit E2E_ALLOW_REMOTE=1 (pnpm test:e2e:live), so a plain `playwright test` never reaches it by accident.
+const litellmHost = (() => {
+  try {
+    return new URL(process.env.LITELLM_BASE_URL ?? '').hostname;
+  } catch {
+    return '';
+  }
+})();
+if (litellmHost && !['localhost', '127.0.0.1', '::1'].includes(litellmHost) && process.env.E2E_ALLOW_REMOTE !== '1') {
+  throw new Error(`Live suite would run against ${litellmHost}. Use pnpm test:e2e:local, or set E2E_ALLOW_REMOTE=1 (pnpm test:e2e:live) on purpose.`);
+}
 
 /**
  * Live suite against a real LiteLLM proxy (docs/plans/e2e_live_litellm_plan.md).
