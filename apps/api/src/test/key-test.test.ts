@@ -72,6 +72,21 @@ describe('key test (F-KEY-9)', () => {
     expect(JSON.stringify(events.body)).not.toContain('/key-test');
   });
 
+  it('reports a provider rejecting the request as KEY_TEST_PROVIDER_ERROR, not as an invalid key (#8)', async () => {
+    const body = JSON.stringify({ error: { message: `litellm.AuthenticationError: AuthenticationError: OpenAIException - Incorrect API key provided. Key Hash ${secret}`, type: null, code: '401' } });
+    const spy = vi.spyOn(t.mock, 'chatWithKey').mockRejectedValueOnce(new LiteLLMHttpError(401, body, '/v1/chat/completions'));
+    const r = await send();
+    spy.mockRestore();
+    expectError(r, 502, 'KEY_TEST_PROVIDER_ERROR');
+    expect(JSON.stringify(r.body)).not.toContain(secret);
+    // the proxy's own key check stays KEY_INVALID
+    const own = JSON.stringify({ error: { message: 'Authentication Error, Invalid proxy server token passed.', type: 'token_not_found_in_db', code: '401' } });
+    const spy2 = vi.spyOn(t.mock, 'chatWithKey').mockRejectedValueOnce(new LiteLLMHttpError(401, own, '/v1/chat/completions'));
+    const r2 = await send();
+    spy2.mockRestore();
+    expectError(r2, 422, 'KEY_INVALID');
+  });
+
   it('never puts the key into logs or the event log, also not through other errors', async () => {
     // e.g. fetch rejects a malformed Authorization header with its value in the message
     const spy = vi.spyOn(t.mock, 'chatWithKey').mockRejectedValueOnce(new TypeError(`Headers.append: "Bearer ${secret}" is an invalid header value.`));

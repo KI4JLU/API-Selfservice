@@ -12,8 +12,23 @@ const MAX_TOKENS = 512;
  */
 function keyTestError(e: unknown): ApiError {
   if (!(e instanceof LiteLLMHttpError)) return new ApiError('KEY_TEST_FAILED', 'LiteLLM could not be called');
+  if (isProviderError(e.body)) return new ApiError('KEY_TEST_PROVIDER_ERROR', 'The provider behind the model rejected the request', { status: e.status });
   if (e.status === 401 || e.status === 403) return new ApiError('KEY_INVALID', 'LiteLLM rejected the key');
   return new ApiError('KEY_TEST_FAILED', `LiteLLM answered with status ${e.status}`, { status: e.status });
+}
+
+/**
+ * Errors raised by the provider behind a model (e.g. a wrong upstream API key in the proxy config) come back
+ * with the same 401 as a rejected portal key, but LiteLLM prefixes their message with its exception class
+ * (`litellm.AuthenticationError: ... OpenAIException ...`). Errors of the proxy's own key check have no prefix.
+ */
+function isProviderError(body: string) {
+  try {
+    const message = (JSON.parse(body) as { error?: { message?: unknown } }).error?.message;
+    return typeof message === 'string' && /^litellm\.\w+Error:/.test(message);
+  } catch {
+    return false;
+  }
 }
 
 /** F-KEY-9: models the given key may call. */

@@ -489,6 +489,7 @@
     "KEY_NOT_ACTIVE": "Key ist nicht aktiv.",
     "KEY_INVALID": "Der Key wurde abgelehnt. Er ist ungültig, gesperrt, abgelaufen oder für dieses Modell nicht freigegeben.",
     "KEY_TEST_FAILED": "LiteLLM konnte den Request nicht ausführen. Prüfen Sie, ob das Modell Chat unterstützt und ob noch Budget vorhanden ist.",
+    "KEY_TEST_PROVIDER_ERROR": "Ihr Key ist gültig, aber der Provider hinter diesem Modell hat die Anfrage abgelehnt. Das Modell ist im Proxy vermutlich falsch konfiguriert. Wählen Sie ein anderes Modell oder melden Sie es einem Admin.",
     "LAST_ADMIN": "Der letzte Admin kann nicht herabgestuft werden.",
     "ROLE_MANAGED_BY_IDP": "Diese Rolle wird über die Keycloak-Gruppe vergeben.",
     "SELF_DEACTIVATION": "Sie können sich nicht selbst deaktivieren.",

@@ -489,6 +489,7 @@
     "KEY_NOT_ACTIVE": "Key is not active.",
     "KEY_INVALID": "The key was rejected. It is invalid, blocked, expired or not enabled for this model.",
     "KEY_TEST_FAILED": "LiteLLM could not run the request. Check that the model supports chat and that budget is left.",
+    "KEY_TEST_PROVIDER_ERROR": "Your key is valid, but the provider behind this model rejected the request. The model is probably misconfigured in the proxy. Choose another model or report it to an admin.",
     "LAST_ADMIN": "The last admin cannot be demoted.",
     "ROLE_MANAGED_BY_IDP": "This role is granted via the Keycloak group.",
     "SELF_DEACTIVATION": "You cannot deactivate yourself.",
