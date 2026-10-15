@@ -47,6 +47,111 @@ On startup the API creates the schema, runs migrations, seeds the default cost c
 - App against the local proxy: `LITELLM_MODE=http`, `LITELLM_BASE_URL=http://localhost:4000`, `LITELLM_API_KEY=sk-local-master` in `.env`.
 - Team admins are a LiteLLM Enterprise feature; without `LITELLM_LICENSE` cost center admins join their team as `user` (warning in the event log).
 
+## Database
+
+PostgreSQL 13+, one schema per environment (`DB_SCHEMA`, default `api_selfservice`). Migrations live in [packages/db/drizzle](packages/db/drizzle) and are tracked in `<DB_SCHEMA>.__migrations`.
+
+Set up (local):
+
+```bash
+docker compose up -d postgres   # Postgres on :5433 (DATABASE_URL in .env.example)
+pnpm db:migrate                 # creates the schema and applies all migrations
+pnpm db:seed                    # default cost center 1111 1111 (idempotent)
+```
+
+`pnpm setup:dev` does all three; `pnpm setup:dev --reset` drops the `DB_SCHEMA` schema and all its data first.
+
+Update after a pull:
+
+```bash
+pnpm db:migrate                 # applies only new migrations; or just restart the API
+```
+
+Change the schema:
+
+1. Edit [packages/db/src/schema.ts](packages/db/src/schema.ts).
+2. `pnpm db:generate` → new SQL file in `packages/db/drizzle`; review and commit it.
+3. `pnpm db:migrate` (or restart the API).
+
+### External database
+
+Use this when the app should run against an existing Postgres (e.g. the LiteLLM host) instead of the Docker `postgres` service. Requirements: PostgreSQL 13 or newer, no extensions needed.
+
+1. **Create a login role** on the Postgres host as superuser (`psql -U postgres`):
+
+   ```sql
+   create role api_selfservice login password '<strong password>';
+   ```
+
+2. **Pick a database** – either a separate one or the existing LiteLLM database:
+
+   ```sql
+   -- a) separate database
+   create database api_selfservice owner api_selfservice;
+
+   -- b) existing LiteLLM database
+   grant connect, create on database litellm to api_selfservice;
+   ```
+
+   `CREATE` is enough: the API creates its schema (`DB_SCHEMA`) itself and owns it. It needs no rights on LiteLLM's tables in `public`.
+
+3. **Optional: create the schema up front** instead of granting `CREATE` on the database (connect to that database first, `\c litellm`):
+
+   ```sql
+   create schema api_selfservice authorization api_selfservice;
+   ```
+
+4. **Allow network access** (only if the app does not run on the Postgres host itself):
+   - `postgresql.conf`: `listen_addresses` includes an address the app can reach, e.g. `'*'` or the server IP (needs a Postgres restart).
+   - `pg_hba.conf`: allow the app's network, e.g. for Docker on the same host:
+
+     ```
+     host  litellm  api_selfservice  172.16.0.0/12  scram-sha-256
+     ```
+
+     then `select pg_reload_conf();`.
+
+   - Firewall: open port `5432` for the app host or the Docker networks only.
+
+5. **Set the connection** in `.env`:
+
+   ```env
+   DATABASE_URL=postgres://api_selfservice:<password>@<host>:5432/litellm
+   DB_SCHEMA=api_selfservice
+   ```
+
+   - `<host>`: `host.docker.internal` when the app runs in Docker (`docker-compose.app.yml`) and Postgres on the same server; `localhost` for `pnpm dev`; otherwise the DB host name.
+   - URL-encode special characters in the password (`@` → `%40`, `:` → `%3A`, `/` → `%2F`).
+   - TLS: append `?sslmode=require`; for a self-signed certificate `?sslmode=no-verify`.
+   - Several environments (dev, staging, prod) can share one database; give each its own `DB_SCHEMA`.
+   - Each API container opens up to 10 connections; check `max_connections` if several instances share the host.
+
+6. **Test the connection** before starting the app:
+
+   ```bash
+   docker run --rm --add-host=host.docker.internal:host-gateway postgres:16-alpine \
+     psql "postgres://api_selfservice:<password>@<host>:5432/litellm" -c 'select current_user, version();'
+   ```
+
+7. **Start the app.** It creates the schema, applies all migrations and seeds the default cost center on its own:
+
+   ```bash
+   sudo docker compose -f docker-compose.app.yml up -d --build   # server
+   pnpm db:migrate && pnpm db:seed && pnpm dev                   # or locally
+   ```
+
+8. **Check** the log for `API-Selfservice API listening` and the applied migrations:
+
+   ```sql
+   select tag, applied_at from api_selfservice.__migrations order by applied_at;
+   ```
+
+Updates work as on any server: pull, rebuild, restart; pending migrations run on start.
+
+### Server / production
+
+Nothing to run by hand. The API applies pending migrations and the seed on every start, so `git pull && sudo docker compose -f docker-compose.app.yml up -d --build` updates the database too. Back up the schema before an update (`pg_dump -n <DB_SCHEMA>`); each migration runs in a transaction, but there are no down migrations.
+
 ## Configuration
 
 All settings are environment variables, see [.env.example](.env.example). Important ones:
