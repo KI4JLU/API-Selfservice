@@ -1,6 +1,7 @@
 # ---- build ----
 FROM node:22-alpine AS build
-RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+# npm instead of corepack: npm honors HTTP(S)_PROXY, corepack does not reliably.
+RUN npm install -g pnpm@10.33.0
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc tsconfig.base.json ./
 COPY apps/api/package.json apps/api/
@@ -13,7 +14,8 @@ RUN pnpm --filter @api-selfservice/web build
 
 # ---- runtime ----
 FROM node:22-alpine AS runtime
-RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+# npm instead of corepack: npm honors HTTP(S)_PROXY, corepack does not reliably.
+RUN npm install -g pnpm@10.33.0
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build /app/package.json /app/pnpm-workspace.yaml /app/pnpm-lock.yaml /app/.npmrc ./

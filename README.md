@@ -108,7 +108,7 @@ The same image is used for dev, staging and prod. Differences only via env: Keyc
    sudo docker compose -f docker-compose.app.yml up -d --build
    ```
 
-   The image is built on the server itself from the checked-out code; there is no registry. The build needs internet access (Docker Hub for `node:22-alpine`, the npm registry for `pnpm install`), about 2 GB RAM and a few GB of disk. The first build takes a few minutes; `docker image prune` removes old images after updates.
+   The image is built on the server itself from the checked-out code; there is no registry. The build needs internet access (Docker Hub for `node:22-alpine`, the npm registry for `pnpm install`), about 2 GB RAM and a few GB of disk. Behind a proxy, set `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` in `.env` (see `.env.example`); compose passes them to the build. Docker Hub itself is pulled by the Docker daemon, which needs its own proxy setting ([docs.docker.com/engine/daemon/proxy](https://docs.docker.com/engine/daemon/proxy/)). The first build takes a few minutes; `docker image prune` removes old images after updates.
 
 Service information:
 

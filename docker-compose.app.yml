@@ -8,6 +8,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Proxy for npm/pnpm during the build (e.g. HTTP_PROXY=http://10.60.3.254:3128 in .env); empty = no proxy.
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-}
+        http_proxy: ${HTTP_PROXY:-}
+        https_proxy: ${HTTPS_PROXY:-}
+        no_proxy: ${NO_PROXY:-}
     restart: unless-stopped # comes back after a crash or reboot of the host
     ports:
       - '${PORT:-3030}:${PORT:-3030}'
