@@ -1,0 +1,66 @@
+# API + web UI only (the image serves the built web app). No database container.
+# Values are read from .env (or the shell) via ${VAR}; required ones fail with a message when missing.
+# A service on the host (Postgres, Mailpit, LiteLLM) is reachable as host.docker.internal, not localhost.
+# Database setup on an existing Postgres host: docs/kb/DEPLOYMENT.md, "Existing Postgres host".
+#   docker compose -f docker-compose.app.yml up -d --build
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped # comes back after a crash or reboot of the host
+    ports:
+      - '${PORT:-3030}:${PORT:-3030}'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    environment:
+      # ---- Runtime ----
+      NODE_ENV: production
+      PORT: ${PORT:-3030}
+      APP_URL: ${APP_URL:-http://localhost:3030} # web app and API share one origin in this image
+      API_URL: ${API_URL:-http://localhost:3030}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # ---- Database ----
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      DB_SCHEMA: ${DB_SCHEMA:-api_selfservice}
+
+      # ---- Better Auth ----
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET is required}
+
+      # ---- Keycloak ----
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:?KEYCLOAK_ISSUER is required}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-api-selfservice}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?KEYCLOAK_CLIENT_SECRET is required}
+      KEYCLOAK_ADMIN_GROUP: ${KEYCLOAK_ADMIN_GROUP:-LiteLLMAdmin}
+      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-}
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-}
+      KEYCLOAK_GROUPS_CLAIM: ${KEYCLOAK_GROUPS_CLAIM:-groups}
+      KEYCLOAK_AFFILIATION_CLAIM: ${KEYCLOAK_AFFILIATION_CLAIM:-eduPersonAffiliation}
+      KEYCLOAK_AFFILIATION_VALID: ${KEYCLOAK_AFFILIATION_VALID-member,staff} # set empty to disable the check
+
+      # ---- LiteLLM ----
+      LITELLM_MODE: ${LITELLM_MODE:-http}
+      LITELLM_BASE_URL: ${LITELLM_BASE_URL:-}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-}
+
+      # ---- Mail ----
+      SMTP_HOST: ${SMTP_HOST:-host.docker.internal}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-API-Selfservice <noreply@localhost>}
+      ADMIN_NOTIFY_EMAILS: ${ADMIN_NOTIFY_EMAILS:-}
+
+      # ---- Business rules ----
+      KEY_LIFETIME_DAYS: ${KEY_LIFETIME_DAYS:-182}
+      DELETION_GRACE_DAYS: ${DELETION_GRACE_DAYS:-365}
+      BUDGET_WARN_THRESHOLD: ${BUDGET_WARN_THRESHOLD:-0.8}
+      JOBS_ENABLED: ${JOBS_ENABLED:-true}
+      LOG_INGEST_CRON: ${LOG_INGEST_CRON:-*/5 * * * *}
+      AFFILIATION_CHECK_CRON: ${AFFILIATION_CHECK_CRON:-0 3 * * *}
+
+      # ---- Debugging (DEV_LOGIN_ENABLED is refused with NODE_ENV=production) ----
+      IMPERSONATION_ENABLED: ${IMPERSONATION_ENABLED:-false}
+      API_DOCS_ADMIN_ONLY: ${API_DOCS_ADMIN_ONLY:-true}

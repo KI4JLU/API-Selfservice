@@ -1,6 +1,6 @@
 # API-Selfservice
 
-Self-service portal for an existing LiteLLM proxy: Keycloak SSO, roles (user, cost center admin, admin), cost centers as LiteLLM teams with members, an owner and released models, budgets, API key self-service (single models or whole providers, monthly or one-off key budgets, key test), request logger, reports, email notifications, event log. Requirements: [docs/PRD.md](docs/PRD.md).
+Self-service portal for an existing LiteLLM proxy: Keycloak SSO, roles (user, cost center admin, admin), cost centers as LiteLLM teams with members, an owner and released models, budgets, API key self-service (single models or whole providers, monthly or one-off key budgets, key test), request logger, reports, email notifications, event log. Requirements: [docs/kb/PRD.md](docs/kb/PRD.md).
 
 Cost centers in short: an admin creates a cost center and picks its owner (a LiteLLM user), who becomes its first cost center admin. Only the owner appoints or removes further cost center admins; all cost center admins add and remove members, one by one or as a pasted list of up to 200 e-mail addresses. Users find approved cost centers by name under "Cost centers" and ask to join; the cost center admins approve or reject the request. Members create keys on the cost center; plain members see its name only, never its budget, spend or owner.
 
@@ -22,7 +22,7 @@ pnpm setup:dev                  # .env, pnpm install, Postgres + Mailpit (Docker
 pnpm dev                        # API :3030, Web :5173
 ```
 
-For local development set `LITELLM_MODE=mock` and `DEV_LOGIN_ENABLED=true` in `.env` (`.env.example` ships `http` and `false`). Details, manual steps, Keycloak and real-proxy setup: [docs/SETUP.md](docs/SETUP.md).
+For local development set `LITELLM_MODE=mock` and `DEV_LOGIN_ENABLED=true` in `.env` (`.env.example` ships `http` and `false`). Details, manual steps, Keycloak and real-proxy setup: [docs/kb/SETUP.md](docs/kb/SETUP.md).
 
 - API docs: http://localhost:3030/api/docs (in production only for signed-in admins)
 - Mailpit (all mails): http://localhost:8025
@@ -54,7 +54,7 @@ All settings are environment variables, see [.env.example](.env.example). Import
 | Variable                                                            | Meaning                                                                                                                                |
 | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `DATABASE_URL`, `DB_SCHEMA`                                         | Postgres of the LiteLLM host, dedicated schema                                                                                         |
-| `KEYCLOAK_ISSUER`, `KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET`   | OIDC client (see [docs/keycloak.md](docs/keycloak.md), automated via `scripts/keycloak-setup.mts`, see [docs/SETUP.md](docs/SETUP.md)) |
+| `KEYCLOAK_ISSUER`, `KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET`   | OIDC client (see [docs/kb/keycloak.md](docs/kb/keycloak.md), automated via `scripts/keycloak-setup.mts`, see [docs/kb/SETUP.md](docs/kb/SETUP.md)) |
 | `KEYCLOAK_ADMIN_GROUP`                                              | Group whose members are automatically admin (`LiteLLMAdmin`)                                                                           |
 | `KEYCLOAK_AFFILIATION_CLAIM`, `KEYCLOAK_AFFILIATION_VALID`          | Account validity (`eduPersonAffiliation` = member,staff); empty = check disabled                                                       |
 | `LITELLM_BASE_URL`, `LITELLM_API_KEY`, `LITELLM_MODE`               | LiteLLM proxy; `mock` only for dev/test                                                                                                |
@@ -79,7 +79,52 @@ docker build -t api-selfservice .     # production image (API + static web)
 
 ## Environments
 
-The same image is used for dev, staging and prod. Differences only via env: Keycloak realm/client, LiteLLM URL/key, `DB_SCHEMA`, SMTP. Migrations are schema-independent; the schema is created on startup. Rollout steps, constraints and how to write migrations: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+The same image is used for dev, staging and prod. Differences only via env: Keycloak realm/client, LiteLLM URL/key, `DB_SCHEMA`, SMTP. Migrations are schema-independent; the schema is created on startup. Rollout steps, constraints and how to write migrations: [docs/kb/DEPLOYMENT.md](docs/kb/DEPLOYMENT.md).
+
+## Running on an Ubuntu server
+
+[docker-compose.app.yml](docker-compose.app.yml) runs the API and the web UI as one container (service `api`, port `3030`) against an existing Postgres. Tested setup: Ubuntu 22.04/24.04 with Docker Engine and the Compose plugin.
+
+1. Install Docker (official repository, see [docs.docker.com/engine/install/ubuntu](https://docs.docker.com/engine/install/ubuntu/)):
+
+   ```bash
+   sudo apt-get update && sudo apt-get install -y ca-certificates curl git
+   curl -fsSL https://get.docker.com | sudo sh
+   sudo systemctl enable --now docker
+   ```
+
+2. Get the code and create the config:
+
+   ```bash
+   git clone <repo-url> /opt/api-selfservice && cd /opt/api-selfservice
+   cp .env.example .env && chmod 600 .env
+   ```
+
+   Set at least `DATABASE_URL`, `DB_SCHEMA`, `AUTH_SECRET` (`openssl rand -base64 32`), `KEYCLOAK_ISSUER`, `KEYCLOAK_CLIENT_SECRET`, `LITELLM_BASE_URL`, `LITELLM_API_KEY`, `SMTP_*`, and `APP_URL`/`API_URL` (the public URL). Postgres, SMTP or LiteLLM on the same server are reached as `host.docker.internal`, not `localhost`. Database setup: [docs/kb/DEPLOYMENT.md](docs/kb/DEPLOYMENT.md), "Existing Postgres host".
+
+3. Build and start:
+
+   ```bash
+   sudo docker compose -f docker-compose.app.yml up -d --build
+   ```
+
+   The image is built on the server itself from the checked-out code; there is no registry. The build needs internet access (Docker Hub for `node:22-alpine`, the npm registry for `pnpm install`), about 2 GB RAM and a few GB of disk. The first build takes a few minutes; `docker image prune` removes old images after updates.
+
+Service information:
+
+| What           | Value / command                                                                                      |
+| -------------- | ---------------------------------------------------------------------------------------------------- |
+| Service        | `api` (compose project = directory name, e.g. `api-selfservice`)                                     |
+| Port           | `3030` on the host (`PORT` in `.env`); put a reverse proxy with TLS (nginx, Caddy) in front of it    |
+| Autostart      | `restart: unless-stopped` + `systemctl enable docker`: starts again after a crash or reboot          |
+| Health         | `curl http://localhost:3030/health` → `ok: true`, `litellm: true`                                    |
+| Status         | `sudo docker compose -f docker-compose.app.yml ps`                                                   |
+| Logs           | `sudo docker compose -f docker-compose.app.yml logs -f api` (ready: `API-Selfservice API listening`) |
+| Stop / start   | `sudo docker compose -f docker-compose.app.yml stop` / `start`                                       |
+| Update         | `git pull && sudo docker compose -f docker-compose.app.yml up -d --build` (migrations run on start)  |
+| Config changes | edit `.env`, then `sudo docker compose -f docker-compose.app.yml up -d` (recreates the container)    |
+
+The Keycloak client needs the public URL as redirect URI (`https://<host>/api/auth/callback/keycloak`), see [docs/kb/keycloak.md](docs/kb/keycloak.md). Run only one container per `DB_SCHEMA` with `JOBS_ENABLED=true`.
 
 ## Security chain
 

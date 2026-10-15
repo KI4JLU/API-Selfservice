@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Set up the API-Selfservice realm in Keycloak as described in docs/keycloak.md.
+ * Set up the API-Selfservice realm in Keycloak as described in docs/kb/keycloak.md.
  *
  * Reads .env (KEYCLOAK_*, APP_URL, API_URL) and the admin credentials from
  * KC_ADMIN_USER / KC_ADMIN_PASS (environment or .env). Idempotent: existing

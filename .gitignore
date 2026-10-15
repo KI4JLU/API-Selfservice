@@ -159,7 +159,7 @@ vite.config.ts.timestamp-*
 .vite/
 
 # Development directories
-/docs/
+/docs/plans
 .vscode/
 tmp/
 
